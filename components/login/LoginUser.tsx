@@ -1,3 +1,4 @@
+import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useLoginUser } from '@/hooks/apis/authentication/useLoginUser';
 import { storeToken } from '@/shared/helpers/storeToken';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,58 +26,24 @@ export default function LoginUser() {
     resolver: zodResolver(loginSchema),
   });
   const { login, status } = useLoginUser();
+  const { fetchUser, status: userFetchStatus } = useFetchUser();
   const handleSuccess = async (resData: any) => {
     await storeToken(resData.token);
+
     router.push('/(authenticated)/home');
   };
+
   const handleError = () => {
     console.log('login failed');
   };
-  //     const handleLogin = async (e: React.FormEvent) => {
-  //     e.preventDefault();
-  //     setLoading(true);
-  //     setError(null);
 
-  //     try {
-  //       const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  //       const response = await fetch(`${BASE_URL}/auth/login`, {
-  //         method: 'POST',
-  //         headers: { 'Content-Type': 'application/json' },
-  //         body: JSON.stringify(credentials),
-  //       });
-
-  //       if (!response.ok) throw new Error('Invalid username or password');
-
-  //       const data = await response.json();
-  //       setToken(data.token);
-  //       setIsFirstTimeLogin(data.isFirstTimeLogin);
-
-  //       if (!data.isFirstTimeLogin) {
-  //         localStorage.setItem('jwtToken', data.token);
-  //         const userData = await fetchUserData(data.token);
-  //         const role = userData?.userClubRole?.find(
-  //           (club) => club?.clubId === userData?.currentActiveClubId
-  //         ).roleName;
-  //         console.log('role name : ', role);
-  //         if (role === 'Member') {
-  //           navigate('/bookings');
-  //         } else if (role === 'ClubAdmin') {
-  //           navigate('/settings-themes');
-  //         } else {
-  //           navigate('/bookings');
-  //         }
-  //       }
-  //     } catch (err) {
-  //       setError(err.message);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
   const onSubmit = async (data: LoginFormData) => {
     const res = await login(data, {
       onSuccess: handleSuccess,
       onError: handleError,
     });
+    const usedata = await fetchUser();
+
     console.log('response : ', res);
   };
 

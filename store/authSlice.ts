@@ -1,15 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-type UserRole = 'client' | 'admin' | 'superAdmin';
-
 interface AuthState {
   isAuthenticated: boolean;
-  role: UserRole | null;
+  user: any | null; // /me response type can be updated later with real shape
 }
 
 const initialState: AuthState = {
   isAuthenticated: false,
-  role: null,
+  user: null,
 };
 
 export const authSlice = createSlice({
@@ -17,12 +15,13 @@ export const authSlice = createSlice({
   initialState,
   reducers: {
     login(state, action) {
+      console.log('action payload : ', action.payload);
       state.isAuthenticated = true;
-      state.role = action.payload.role;
+      state.user = action.payload;
     },
     logout(state) {
       state.isAuthenticated = false;
-      state.role = null;
+      state.user = null;
     },
   },
 });

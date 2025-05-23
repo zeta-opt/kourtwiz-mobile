@@ -5,23 +5,25 @@ import { RootState } from '../../store';
 import { closeDrawer } from '../../store/uiSlice';
 
 const routes: { label: string; path: string }[] = [
-  { label: '🏠 Dashboard', path: '/(authenticated)/dashboard' },
-  { label: '🏠 Members', path: '/(authenticated)/members' },
-  { label: '🏠 Membership Plans', path: '/(authenticated)/membership-plans' },
-  { label: '🏠 Devices', path: '/(authenticated)/devices' },
-  { label: '🏠 Courts', path: '/(authenticated)/courts' },
+  { label: '📊 Dashboard', path: '/(authenticated)/dashboard' },
+  { label: '👥 Members', path: '/(authenticated)/members' },
+  { label: '💳 Membership Plans', path: '/(authenticated)/membership-plans' },
+  { label: '📱 Devices', path: '/(authenticated)/devices' },
+  { label: '🎾 Courts', path: '/(authenticated)/courts' },
   { label: '⚙️ Settings', path: '/(authenticated)/settings' },
-  { label: '🏠 Club Booking', path: '/(authenticated)/club-booking' },
-  { label: '🏠 Asserts', path: '/(authenticated)/asserts' },
-  { label: '🏠 Profile', path: '/(authenticated)/profile' },
-  { label: '🏠 Create Play', path: '/(authenticated)/create-play' },
-  { label: '🏠 Coach', path: '/(authenticated)/coach' },
-  { label: '🏠 Themes', path: '/(authenticated)/themes' },
-  { label: '🏠 Live Updates', path: '/(authenticated)/live-updates' },
+  { label: '📅 Club Booking', path: '/(authenticated)/club-booking' },
+  { label: '📦 Assets', path: '/(authenticated)/asserts' },
+  { label: '🙍‍♂️ Profile', path: '/(authenticated)/profile' },
+  { label: '🎮 Create Play', path: '/(authenticated)/create-play' },
+  { label: '🏋️ Coach', path: '/(authenticated)/coach' },
+  { label: '🎨 Themes', path: '/(authenticated)/themes' },
+  { label: '📡 Live Updates', path: '/(authenticated)/live-updates' },
 ];
 
 export default function SideDrawer() {
   const { drawerOpen } = useSelector((state: RootState) => state.ui);
+  const { user } = useSelector((state: RootState) => state.auth);
+  console.log('user data from side bar:', user);
   const dispatch = useDispatch();
   const router = useRouter();
 
