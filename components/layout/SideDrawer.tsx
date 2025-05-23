@@ -1,23 +1,47 @@
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { closeDrawer } from '../../store/uiSlice';
 
+const routes: { label: string; path: string }[] = [
+  { label: '🏠 Dashboard', path: '/(authenticated)/dashboard' },
+  { label: '🏠 Members', path: '/(authenticated)/members' },
+  { label: '🏠 Membership Plans', path: '/(authenticated)/membership-plans' },
+  { label: '🏠 Devices', path: '/(authenticated)/devices' },
+  { label: '🏠 Courts', path: '/(authenticated)/courts' },
+  { label: '⚙️ Settings', path: '/(authenticated)/settings' },
+  { label: '🏠 Club Booking', path: '/(authenticated)/club-booking' },
+  { label: '🏠 Asserts', path: '/(authenticated)/asserts' },
+  { label: '🏠 Profile', path: '/(authenticated)/profile' },
+  { label: '🏠 Create Play', path: '/(authenticated)/create-play' },
+  { label: '🏠 Coach', path: '/(authenticated)/coach' },
+  { label: '🏠 Themes', path: '/(authenticated)/themes' },
+  { label: '🏠 Live Updates', path: '/(authenticated)/live-updates' },
+];
+
 export default function SideDrawer() {
   const { drawerOpen } = useSelector((state: RootState) => state.ui);
   const dispatch = useDispatch();
+  const router = useRouter();
 
   if (!drawerOpen) return null;
 
+  const handleNavigate = (path: string) => {
+    router.replace(path);
+    dispatch(closeDrawer());
+  };
+
   return (
     <View style={styles.overlay}>
-      {/* Drawer comes first - left side */}
       <View style={styles.drawer}>
-        <Text style={styles.item}>🏠 Dashboard</Text>
-        <Text style={styles.item}>⚙️ Settings</Text>
+        {routes.map((route, index) => (
+          <Pressable key={index} onPress={() => handleNavigate(route.path)}>
+            <Text style={styles.item}>{route.label}</Text>
+          </Pressable>
+        ))}
       </View>
 
-      {/* Backdrop comes second - right side */}
       <Pressable
         style={styles.backdrop}
         onPress={() => dispatch(closeDrawer())}
@@ -29,7 +53,7 @@ export default function SideDrawer() {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row', // left to right
+    flexDirection: 'row',
     zIndex: 100,
   },
   drawer: {

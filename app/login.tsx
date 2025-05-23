@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 export default function LoginScreen() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isFirstTimeLogin, setIsFirstTimeLogin] = useState<boolean>(true);
+  const [isFirstTimeLogin, setIsFirstTimeLogin] = useState<boolean>(false);
 
   return <>{!isFirstTimeLogin ? <LoginUser /> : <LoginFirstTime />}</>;
 }

@@ -1,13 +1,14 @@
+import { useLoginUser } from '@/hooks/apis/authentication/useLoginUser';
+import { storeToken } from '@/shared/helpers/storeToken';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Text, TextInput } from 'react-native-paper';
 import { z } from 'zod';
-
 // Schema definition using Zod
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' }),
+  username: z.string().email({ message: 'Invalid email address' }),
   password: z
     .string()
     .min(6, { message: 'Password must be at least 6 characters' }),
@@ -23,7 +24,14 @@ export default function LoginUser() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
-
+  const { login, status } = useLoginUser();
+  const handleSuccess = async (resData: any) => {
+    await storeToken(resData.token);
+    router.push('/(authenticated)/home');
+  };
+  const handleError = () => {
+    console.log('login failed');
+  };
   //     const handleLogin = async (e: React.FormEvent) => {
   //     e.preventDefault();
   //     setLoading(true);
@@ -64,9 +72,12 @@ export default function LoginUser() {
   //       setLoading(false);
   //     }
   //   };
-  const onSubmit = (data: LoginFormData) => {
-    console.log('Login', data);
-    router.push('/(authenticated)/home');
+  const onSubmit = async (data: LoginFormData) => {
+    const res = await login(data, {
+      onSuccess: handleSuccess,
+      onError: handleError,
+    });
+    console.log('response : ', res);
   };
 
   return (
@@ -76,7 +87,7 @@ export default function LoginUser() {
       </Text>
       <Controller
         control={control}
-        name='email'
+        name='username'
         render={({ field: { onChange, value } }) => (
           <TextInput
             label='Email'
@@ -85,11 +96,13 @@ export default function LoginUser() {
             autoCapitalize='none'
             keyboardType='email-address'
             style={styles.input}
-            error={!!errors.email}
+            error={!!errors.username}
           />
         )}
       />
-      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
+      {errors.username && (
+        <Text style={styles.error}>{errors.username.message}</Text>
+      )}
 
       <Controller
         control={control}
@@ -117,6 +130,7 @@ export default function LoginUser() {
         mode='contained'
         onPress={handleSubmit(onSubmit)}
         style={styles.button}
+        loading={status === 'loading'}
       >
         Login
       </Button>

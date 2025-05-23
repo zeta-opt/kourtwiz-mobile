@@ -1,16 +1,22 @@
+import { getToken } from '@/shared/helpers/storeToken';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { toggleDrawer } from '../../store/uiSlice';
-
 export default function BottomTabs() {
   const router = useRouter();
   const dispatch = useDispatch();
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => dispatch(toggleDrawer())}>
+      <TouchableOpacity
+        onPress={async () => {
+          const token = await getToken();
+          console.log(token);
+          dispatch(toggleDrawer());
+        }}
+      >
         <MaterialIcons name='menu' size={28} />
       </TouchableOpacity>
 
