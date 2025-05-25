@@ -28,7 +28,6 @@ export default function LoginFirstTime() {
   });
 
   const onSubmit = (data: LoginFormData) => {
-    console.log('Login', data);
     router.push('/(authenticated)/home');
   };
 

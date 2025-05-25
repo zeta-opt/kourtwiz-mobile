@@ -1,4 +1,3 @@
-import { getToken } from '@/shared/helpers/storeToken';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -12,8 +11,6 @@ export default function BottomTabs() {
     <View style={styles.container}>
       <TouchableOpacity
         onPress={async () => {
-          const token = await getToken();
-          console.log(token);
           dispatch(toggleDrawer());
         }}
       >

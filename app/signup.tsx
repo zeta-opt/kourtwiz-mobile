@@ -10,7 +10,6 @@ export default function SignupScreen() {
 
   const handleSignup = () => {
     // TODO: Add signup logic
-    console.log('Signup', { name, email, password, confirmPassword });
   };
 
   return (

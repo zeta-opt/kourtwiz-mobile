@@ -22,8 +22,6 @@ const routes: { label: string; path: string }[] = [
 
 export default function SideDrawer() {
   const { drawerOpen } = useSelector((state: RootState) => state.ui);
-  const { user } = useSelector((state: RootState) => state.auth);
-  console.log('user data from side bar:', user);
   const dispatch = useDispatch();
   const router = useRouter();
 

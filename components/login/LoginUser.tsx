@@ -27,9 +27,9 @@ export default function LoginUser() {
   });
   const { login, status } = useLoginUser();
   const { fetchUser, status: userFetchStatus } = useFetchUser();
+
   const handleSuccess = async (resData: any) => {
     await storeToken(resData.token);
-
     router.push('/(authenticated)/home');
   };
 
@@ -38,13 +38,12 @@ export default function LoginUser() {
   };
 
   const onSubmit = async (data: LoginFormData) => {
-    const res = await login(data, {
+    await login(data, {
       onSuccess: handleSuccess,
       onError: handleError,
     });
-    const usedata = await fetchUser();
-
-    console.log('response : ', res);
+    //setting /me data
+    await fetchUser();
   };
 
   return (
@@ -97,7 +96,7 @@ export default function LoginUser() {
         mode='contained'
         onPress={handleSubmit(onSubmit)}
         style={styles.button}
-        loading={status === 'loading'}
+        loading={status === 'loading' || userFetchStatus === 'loading'}
       >
         Login
       </Button>

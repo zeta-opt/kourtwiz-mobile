@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 export default function Themes() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>🏡 Welcome to Themes!</Text>
+      <Text style={styles.text}>🏡 Welcome to themes!</Text>
     </View>
   );
 }
