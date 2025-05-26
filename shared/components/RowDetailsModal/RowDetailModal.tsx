@@ -7,12 +7,14 @@ type RowDetailsModalProps = {
   visible: boolean;
   onDismiss: () => void;
   data: Record<string, string> | null;
+  modalTitle: string;
 };
 
 const RowDetailsModal = ({
   visible,
   onDismiss,
   data,
+  modalTitle,
 }: RowDetailsModalProps) => {
   const styles = getStyles();
   return (
@@ -23,7 +25,7 @@ const RowDetailsModal = ({
         contentContainerStyle={styles.modalContainer}
       >
         <Card>
-          <Card.Title title='User Details' />
+          <Card.Title title={modalTitle} />
           <Card.Content>
             {data ? (
               Object.entries(data).map(([key, value]) => (

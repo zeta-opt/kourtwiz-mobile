@@ -85,7 +85,12 @@ export default function Members() {
           Add User
         </Button>
       </View>
-      <ViewOnlyTable columns={columns} rows={rows} DEFAULT_COLUMN_WIDTH={150} />
+      <ViewOnlyTable
+        columns={columns}
+        rows={rows}
+        DEFAULT_COLUMN_WIDTH={150}
+        modalTitle='User Details'
+      />
     </View>
   );
 }

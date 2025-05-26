@@ -10,9 +10,15 @@ type Props = {
   columns: string[];
   rows: Record<string, string>[];
   DEFAULT_COLUMN_WIDTH: number;
+  modalTitle: string;
 };
 
-const ViewOnlyTable = ({ columns, rows, DEFAULT_COLUMN_WIDTH }: Props) => {
+const ViewOnlyTable = ({
+  columns,
+  rows,
+  DEFAULT_COLUMN_WIDTH,
+  modalTitle,
+}: Props) => {
   const totalTableContentWidth = columns.length * DEFAULT_COLUMN_WIDTH;
   const theme = useTheme();
   const styles = getStyles(DEFAULT_COLUMN_WIDTH);
@@ -87,6 +93,7 @@ const ViewOnlyTable = ({ columns, rows, DEFAULT_COLUMN_WIDTH }: Props) => {
           visible={modalVisible}
           onDismiss={() => setModalVisible(false)}
           data={selectedRow}
+          modalTitle={modalTitle}
         />
       </ScrollView>
     </ScrollView>

@@ -1,19 +1,64 @@
-import { useState } from 'react';
+import AddCourtsModal from '@/components/courts/AddCourtsModal';
+import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
+import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
+import ViewOnlyTable from '@/shared/components/ViewOnlyTable/ViewOnlytable';
+import { RootState } from '@/store';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from 'react-native-paper';
+import { useSelector } from 'react-redux';
 
 export default function Courts() {
   const [modalVisible, setModalVisible] = useState(false);
-  console.log('modal : ', modalVisible);
+  const [columns, setColumn] = useState<string[]>([
+    'name',
+    'surface',
+    'interval',
+  ]);
+  const [rows, setRows] = useState<Record<string, string>[]>([]);
+
+  const { user } = useSelector((state: RootState) => state.auth);
+  const clubId = user?.currentActiveClubId;
+  const { data: courts, status, refetch } = useGetClubCourt({ clubId });
+
+  const handleAddUser = (data: any) => {
+    setModalVisible(false);
+  };
+
+  useEffect(() => {
+    if (!courts || courts.length === 0) return;
+    setColumn(['name', 'surface', 'interval']);
+    const resDataRows = courts.map((court) => ({
+      name: String(court.name),
+      surface: String(court.surface),
+      interval: String(court.reservationIntervalMinutes),
+    }));
+    setRows(resDataRows);
+  }, [clubId, courts]);
+
+  if (status === 'loading') return <LoaderScreen />;
 
   return (
     <View style={styles.container}>
+      <AddCourtsModal
+        visible={modalVisible}
+        refetch={refetch}
+        onDismiss={() => setModalVisible(false)}
+        currentClubId={clubId}
+        onSubmit={handleAddUser}
+      />
       <View style={styles.header}>
-        <Text style={styles.title}>Club Members</Text>
+        <Text style={styles.title}>Courts</Text>
         <Button mode='contained' onPress={() => setModalVisible(true)}>
-          Add User
+          Add
         </Button>
       </View>
+      <ViewOnlyTable
+        columns={columns}
+        rows={rows}
+        DEFAULT_COLUMN_WIDTH={150}
+        modalTitle='Court details'
+      />
     </View>
   );
 }
