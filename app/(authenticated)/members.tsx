@@ -1,10 +1,11 @@
 import AddMembershipModal from '@/components/Memberships/AddMembershipModal';
 import { useGetUsersByclubId } from '@/hooks/apis/user/useGetUsersByClubId';
+import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import ViewOnlyTable from '@/shared/components/ViewOnlyTable/ViewOnlytable';
 import { RootState } from '@/store';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { ActivityIndicator, Button } from 'react-native-paper';
+import { Button } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 
 export default function Members() {
@@ -67,12 +68,7 @@ export default function Members() {
     setRows(resDataRows);
   }, [currentClubId, data]);
 
-  if (status === 'loading')
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator animating={true} size='large' />
-      </View>
-    );
+  if (status === 'loading') return <LoaderScreen />;
 
   return (
     <View style={styles.container}>
@@ -111,10 +107,5 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });

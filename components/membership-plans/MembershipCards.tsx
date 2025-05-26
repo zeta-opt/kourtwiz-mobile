@@ -1,4 +1,5 @@
 import { useGetMembershipsByClubId } from '@/hooks/apis/memberships/useGetmembershipsByClubId';
+import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import React from 'react';
 import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
 import { Card, Text, useTheme } from 'react-native-paper';
@@ -19,10 +20,11 @@ const CARD_MARGIN = 13;
 const CARD_WIDTH = (Dimensions.get('window').width - CARD_MARGIN * 3) / 2;
 
 const MembershipCards = ({ currentClubId }: Props) => {
-  const theme = useTheme();
-  const { data: clubMembershipData = [] } = useGetMembershipsByClubId(
+  const { data: clubMembershipData = [], status } = useGetMembershipsByClubId(
     currentClubId ?? ''
   );
+  const theme = useTheme();
+  if (status === 'loading') return <LoaderScreen />;
 
   const renderCard = ({ item }: { item: any }) => (
     <Card style={[styles.card, { borderColor: theme.colors.primary }]}>
