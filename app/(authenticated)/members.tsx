@@ -103,9 +103,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: '20%', // Add this line to push it 10% down from top
-    marginBottom: 50,
-    paddingHorizontal: 20,
+    marginTop: '5%',
+    marginBottom: 20,
+    paddingHorizontal: 10,
     paddingBottom: 20,
   },
   title: {

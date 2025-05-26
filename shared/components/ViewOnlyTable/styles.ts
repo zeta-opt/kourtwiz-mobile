@@ -4,7 +4,7 @@ export const getStyles = (DEFAULT_COLUMN_WIDTH: number) => {
   const styles = StyleSheet.create({
     outerScrollContainer: {
       flex: 1,
-      maxHeight: '80%',
+      maxHeight: '90%',
     },
     horizontalScrollContent: {},
     dataTable: {
