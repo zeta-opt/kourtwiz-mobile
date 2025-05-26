@@ -9,7 +9,7 @@ type UseGetUsersReturn = {
   refetch: () => void;
 };
 
-export const useGetClubCourt = ({
+export const useGetClubCoach = ({
   clubId,
 }: {
   clubId: string;
@@ -29,12 +29,15 @@ export const useGetClubCourt = ({
         const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
         const token = await getToken();
 
-        const response = await axios.get(`${BASE_URL}/courts/club/${clubId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: '*/*',
-          },
-        });
+        const response = await axios.get(
+          `${BASE_URL}/api/clubs/${clubId}/coaches`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: '*/*',
+            },
+          }
+        );
         setData(response.data);
         setStatus('success');
       } catch (error) {
