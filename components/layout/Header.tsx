@@ -9,9 +9,10 @@ const Header = () => {
   const theme = useTheme();
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
-  const selectedClubname = user?.userClubRole?.find(
-    (club: any) => club.clubId === user?.currentActiveClubId
-  ).clubName;
+  const selectedClubname =
+    user?.userClubRole?.find(
+      (club: any) => club.clubId === user?.currentActiveClubId
+    )?.clubName || 'Kourtwiz';
 
   return (
     <SafeAreaView>
