@@ -16,8 +16,10 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
-
-export default function LoginUser() {
+type Props = {
+  handleFirstTimeLogin: (val: boolean) => void;
+};
+export default function LoginUser({ handleFirstTimeLogin }: Props) {
   const {
     control,
     handleSubmit,
@@ -29,8 +31,15 @@ export default function LoginUser() {
   const { fetchUser, status: userFetchStatus } = useFetchUser();
 
   const handleSuccess = async (resData: any) => {
+    console.log('is first time login : ', resData.isFirstTimeLogin);
+    console.log('storing token from not first time login');
     await storeToken(resData.token);
-    router.push('/(authenticated)/home');
+
+    if (resData.isFirstTimeLogin) {
+      handleFirstTimeLogin(true);
+    } else {
+      router.push('/(authenticated)/home');
+    }
   };
 
   const handleError = () => {

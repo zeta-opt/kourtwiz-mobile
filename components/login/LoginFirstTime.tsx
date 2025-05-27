@@ -1,13 +1,14 @@
+import { useChangePassword } from '@/hooks/apis/authentication/useChangePassword';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button, Text, TextInput } from 'react-native-paper';
 import { z } from 'zod';
 
 // Schema definition using Zod
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' }),
+  username: z.string().email({ message: 'Invalid email address' }),
   tempPassword: z
     .string()
     .min(6, { message: 'Password must be at least 6 characters' }),
@@ -17,8 +18,10 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
-
-export default function LoginFirstTime() {
+type Props = {
+  handleFirstTimeLogin: (val: boolean) => void;
+};
+export default function LoginFirstTime({ handleFirstTimeLogin }: Props) {
   const {
     control,
     handleSubmit,
@@ -26,8 +29,22 @@ export default function LoginFirstTime() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+  const { changePassword, status } = useChangePassword();
+  const handleSuccess = async (resData: any) => {
+    console.log('is first time login data : ', resData);
+    handleFirstTimeLogin(false);
+    router.push('/(authenticated)/home');
+  };
 
-  const onSubmit = (data: LoginFormData) => {
+  const handleError = () => {
+    console.log('login failed');
+  };
+
+  const onSubmit = async (data: LoginFormData) => {
+    await changePassword(data, {
+      onSuccess: handleSuccess,
+      onError: handleError,
+    });
     router.push('/(authenticated)/home');
   };
 
@@ -38,7 +55,7 @@ export default function LoginFirstTime() {
       </Text>
       <Controller
         control={control}
-        name='email'
+        name='username'
         render={({ field: { onChange, value } }) => (
           <TextInput
             label='Email'
@@ -47,11 +64,13 @@ export default function LoginFirstTime() {
             autoCapitalize='none'
             keyboardType='email-address'
             style={styles.input}
-            error={!!errors.email}
+            error={!!errors.username}
           />
         )}
       />
-      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
+      {errors.username && (
+        <Text style={styles.error}>{errors.username.message}</Text>
+      )}
 
       <Controller
         control={control}
@@ -88,16 +107,14 @@ export default function LoginFirstTime() {
       {errors.newPassword && (
         <Text style={styles.error}>{errors.newPassword.message}</Text>
       )}
-      <TouchableOpacity onPress={() => console.log('Forgot Password?')}>
-        <Text style={styles.forgot}>Forgot Password?</Text>
-      </TouchableOpacity>
 
       <Button
         mode='contained'
         onPress={handleSubmit(onSubmit)}
         style={styles.button}
+        loading={status === 'loading'}
       >
-        Login
+        Change Password
       </Button>
     </View>
   );
