@@ -93,7 +93,12 @@ const FindPlayerLayout = () => {
           </Card>
         ))}
       </ScrollView>
-      <MultiStepInviteModal visible={playerFinderModal} refetch={refetch} />
+      <MultiStepInviteModal
+        visible={playerFinderModal}
+        refetch={() => {
+          console.log('refetch');
+        }}
+      />
       <PreferredPlacesModal
         visible={preferredPlaceModal}
         handleClose={() => {

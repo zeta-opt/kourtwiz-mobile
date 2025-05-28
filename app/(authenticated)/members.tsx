@@ -48,21 +48,21 @@ export default function Members() {
 
     const filteredUsers = data?.filter((user: any) => {
       if (!user || !user.role) return false;
-      return user.role.name !== 'ClubAdmin';
+      return user?.role?.name !== 'ClubAdmin';
     });
 
     const resDataRows = filteredUsers?.map((filUser) => ({
-      name: String(filUser.user.name),
-      email: String(filUser.user.email),
-      phoneNumber: String(filUser.user.phoneNumber),
+      name: String(filUser?.user?.name),
+      email: String(filUser?.user?.email),
+      phoneNumber: String(filUser?.user?.phoneNumber),
       role: String(filUser.role?.name),
       tasks:
-        filUser.user.tasks?.length > 0
-          ? filUser.user.tasks.join(' ,')
+        filUser.user?.tasks?.length > 0
+          ? filUser?.user?.tasks?.join(' ,')
           : 'No tasks',
-      address: String(filUser.user.address) || 'NA',
-      city: String(filUser.user.city) || 'NA',
-      membership: String(filUser.membershipPlan?.membershipName) || 'N/A',
+      address: String(filUser?.user?.address) || 'NA',
+      city: String(filUser?.user?.city) || 'NA',
+      membership: String(filUser?.membershipPlan?.membershipName) || 'N/A',
     }));
 
     setRows(resDataRows);
