@@ -1,7 +1,7 @@
 import AddCoachModal from '@/components/coach/addCoachModal';
 import { useGetClubCoach } from '@/hooks/apis/coach/useGetClubCoach';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
-import ViewOnlyTable from '@/shared/components/ViewOnlyTable/ViewOnlytable';
+import ViewOnlyList from '@/shared/components/ViewOnlyList/ViewOnlyList';
 import { RootState } from '@/store';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -27,7 +27,7 @@ export default function Coach() {
 
   useEffect(() => {
     if (!coaches || coaches.length === 0) return;
-    setColumn(['name', 'email', 'price per hour']);
+    // setColumn(['name', 'email', 'price per hour']);
     const resDataRows = coaches.map((coach) => ({
       name: String(coach.name),
       email: String(coach.email),
@@ -53,12 +53,12 @@ export default function Coach() {
           Add
         </Button>
       </View>
-      <ViewOnlyTable
-        columns={columns}
-        rows={rows}
-        DEFAULT_COLUMN_WIDTH={150}
-        modalTitle='Coach details'
-      />
+      <ViewOnlyList
+          columns={columns}
+          rows={rows}
+          modalTitle='Coach details'
+        />
+
     </View>
   );
 }
