@@ -26,6 +26,12 @@ export default function BottomTabs() {
       >
         <MaterialIcons name='person' size={28} />
       </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => router.replace('/(authenticated)/find-players')}
+      >
+        <MaterialIcons name='group' size={28} />
+      </TouchableOpacity>
     </View>
   );
 }
