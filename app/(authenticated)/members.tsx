@@ -1,7 +1,7 @@
 import AddMembershipModal from '@/components/Memberships/AddMembershipModal';
 import { useGetUsersByclubId } from '@/hooks/apis/user/useGetUsersByClubId';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
-import ViewOnlyTable from '@/shared/components/ViewOnlyTable/ViewOnlytable';
+import ViewOnlyList from '@/shared/components/ViewOnlyList/ViewOnlyList';
 import { RootState } from '@/store';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -50,7 +50,7 @@ export default function Members() {
       if (!user || !user.role) return false;
       return user?.role?.name !== 'ClubAdmin';
     });
-
+    
     const resDataRows = filteredUsers?.map((filUser) => ({
       name: String(filUser?.user?.name),
       email: String(filUser?.user?.email),
@@ -85,12 +85,11 @@ export default function Members() {
           Add User
         </Button>
       </View>
-      <ViewOnlyTable
-        columns={columns}
-        rows={rows}
-        DEFAULT_COLUMN_WIDTH={150}
-        modalTitle='User Details'
-      />
+      <ViewOnlyList
+          columns={columns}
+          rows={rows}
+          modalTitle='User details'
+        />
     </View>
   );
 }

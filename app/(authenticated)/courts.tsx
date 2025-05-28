@@ -1,7 +1,7 @@
 import AddCourtsModal from '@/components/courts/AddCourtsModal';
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
-import ViewOnlyTable from '@/shared/components/ViewOnlyTable/ViewOnlytable';
+import ViewOnlyList from '@/shared/components/ViewOnlyList/ViewOnlyList';
 import { RootState } from '@/store';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -53,12 +53,11 @@ export default function Courts() {
           Add
         </Button>
       </View>
-      <ViewOnlyTable
-        columns={columns}
-        rows={rows}
-        DEFAULT_COLUMN_WIDTH={150}
-        modalTitle='Court details'
-      />
+      <ViewOnlyList
+          columns={columns}
+          rows={rows}
+          modalTitle='Court details'
+        />
     </View>
   );
 }
