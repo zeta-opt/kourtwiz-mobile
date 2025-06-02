@@ -8,6 +8,7 @@ import {
   closePreferredPlaceModal,
   openPlayerFinderModal,
 } from '../../store/uiSlice';
+import ChooseContactsModal from './choose-contacts-modal/ChooseContactsModal';
 import MultiStepInviteModal from './FindPLayerMoadal';
 import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
 const cardData = [
@@ -93,6 +94,7 @@ const FindPlayerLayout = () => {
           </Card>
         ))}
       </ScrollView>
+      <ChooseContactsModal />
       <MultiStepInviteModal
         visible={playerFinderModal}
         refetch={() => {

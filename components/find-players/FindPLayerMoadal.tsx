@@ -1,6 +1,11 @@
+import { simplifyContacts } from '@/helpers/find-players/phoneContactsToList';
 import { useRequestPlayerFinder } from '@/hooks/apis/player-finder/useRequestPlayerFinder';
 import { RootState } from '@/store';
-import { resetPlayerFinderData } from '@/store/playerFinderSlice';
+import {
+  resetPlayerFinderData,
+  setContactList,
+} from '@/store/playerFinderSlice';
+import * as Contacts from 'expo-contacts';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -15,7 +20,10 @@ import {
 } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
-import { closePlayerFinderModal } from '../../store/uiSlice';
+import {
+  closePlayerFinderModal,
+  openSelectContactsModal,
+} from '../../store/uiSlice';
 import ChoosePlayersPool from './choose-players-pool/ChoosePlayersPool';
 
 const totalSteps = 6;
@@ -41,7 +49,7 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
   const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
   const { requestPlayerFinder, status: finderStatus } =
     useRequestPlayerFinder();
-
+  console.log('Component mounted');
   const handleSubmit = async () => {
     requestPlayerFinder({
       finderData: {
@@ -166,9 +174,24 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
             <Button
               mode='contained'
               style={{ marginVertical: 8 }}
-              onPress={() => console.log('Add from contacts')}
+              onPress={async () => {
+                const { status } = await Contacts.requestPermissionsAsync();
+                if (status === 'granted') {
+                  const { data: contactsList } =
+                    await Contacts.getContactsAsync({
+                      fields: [Contacts.Fields.PhoneNumbers],
+                    });
+                  console.log(
+                    'contact list data : ',
+                    JSON.stringify(simplifyContacts(contactsList))
+                  );
+                  dispatch(setContactList(simplifyContacts(contactsList)));
+                  dispatch(openSelectContactsModal());
+                  dispatch(closePlayerFinderModal());
+                }
+              }}
             >
-              Add from Contacts
+              Invite From Contacts
             </Button>
           </View>
         );

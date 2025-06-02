@@ -6,6 +6,7 @@ const uiSlice = createSlice({
     drawerOpen: false,
     playerFinderModal: false,
     preferredPlaceModal: false,
+    selectContactsModal: false,
   },
   reducers: {
     openDrawer: (state) => {
@@ -30,6 +31,12 @@ const uiSlice = createSlice({
     closePreferredPlaceModal: (state) => {
       state.preferredPlaceModal = false;
     },
+    openSelectContactsModal: (state) => {
+      state.selectContactsModal = true;
+    },
+    closeSelectContactsModal: (state) => {
+      state.selectContactsModal = false;
+    },
   },
 });
 
@@ -41,5 +48,7 @@ export const {
   closePlayerFinderModal,
   openPreferredPlaceModal,
   closePreferredPlaceModal,
+  openSelectContactsModal,
+  closeSelectContactsModal,
 } = uiSlice.actions;
 export default uiSlice.reducer;

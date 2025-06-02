@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 // Define the shape of a single preferred contact
-interface PreferredContact {
+interface Contact {
   contactName: string;
   contactPhoneNumber: string;
 }
@@ -13,7 +13,8 @@ interface PlayerFinderState {
   playTime: string | null; // Keeping as string for now, could be Date if parsed
   playersNeeded: number | null;
   skillRating: number | null;
-  preferredContacts: PreferredContact[];
+  preferredContacts: Contact[];
+  contactList: Contact[];
 }
 
 // Initial state for the player finder data
@@ -24,6 +25,7 @@ const initialState: PlayerFinderState = {
   playersNeeded: null,
   skillRating: null,
   preferredContacts: [],
+  contactList: [],
 };
 
 const playerFinderDataSlice = createSlice({
@@ -51,7 +53,7 @@ const playerFinderDataSlice = createSlice({
       state.skillRating = action.payload;
     },
     // Action to add a single preferred contact
-    addPreferredContact: (state, action: PayloadAction<PreferredContact>) => {
+    addPreferredContact: (state, action: PayloadAction<Contact>) => {
       state.preferredContacts.push(action.payload);
     },
     // Action to remove a preferred contact by its index
@@ -61,7 +63,7 @@ const playerFinderDataSlice = createSlice({
     // Action to update an existing preferred contact by its index
     updatePreferredContact: (
       state,
-      action: PayloadAction<{ index: number; contact: PreferredContact }>
+      action: PayloadAction<{ index: number; contact: Contact }>
     ) => {
       const { index, contact } = action.payload;
       if (state.preferredContacts[index]) {
@@ -69,11 +71,15 @@ const playerFinderDataSlice = createSlice({
       }
     },
     // Action to completely replace the preferred contacts array
-    setPreferredContacts: (
-      state,
-      action: PayloadAction<PreferredContact[]>
-    ) => {
+    setPreferredContacts: (state, action: PayloadAction<Contact[]>) => {
       state.preferredContacts = action.payload;
+    },
+    setContactList: (state, action: PayloadAction<Contact[]>) => {
+      console.log('setting contact list ');
+      state.contactList = action.payload;
+    },
+    removeContactList: (state) => {
+      state.contactList = [];
     },
     // Action to reset all player finder data to its initial state
     resetPlayerFinderData: (state) => {
@@ -92,6 +98,8 @@ export const {
   removePreferredContact,
   updatePreferredContact,
   setPreferredContacts,
+  setContactList,
+  removeContactList,
   resetPlayerFinderData,
 } = playerFinderDataSlice.actions;
 
