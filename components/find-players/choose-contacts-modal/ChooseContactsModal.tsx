@@ -1,9 +1,10 @@
 import { RootState } from '@/store';
+import { setPreferredContacts } from '@/store/playerFinderSlice';
 import {
   closeSelectContactsModal,
   openPlayerFinderModal,
 } from '@/store/uiSlice';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import {
   Button,
@@ -24,13 +25,24 @@ const ChooseContactsModal = () => {
   const visible = useSelector(
     (state: RootState) => state.ui.selectContactsModal
   );
-  const contactList = useSelector(
-    (state: RootState) => state.playerFinder.contactList
+  const { contactList, preferredContacts } = useSelector(
+    (state: RootState) => state.playerFinder
   );
   const dispatch = useDispatch();
 
   const [selected, setSelected] = useState<Record<string, Contact>>({});
   const [searchText, setSearchText] = useState('');
+
+  useEffect(() => {
+    const selectedTemp: Record<string, Contact> = {};
+
+    preferredContacts.forEach((contact) => {
+      const key = `${contact.contactName}_${contact.contactPhoneNumber}`;
+      selectedTemp[key] = contact;
+    });
+
+    setSelected(selectedTemp);
+  }, [preferredContacts]);
 
   const handleClose = () => {
     dispatch(closeSelectContactsModal());
@@ -40,7 +52,7 @@ const ChooseContactsModal = () => {
   const handleSubmit = () => {
     const selectedContacts = Object.values(selected);
     console.log('Submitted contacts:', selectedContacts);
-    // Do something with selectedContacts
+    dispatch(setPreferredContacts(selectedContacts));
     handleClose();
   };
 
@@ -132,7 +144,7 @@ const ChooseContactsModal = () => {
           disabled={Object.keys(selected).length === 0}
           style={styles.submitButton}
         >
-          Submit
+          Select
         </Button>
       </Modal>
     </Portal>

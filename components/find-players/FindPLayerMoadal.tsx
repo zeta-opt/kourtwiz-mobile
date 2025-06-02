@@ -2,6 +2,7 @@ import { simplifyContacts } from '@/helpers/find-players/phoneContactsToList';
 import { useRequestPlayerFinder } from '@/hooks/apis/player-finder/useRequestPlayerFinder';
 import { RootState } from '@/store';
 import {
+  removePreferredContact,
   resetPlayerFinderData,
   setContactList,
 } from '@/store/playerFinderSlice';
@@ -13,6 +14,7 @@ import {
   Button,
   Card,
   Divider,
+  IconButton,
   Modal,
   Portal,
   ProgressBar,
@@ -34,16 +36,17 @@ type Props = {
 const MultiStepInviteModal = ({ visible, refetch }: Props) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { preferredContacts } = useSelector(
+    (state: RootState) => state.playerFinder
+  );
+
   const userId = user?.userId;
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(new Date());
   const [skillLevel, setSkillLevel] = useState(1);
   const [playerCount, setPlayerCount] = useState(1);
-  const [contacts, setContacts] = useState([
-    { contactName: 'Peter Jones', contactPhoneNumber: '+19876543210' },
-  ]);
+  const [submitted, setSubmitted] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  console.log(setContacts);
   const goToNext = () => setStep((prev) => Math.min(prev + 1, totalSteps));
   const goToPrevious = () => setStep((prev) => Math.max(prev - 1, 1));
   const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
@@ -58,21 +61,13 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
         playTime: date.toISOString(),
         playersNeeded: playerCount,
         skillRating: skillLevel,
-        preferredContacts: contacts,
+        preferredContacts: preferredContacts,
       },
       callbacks: {
         onSuccess: () => {
           dispatch(resetPlayerFinderData());
-          setDate(new Date());
-          setSkillLevel(1);
-          setPlayerCount(1);
-          setStep(1);
-          dispatch(closePlayerFinderModal());
           refetch();
-          Toast.show({
-            type: 'success',
-            text1: 'Invitation sent!',
-          });
+          setSubmitted(true);
         },
         onError: () => {
           dispatch(closePlayerFinderModal());
@@ -162,12 +157,23 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
         return (
           <View style={{ flex: 1 }}>
             <ScrollView style={{ flex: 1 }}>
-              {contacts.map((contact, index) => (
+              {preferredContacts.length === 0 && (
+                <Text>No contact selected</Text>
+              )}
+              {preferredContacts.map((contact, index) => (
                 <Card key={index} style={styles.contactCard}>
-                  <Card.Content>
-                    <Text>{contact.contactName}</Text>
-                    <Text>{contact.contactPhoneNumber}</Text>
-                  </Card.Content>
+                  <Card.Title
+                    title={contact.contactName}
+                    subtitle={contact.contactPhoneNumber}
+                    right={() => (
+                      <IconButton
+                        icon='close'
+                        onPress={() => {
+                          dispatch(removePreferredContact(index));
+                        }}
+                      />
+                    )}
+                  />
                 </Card>
               ))}
             </ScrollView>
@@ -207,18 +213,37 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
               <Divider style={styles.divider} />
               <Text>👥 Players: {playerCount}</Text>
               <Divider style={styles.divider} />
+              <Text>👥 Contact: {preferredContacts.length}</Text>
+              <Divider style={styles.divider} />
               <Text>📊 Skill Level: {skillLevel.toFixed(1)}</Text>
             </Card.Content>
-            <Button
-              mode='contained'
-              style={{ margin: 16 }}
-              onPress={() => {
-                handleSubmit();
-              }}
-              loading={finderStatus === 'loading'}
-            >
-              Find Players
-            </Button>
+            {submitted ? (
+              <Button
+                mode='contained'
+                style={{ margin: 16, backgroundColor: 'green' }}
+                icon='check'
+                labelStyle={{ color: 'white' }}
+                onPress={() => {
+                  setDate(new Date());
+                  setSkillLevel(1);
+                  setPlayerCount(1);
+                  setStep(1);
+                  setSubmitted(false);
+                  dispatch(closePlayerFinderModal());
+                }}
+              >
+                <Text style={{ color: 'white' }}>Submitted</Text>
+              </Button>
+            ) : (
+              <Button
+                mode='contained'
+                style={{ margin: 16 }}
+                onPress={handleSubmit}
+                loading={finderStatus === 'loading'}
+              >
+                Find Players
+              </Button>
+            )}
           </Card>
         );
       default:
@@ -311,7 +336,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   contactCard: {
-    marginBottom: 8,
+    marginVertical: 6,
+    marginHorizontal: 12,
+    elevation: 2,
   },
   divider: {
     marginVertical: 6,
