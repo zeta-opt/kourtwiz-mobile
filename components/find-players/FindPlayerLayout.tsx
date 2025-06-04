@@ -1,6 +1,7 @@
-// import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
+import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
+import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { RootState } from '@/store';
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, IconButton, Text } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
@@ -10,52 +11,24 @@ import {
 } from '../../store/uiSlice';
 import ChooseContactsModal from './choose-contacts-modal/ChooseContactsModal';
 import MultiStepInviteModal from './FindPLayerMoadal';
+import InviteSummaryModal from './invite-summary modal/InviteSummaryModal';
 import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
-const cardData = [
-  {
-    id: 1,
-    clubName: 'Club Name 1',
-    date: '2025 5 28',
-    invited: 3,
-    accepted: 0,
-    status: 'pending',
-  },
-  {
-    id: 2,
-    clubName: 'Club Name 2',
-    date: '2025 5 28',
-    invited: 3,
-    accepted: 0,
-    status: 'pending',
-  },
-  {
-    id: 3,
-    clubName: 'Club Name 3',
-    date: '2025 5 28',
-    invited: 3,
-    accepted: 0,
-    status: 'completed',
-  },
-  {
-    id: 4,
-    clubName: 'Club Name 4',
-    date: '2025 5 28',
-    invited: 3,
-    accepted: 0,
-    status: 'completed',
-  },
-];
 
 const FindPlayerLayout = () => {
   const dispatch = useDispatch();
+  const [selectedInvite, setSelectedInvite] = useState<any>(null);
+  const [openInviteSummaryModel, setOpenInviteSummaryModel] = useState(false);
   const { playerFinderModal, preferredPlaceModal } = useSelector(
     (state: RootState) => state.ui
   );
-  // const { user } = useSelector((state: RootState) => state.auth);
-  // const { data, refetch } = useGetPlayerInvitationSent({
-  //   inviteeEmail: user?.email,
-  // });
-  // console.log('invites data : ', data);
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { data, refetch } = useGetPlayerInvitationSent({
+    inviteeEmail: user?.email,
+  });
+  const groupedInvites = groupInviteeByRequestId(data);
+  const handleCloseInviteSummaryModel = () => {
+    setOpenInviteSummaryModel(false);
+  };
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -66,27 +39,36 @@ const FindPlayerLayout = () => {
       </View>
 
       <ScrollView style={styles.scrollArea}>
-        {cardData.map((card) => (
-          <Card key={card.id} style={styles.card}>
+        {Object.values(groupedInvites).map((gameInvite) => (
+          <Card
+            key={gameInvite.requestId}
+            style={styles.card}
+            onPress={() => {
+              console.log('clicked!!');
+              setSelectedInvite(Object.values(groupedInvites)[0]);
+              setOpenInviteSummaryModel(true);
+            }}
+          >
             <Card.Content style={styles.cardContent}>
               <View style={styles.cardLeft}>
-                <Text variant='titleMedium'>{card.clubName}</Text>
-                <Text style={styles.blackText}>{card.date}</Text>
+                <Text variant='titleMedium'>{gameInvite.placeToPlay}</Text>
+                <Text style={styles.blackText}>{gameInvite.date}</Text>
                 <Text style={styles.greyText}>
-                  {card.invited} players invited
+                  {gameInvite.accepted + gameInvite.pending} players invited
                 </Text>
                 <Text style={styles.greenText}>
-                  Accepted: {card.accepted}/{card.invited}
+                  Accepted: {gameInvite.accepted}/
+                  {gameInvite.accepted + gameInvite.pending}
                 </Text>
               </View>
               <View style={styles.cardRight}>
                 <IconButton
                   icon={
-                    card.status === 'pending'
+                    gameInvite.pending !== 0
                       ? 'clock-outline'
                       : 'check-circle-outline'
                   }
-                  iconColor={card.status === 'pending' ? 'orange' : 'green'}
+                  iconColor={gameInvite.pending !== 0 ? 'orange' : 'green'}
                   size={28}
                 />
               </View>
@@ -95,18 +77,18 @@ const FindPlayerLayout = () => {
         ))}
       </ScrollView>
       <ChooseContactsModal />
-      <MultiStepInviteModal
-        visible={playerFinderModal}
-        refetch={() => {
-          console.log('refetch');
-        }}
-      />
+      <MultiStepInviteModal visible={playerFinderModal} refetch={refetch} />
       <PreferredPlacesModal
         visible={preferredPlaceModal}
         handleClose={() => {
           dispatch(openPlayerFinderModal());
           dispatch(closePreferredPlaceModal());
         }}
+      />
+      <InviteSummaryModal
+        data={selectedInvite}
+        visible={openInviteSummaryModel}
+        handleClose={handleCloseInviteSummaryModel}
       />
       <View style={styles.footer}>
         <Button
