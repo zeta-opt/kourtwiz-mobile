@@ -32,21 +32,22 @@ const PreferredPlacesModal = ({ visible, handleClose }: Props) => {
             style={styles.scrollArea}
             contentContainerStyle={styles.scrollContent}
           >
-            {data?.map((place) => (
-              <Card
-                key={place.id}
-                style={styles.card}
-                onPress={() => {
-                  dispatch(setPlaceToPlay(place.name));
-                  handleClose();
-                }}
-              >
-                <Card.Content>
-                  <Text variant='titleMedium'>{place.name}</Text>
-                  <Text style={styles.courtType}>{place.courtType}</Text>
-                </Card.Content>
-              </Card>
-            ))}
+            {data &&
+              data?.map((place) => (
+                <Card
+                  key={place.id}
+                  style={styles.card}
+                  onPress={() => {
+                    dispatch(setPlaceToPlay(place.name));
+                    handleClose();
+                  }}
+                >
+                  <Card.Content>
+                    <Text variant='titleMedium'>{place.name}</Text>
+                    <Text style={styles.courtType}>{place.courtType}</Text>
+                  </Card.Content>
+                </Card>
+              ))}
           </ScrollView>
         )}
       </Modal>
