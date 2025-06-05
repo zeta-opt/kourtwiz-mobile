@@ -32,6 +32,11 @@ export default function BottomTabs() {
       >
         <MaterialIcons name='group' size={28} />
       </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => router.replace('/(authenticated)/player-invitations')}
+      >
+        <MaterialIcons name='inbox' size={28} />
+      </TouchableOpacity>
     </View>
   );
 }

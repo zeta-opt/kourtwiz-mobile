@@ -44,7 +44,6 @@ const FindPlayerLayout = () => {
             key={gameInvite.requestId}
             style={styles.card}
             onPress={() => {
-              console.log('clicked!!');
               setSelectedInvite(Object.values(groupedInvites)[0]);
               setOpenInviteSummaryModel(true);
             }}
@@ -54,11 +53,10 @@ const FindPlayerLayout = () => {
                 <Text variant='titleMedium'>{gameInvite.placeToPlay}</Text>
                 <Text style={styles.blackText}>{gameInvite.date}</Text>
                 <Text style={styles.greyText}>
-                  {gameInvite.accepted + gameInvite.pending} players invited
+                  {gameInvite.Requests.length} players invited
                 </Text>
                 <Text style={styles.greenText}>
-                  Accepted: {gameInvite.accepted}/
-                  {gameInvite.accepted + gameInvite.pending}
+                  Accepted: {gameInvite.accepted}/{gameInvite.Requests.length}
                 </Text>
               </View>
               <View style={styles.cardRight}>

@@ -46,7 +46,7 @@ export const useLoginUser = (): UseLoginUserReturn => {
       return response.data;
     } catch (err: any) {
       setStatus('error');
-      console.log(err);
+      console.log(JSON.stringify(err));
       const errorMessage =
         err?.response?.data?.message || err.message || 'Unknown error';
       setError(errorMessage);
