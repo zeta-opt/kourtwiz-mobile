@@ -1,4 +1,5 @@
 import { useAddClubDevice } from '@/hooks/apis/devices/useAddClubDevice';
+import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts'; // ⬅️ Add this import
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -15,13 +16,15 @@ import Toast from 'react-native-toast-message';
 import { z } from 'zod';
 import { useState } from 'react';
 
-
 const deviceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   type: z.enum(['CAMERA', 'LIGHT', 'SWITCH'], {
     required_error: 'Type is required',
   }),
-  status: z.string().min(1, 'Status is required'),
+  status: z.enum(['Online', 'Offline', 'Error'], {
+    required_error: 'Status is required',
+  }),
+  courtId: z.string().min(1, 'Court is required'),
 });
 
 type DeviceFormData = z.infer<typeof deviceSchema>;
@@ -48,14 +51,18 @@ const AddDeviceModal = ({
     formState: { errors },
   } = useForm<DeviceFormData>({
     resolver: zodResolver(deviceSchema),
+    defaultValues: {
+      status: 'Online',
+      courtId: '',
+    },
   });
 
-  const { addDevice, status } = useAddClubDevice();
+  const { addDevice, status: addStatus } = useAddClubDevice();
+  const { data: courts = [] } = useGetClubCourt({ clubId: currentClubId });
 
   const onFormSubmit = (data: DeviceFormData) => {
     addDevice({
       deviceData: { ...data, clubId: currentClubId },
-      // clubId: currentClubId,
       callbacks: {
         onSuccess: () => {
           Toast.show({ type: 'success', text1: 'Device Added!' });
@@ -100,7 +107,7 @@ const AddDeviceModal = ({
             <HelperText type='error'>{errors.name.message}</HelperText>
           )}
 
-          {/* ✅ Type Dropdown */}
+          {/* Type */}
           <Controller
             control={control}
             name='type'
@@ -145,20 +152,87 @@ const AddDeviceModal = ({
           <Controller
             control={control}
             name='status'
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                label='Status'
-                value={value}
-                onChangeText={onChange}
-                mode='outlined'
-                error={!!errors.status}
-                style={styles.input}
-              />
-            )}
+            render={({ field: { onChange, value } }) => {
+              const [menuVisible, setMenuVisible] = useState(false);
+              return (
+                <View style={{ marginBottom: 10 }}>
+                  <Menu
+                    visible={menuVisible}
+                    onDismiss={() => setMenuVisible(false)}
+                    anchor={
+                      <TextInput
+                        label='Status'
+                        value={value}
+                        mode='outlined'
+                        onFocus={() => setMenuVisible(true)}
+                        error={!!errors.status}
+                        style={styles.input}
+                      />
+                    }
+                  >
+                    {['Online', 'Offline', 'Error'].map((option) => (
+                      <Menu.Item
+                        key={option}
+                        onPress={() => {
+                          onChange(option);
+                          setMenuVisible(false);
+                        }}
+                        title={option}
+                      />
+                    ))}
+                  </Menu>
+                  {errors.status && (
+                    <HelperText type='error'>{errors.status.message}</HelperText>
+                  )}
+                </View>
+              );
+            }}
           />
-          {errors.status && (
-            <HelperText type='error'>{errors.status.message}</HelperText>
-          )}
+
+          {/* Court Dropdown */}
+          <Controller
+            control={control}
+            name='courtId'
+            render={({ field: { onChange, value } }) => {
+              const [menuVisible, setMenuVisible] = useState(false);
+              return (
+                <View style={{ marginBottom: 10 }}>
+                  <Menu
+                    visible={menuVisible}
+                    onDismiss={() => setMenuVisible(false)}
+                    anchor={
+                      <TextInput
+                        label='Court'
+                        value={
+                          (courts?.find((court) => court.id === value)?.name) ?? ''
+                        }
+                        mode='outlined'
+                        onFocus={() => setMenuVisible(true)}
+                        error={!!errors.courtId}
+                        style={styles.input}
+                      />
+                    }
+                  >
+                    {courts?.map((court) => (
+                      <Menu.Item
+                        key={court.id}
+                        onPress={() => {
+                          onChange(court.id);
+                          setMenuVisible(false);
+                        }}
+                        title={court.name}
+                      />
+                    ))}
+                  </Menu>
+                  {errors.courtId && (
+                    <HelperText type='error'>
+                      {errors.courtId.message}
+                    </HelperText>
+                  )}
+                </View>
+              );
+            }}
+          />
         </ScrollView>
 
         <View style={styles.buttonContainer}>
@@ -169,7 +243,7 @@ const AddDeviceModal = ({
             mode='contained'
             onPress={handleSubmit(onFormSubmit)}
             style={styles.button}
-            loading={status === 'loading'}
+            loading={addStatus === 'loading'}
           >
             Submit
           </Button>

@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { Card, Text, useTheme } from 'react-native-paper';
+import { Card, Text, useTheme, IconButton } from 'react-native-paper'; 
 import RowDetailsModal from '../RowDetailsModal/RowDetailModal';
 
 type Props = {
   columns: string[];
-  rows: Record<string, string>[];
+  rows: Record<string, string>[]; 
   modalTitle: string;
+  onDelete?: (row: Record<string, string>) => void; 
 };
 
-const ViewOnlyList = ({ columns, rows, modalTitle }: Props) => {
+const ViewOnlyList = ({ columns, rows, modalTitle, onDelete }: Props) => {
   const theme = useTheme();
   const [selectedRow, setSelectedRow] = useState<Record<string, string> | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -29,15 +30,25 @@ const ViewOnlyList = ({ columns, rows, modalTitle }: Props) => {
             backgroundColor: theme.colors.elevation.level1,
             borderRadius: 10,
           }}
-          onPress={() => handlePress(row)}
         >
           <Card.Content>
-            {columns.map((col, i) => (
-              <View key={i} style={{ marginBottom: 5 }}>
-                <Text style={{ fontWeight: 'bold' }}>{col}:</Text>
-                <Text>{row[col]}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }} onTouchEnd={() => handlePress(row)}>
+                {columns.map((col, i) => (
+                  <View key={i} style={{ marginBottom: 5 }}>
+                    <Text style={{ fontWeight: 'bold' }}>{col}:</Text>
+                    <Text>{row[col]}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
+              {onDelete && (
+                <IconButton
+                  icon="delete"
+                  iconColor={theme.colors.error}
+                  onPress={() => onDelete(row)} 
+                />
+              )}
+            </View>
           </Card.Content>
         </Card>
       ))}
@@ -52,3 +63,4 @@ const ViewOnlyList = ({ columns, rows, modalTitle }: Props) => {
 };
 
 export default ViewOnlyList;
+
