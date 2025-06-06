@@ -28,7 +28,7 @@ const statusIconMap: Record<string, string> = {
 };
 
 const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
-  console.log('data : ', data);
+  // console.log('data : ', data);
   return (
     <Portal>
       <Modal

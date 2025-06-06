@@ -29,6 +29,7 @@ const FindPlayerLayout = () => {
   const handleCloseInviteSummaryModel = () => {
     setOpenInviteSummaryModel(false);
   };
+  // console.log('selectedInvite : ', selectedInvite);
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -44,7 +45,8 @@ const FindPlayerLayout = () => {
             key={gameInvite.requestId}
             style={styles.card}
             onPress={() => {
-              setSelectedInvite(Object.values(groupedInvites)[0]);
+              console.log('Object.values(groupedInvites)[0] : ', gameInvite);
+              setSelectedInvite(gameInvite);
               setOpenInviteSummaryModel(true);
             }}
           >
