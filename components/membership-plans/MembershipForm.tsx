@@ -1,68 +1,68 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
-  ScrollView,
-  StyleSheet,
-  View,
-  Text as RNText,
-  Alert,
+    ScrollView,
+    StyleSheet,
+    View,
+    Text as RNText,
+    Alert,
 } from 'react-native';
 import {
-  Button,
-  Checkbox,
-  Text,
-  TextInput,
-  IconButton,
-  Portal,
-  Modal,
-  HelperText,
+    Button,
+    Checkbox,
+    Text,
+    TextInput,
+    IconButton,
+    Portal,
+    Modal,
+    HelperText,
 } from 'react-native-paper';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Dropdown } from 'react-native-paper-dropdown';
 import {
-  useCreateClubMembership,
-  MembershipFormValues,
+    useCreateClubMembership,
+    MembershipFormValues,
 } from '@/hooks/apis/memberships/useCreateClubMembership';
 
 type Props = {
-  clubId: string;
-  onClose: () => void;
-  onSuccess: () => void;
-  visible: boolean;
-  currentClubId: string;
-  refetch: () => void;
+    clubId: string;
+    onClose: () => void;
+    onSuccess: () => void;
+    visible: boolean;
+    currentClubId: string;
+    refetch: () => void;
 };
 
 const perkOptions = [
-  { id: 'advanceBookingDays', label: 'Advance Booking Days' },
-  { id: 'openPlaySessionsAllowed', label: 'Open Play Sessions' },
-  { id: 'tournamentAccess', label: 'Tournament Access' },
-  { id: 'guestPasses', label: 'Guest Passes' },
-  { id: 'coachingSessions', label: 'Coaching Sessions' },
+    { id: 'advanceBookingDays', label: 'Advance Booking Days' },
+    { id: 'openPlaySessionsAllowed', label: 'Open Play Sessions' },
+    { id: 'tournamentAccess', label: 'Tournament Access' },
+    { id: 'guestPasses', label: 'Guest Passes' },
+    { id: 'coachingSessions', label: 'Coaching Sessions' },
 ];
 
 type MembershipFormUI = Omit<MembershipFormValues, 'price'> & {
-  price: string;
+    price: string;
 };
 
 const initialForm: MembershipFormUI = {
-  membershipName: '',
-  price: '',
-  duration: 'Duration',
-  perks: {},
-  customPerks: [],
+    membershipName: '',
+    price: '',
+    duration: 'Duration',
+    perks: {},
+    customPerks: [],
 };
 
 export const MembershipForm = ({ clubId, onClose, onSuccess }: Props) => {
-  const [modalVisible, setModalVisible] = useState(true);
-  const { createMembership, status } = useCreateClubMembership();
-
-  const {
+    const [modalVisible, setModalVisible] = useState(true);
+    const { createMembership, status } = useCreateClubMembership();
+    
+    const {
     control,
     handleSubmit,
     getValues,
     setValue,
     formState: { errors },
-  } = useForm<MembershipFormUI>({
+    } = useForm<MembershipFormUI>({
     defaultValues: initialForm,
   });
 
