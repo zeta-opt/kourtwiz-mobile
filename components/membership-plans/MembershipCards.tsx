@@ -1,18 +1,12 @@
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
-import React from 'react';
-import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
-import { Card, Text, useTheme } from 'react-native-paper';
+import React, {useState, useEffect, useRef} from 'react';
+import { Dimensions, FlatList, Pressable, StyleSheet, View, Modal, Animated } from 'react-native';
+import { Card, Text, useTheme, Portal } from 'react-native-paper';
 
 type Props = {
   currentClubId: string;
-};
-
-const perkLabels: Record<string, string> = {
-  gymAccess: 'Gym Access',
-  swimmingPool: 'Swimming Pool',
-  sauna: 'Sauna Access',
-  personalTrainer: 'Personal Trainer',
-  spa: 'Spa Access',
+  data: any[];
+  status: string;
 };
 
 const CARD_MARGIN = 13;
@@ -26,7 +20,20 @@ const perkLabelMap: Record<string, string> = {
 };
 
 
+const MembershipCards = ({ data, status }: Props) => {
   const theme = useTheme();
+
+  const [selectedCard, setSelectedCard] = useState<any | null>(null);
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+    useEffect(() => {
+      if (selectedCard) {
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+        }).start();
+      }
+    }, [selectedCard, scaleAnim]);
+
   if (status === 'loading') return <LoaderScreen />;
 
   const handleCardPress = (card: any) => {
@@ -74,15 +81,10 @@ const perkLabelMap: Record<string, string> = {
   );
 
   return (
-    <FlatList
-      data={clubMembershipData}
-      renderItem={renderCard}
-      keyExtractor={(item) => item.id.toString()}
-      numColumns={2}
-      contentContainerStyle={styles.listContent}
-      columnWrapperStyle={styles.row}
-      showsVerticalScrollIndicator={false}
-    />
+    <View>
+      <FlatList
+        data={data}
+        renderItem={({ item }) => (
           <Pressable
             onPress={() => handleCardPress(item)}
             android_ripple={{ color: '#ddd' }}
@@ -154,6 +156,15 @@ const perkLabelMap: Record<string, string> = {
                     >
                       <Text style={{ color: theme.colors.primary }}>Close</Text>
                     </Pressable>
+                    </Card.Content>
+                  </Card>
+                </Animated.View>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Modal>
+      </Portal>
+    </View>
   );
 };
 
@@ -179,6 +190,29 @@ const styles = StyleSheet.create({
   perkHeader: {
     marginBottom: 2,
     fontWeight: 600,
+    fontSize: 14,
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  centeredCard: {
+    width: '90%',
+    maxWidth: 420,
+    borderRadius: 16,
+  },
+  enlargedCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
 });
 
