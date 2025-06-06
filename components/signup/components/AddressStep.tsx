@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Alert,
   Button,
@@ -10,46 +10,51 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
-import { z } from "zod";
-import { useSignup } from "../SignupContext";
+} from 'react-native';
+import { z } from 'zod';
+import { useSignup } from '../SignupContext';
 
 const schema = z.object({
-  zip: z.string().min(5, "ZIP code is required"),
-  address: z.string().min(1, "Address is required"),
+  zip: z.string().min(5, 'ZIP code is required'),
+  address: z.string().min(1, 'Address is required'),
 });
 
-const AddressStep = ({ onNext, onBack }) => {
+const AddressStep = ({
+  onNext,
+  onBack,
+}: {
+  onNext: () => void;
+  onBack: () => void;
+}) => {
   const { data, updateData } = useSignup();
-  const [zip, setZip] = useState(data.zip || "");
-  const [address, setAddress] = useState(data.address || "");
-  const [city, setCity] = useState(data.city || "");
-  const [state, setState] = useState(data.state || "");
-  const [country, setCountry] = useState(data.country || "US");
+  const [zip, setZip] = useState(data.zip || '');
+  const [address, setAddress] = useState(data.address || '');
+  const [city, setCity] = useState(data.city || '');
+  const [state, setState] = useState(data.state || '');
+  const [country, setCountry] = useState(data.country || 'US');
   const [errors, setErrors] = useState({});
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
   const [selectedPlaces, setSelectedPlaces] = useState([]);
   const [showPlaces, setShowPlaces] = useState(false);
-
-  const handleZipLookup = async (zipCode) => {
+  const handleZipLookup = async (zipCode: string) => {
     setZip(zipCode);
     if (zipCode.length === 5) {
       try {
         const res = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
-        if (!res.ok) throw new Error("Invalid ZIP");
+        if (!res.ok) throw new Error('Invalid ZIP');
         const data = await res.json();
         const place = data.places[0];
-        setCity(place["place name"]);
-        setState(place["state"]);
-        setCountry(data["country"]);
+        setCity(place['place name']);
+        setState(place['state']);
+        setCountry(data['country']);
       } catch (err) {
         Alert.alert(
-          "ZIP Lookup Failed",
-          "Invalid ZIP code or location not found"
+          'ZIP Lookup Failed',
+          'Invalid ZIP code or location not found'
         );
-        setCity("");
-        setState("");
-        setCountry("US");
+        setCity('');
+        setState('');
+        setCountry('US');
       }
     }
   };
@@ -62,20 +67,20 @@ const AddressStep = ({ onNext, onBack }) => {
         state,
         zipCode: zip,
         country,
-        maxDistanceInKm: "5",
-        page: "0",
-        limit: "10",
+        maxDistanceInKm: '5',
+        page: '0',
+        limit: '10',
       });
 
       const res = await fetch(
         `http://44.216.113.234:8080/api/import/nearbyaddress?${params}`
       );
-      if (!res.ok) throw new Error("Failed to fetch places");
+      if (!res.ok) throw new Error('Failed to fetch places');
       const data = await res.json();
       setNearbyPlaces(data);
       setShowPlaces(true);
     } catch (err) {
-      Alert.alert("Error", "Could not fetch preferred places");
+      Alert.alert('Error', 'Could not fetch preferred places');
     }
   };
 
@@ -88,18 +93,20 @@ const AddressStep = ({ onNext, onBack }) => {
           fieldErrors[err.path[0]] = err.message;
         });
         setErrors(fieldErrors);
-        Alert.alert("Validation Error", result.error.errors[0].message);
+        Alert.alert('Validation Error', result.error.errors[0].message);
         return;
       }
       updateData({ zip, address, city, state, country });
       fetchNearbyPlaces();
     } else {
+      console.log('selected Places : ', selectedPlaces);
       updateData({ preferredPlaces: selectedPlaces });
       onNext();
     }
   };
 
   const handleSelectPlace = (placeId) => {
+    console.log('selecting place : ', placeId);
     setSelectedPlaces((prev) =>
       prev.includes(placeId)
         ? prev.filter((id) => id !== placeId)
@@ -109,14 +116,14 @@ const AddressStep = ({ onNext, onBack }) => {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#116AAD" }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={{ flex: 1, backgroundColor: '#116AAD' }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps='handled'
       >
-        <Text style={styles.title}>Select Preferred Places</Text>
+        <Text style={styles.title}>Select Preferred Places!</Text>
         <View style={styles.card}>
           {!showPlaces ? (
             <>
@@ -125,8 +132,8 @@ const AddressStep = ({ onNext, onBack }) => {
                 style={styles.input}
                 value={zip}
                 onChangeText={handleZipLookup}
-                placeholder="ZIP Code"
-                keyboardType="numeric"
+                placeholder='ZIP Code'
+                keyboardType='numeric'
                 maxLength={5}
               />
               {errors.zip && <Text style={styles.errorText}>{errors.zip}</Text>}
@@ -136,7 +143,7 @@ const AddressStep = ({ onNext, onBack }) => {
                 style={styles.input}
                 value={address}
                 onChangeText={setAddress}
-                placeholder="Address"
+                placeholder='Address'
               />
               {errors.address && (
                 <Text style={styles.errorText}>{errors.address}</Text>
@@ -164,8 +171,8 @@ const AddressStep = ({ onNext, onBack }) => {
                   style={{
                     padding: 12,
                     backgroundColor: selectedPlaces.includes(place.id)
-                      ? "#cde"
-                      : "transparent",
+                      ? '#cde'
+                      : 'transparent',
                   }}
                 >
                   <Text>{place.Name || place.name}</Text>
@@ -175,9 +182,9 @@ const AddressStep = ({ onNext, onBack }) => {
           )}
 
           <View style={styles.buttonRow}>
-            {!showPlaces && <Button title="Back" onPress={onBack} />}
+            {!showPlaces && <Button title='Back' onPress={onBack} />}
             <Button
-              title={showPlaces ? "Confirm and Continue" : "Next"}
+              title={showPlaces ? 'Confirm and Continue' : 'Next'}
               onPress={handleNext}
             />
           </View>
@@ -196,40 +203,40 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
     marginBottom: 20,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 24,
     padding: 20,
   },
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
     marginTop: 12,
     marginBottom: 4,
-    color: "#333",
+    color: '#333',
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     borderRadius: 12,
     padding: 12,
     fontSize: 16,
-    backgroundColor: "#f8f8f8",
-    color: "#000",
+    backgroundColor: '#f8f8f8',
+    color: '#000',
   },
   errorText: {
-    color: "red",
+    color: 'red',
     fontSize: 13,
     marginTop: 4,
   },
   buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 20,
   },
 });

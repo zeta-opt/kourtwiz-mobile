@@ -1,8 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
-import { useSignup } from '../SignupContext';
 import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSignup } from '../SignupContext';
 
 const DoneStep = () => {
   const { data } = useSignup();
@@ -18,7 +25,6 @@ const DoneStep = () => {
       setLoading(false);
       return;
     }
-
     const payload = {
       email: data.email,
       name: data.fullName,
@@ -35,6 +41,9 @@ const DoneStep = () => {
       playerDetails: {
         isAppDownloaded: true,
         personalRating: data.rating || 1,
+        preferPlacesToPlay: data?.preferredPlaces?.map((id: string) => ({
+          id: id,
+        })),
       },
     };
 
@@ -74,24 +83,30 @@ const DoneStep = () => {
       <View style={styles.card}>
         {loading ? (
           <>
-            <ActivityIndicator size="large" color="#116AAD" />
+            <ActivityIndicator size='large' color='#116AAD' />
             <Text style={styles.infoText}>Creating Profile...</Text>
-            <View style={[styles.doneBtn, { backgroundColor: '#ccc' }]}>              
+            <View style={[styles.doneBtn, { backgroundColor: '#ccc' }]}>
               <Text style={styles.doneText}>Done</Text>
             </View>
           </>
         ) : success ? (
           <>
-            <Image source={require('../assets/success-check.png')} style={styles.icon} />
+            <Image
+              source={require('../assets/success-check.png')}
+              style={styles.icon}
+            />
             <Text style={styles.successText}>Your profile is ready.</Text>
-            <TouchableOpacity style={styles.doneBtn} onPress={handleDone}>              
+            <TouchableOpacity style={styles.doneBtn} onPress={handleDone}>
               <Text style={styles.doneText}>Done</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
-            <Text style={styles.errorText}>❌ Error during signup. Please contact the administrator or call support.</Text>
-            <View style={[styles.doneBtn, { backgroundColor: '#ccc' }]}>              
+            <Text style={styles.errorText}>
+              ❌ Error during signup. Please contact the administrator or call
+              support.
+            </Text>
+            <View style={[styles.doneBtn, { backgroundColor: '#ccc' }]}>
               <Text style={styles.doneText}>Done</Text>
             </View>
           </>
