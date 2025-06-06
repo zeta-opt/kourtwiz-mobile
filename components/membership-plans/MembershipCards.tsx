@@ -11,6 +11,14 @@ type Props = {
 
 const CARD_MARGIN = 13;
 const CARD_WIDTH = (Dimensions.get('window').width - CARD_MARGIN * 3) / 2;
+const perkLabelMap: Record<string, string> = {
+  advanceBookingDays: 'Advance Booking Days',
+  openPlaySessionsAllowed: 'Open Play Sessions',
+  tournamentAccess: 'Tournament Access',
+  guestPasses: 'Guest Passes',
+  coachingSessions: 'Coaching Sessions',
+};
+
 
 const MembershipCards = ({ data, status }: Props) => {
   const theme = useTheme();
@@ -28,40 +36,46 @@ const MembershipCards = ({ data, status }: Props) => {
 
   if (status === 'loading') return <LoaderScreen />;
 
+  const handleCardPress = (card: any) => {
+    setSelectedCard(card);
+  };  
+
   const renderCard = ({ item }: { item: any }) => (
     <Card style={[styles.card, { borderColor: theme.colors.primary }]}>
       <Card.Content>
         <Text variant='titleMedium'>{item.membershipName}</Text>
-        <Text variant='bodySmall'>Price: ${item.price}</Text>
-        <Text variant='bodySmall'>Duration: {item.duration}</Text>
+        <Text variant='bodyMedium'>Price: ${item.price}</Text>
+        <Text variant='bodyMedium'>Duration: {item.duration}</Text>
 
         {item.perks && Object.values(item.perks).some((v) => v !== 0) && (
           <View style={styles.perksContainer}>
-            <Text variant='bodySmall' style={styles.perkHeader}>
+            <Text variant='bodyLarge' style={styles.perkHeader}>
               Perks:
             </Text>
             {Object.entries(item.perks)
               .filter(([, value]) => value !== 0)
               .map(([key, value]) => (
                 <Text key={key}>
-                  • {key}: {String(value)}
+                  • {perkLabelMap[key] || key}: {String(value)}
                 </Text>
               ))}
           </View>
         )}
 
-        {item.customPerks?.length > 0 && (
-          <View style={styles.perksContainer}>
-            <Text variant='bodySmall' style={styles.perkHeader}>
-              Custom Perks:
-            </Text>
-            {item.customPerks.map((perk: any, index: number) => (
+      {item.customPerks?.filter((perk:any) => perk.name?.trim() !== '').length > 0 && (
+        <View style={styles.perksContainer}>
+          <Text variant='bodyLarge' style={styles.perkHeader}>
+            Custom Perks:
+          </Text>
+          {item.customPerks
+            .filter((perk: any) => perk.name?.trim() !== '')
+            .map((perk: any, index: number) => (
               <Text key={index}>
                 • {perk.name}: {perk.value}
               </Text>
             ))}
-          </View>
-        )}
+        </View>
+      )}
       </Card.Content>
     </Card>
   );
@@ -71,7 +85,11 @@ const MembershipCards = ({ data, status }: Props) => {
       <FlatList
         data={data}
         renderItem={({ item }) => (
-          <Pressable onPress={() => setSelectedCard(item)}>
+          <Pressable
+            onPress={() => handleCardPress(item)}
+            android_ripple={{ color: '#ddd' }}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+          >
             {renderCard({ item })}
           </Pressable>
         )}
@@ -103,27 +121,41 @@ const MembershipCards = ({ data, status }: Props) => {
                     <Text variant="titleLarge" style={{ marginBottom: 8 }}>
                       {selectedCard?.membershipName}
                     </Text>
-                    <Text variant="bodyMedium">${selectedCard?.price}</Text>
-                    <Text variant="bodySmall" style={{ marginBottom: 8 }}>
-                      Duration: {selectedCard?.duration}
-                    </Text>
+                    <Text variant="bodyMedium">Price: ${selectedCard?.price}</Text>
+                    <Text variant="bodyMedium" style={{ marginBottom: 8 }}>Duration: {selectedCard?.duration}</Text>
 
-                    <Text variant="labelLarge">Perks:</Text>
-                    {selectedCard?.perks &&
-                      Object.entries(selectedCard.perks).map(([key, value]) => (
-                        <Text key={key}>• {key}: {String(value)}</Text>
-                      ))}
+                    {selectedCard?.perks && Object.values(selectedCard.perks).some(v => v !== 0) && (
+                      <>
+                        <Text variant="bodyMedium">Perks:</Text>
+                        {Object.entries(selectedCard.perks)
+                          .filter(([, value]) => value !== 0)
+                          .map(([key, value]) => (
+                            <Text key={key}>
+                              • {perkLabelMap[key] || key}: {String(value)}
+                            </Text>
+                          ))}
+                      </>
+                    )}
 
-                    {selectedCard?.customPerks?.length > 0 && (
-                        <>
-                        <Text variant="labelLarge" style={{ marginTop: 10 }}>
+                    {selectedCard?.customPerks?.filter((p:any) => p.name?.trim() !== '')?.length > 0 && (
+                      <>
+                        <Text variant="bodyMedium" style={{ marginTop: 10 }}>
                           Custom Perks:
                         </Text>
-                        {selectedCard.customPerks.map((perk: { name: string; value: string | number }, index: number) => (
-                          <Text key={index}>• {perk.name}: {perk.value}</Text>
-                        ))}
-                        </>
-                      )}
+                        {selectedCard.customPerks
+                          .filter((perk: { name: string }) => perk.name?.trim() !== '')
+                          .map((perk: { name: string; value: string | number }, index: number) => (
+                            <Text key={index}>• {perk.name}: {perk.value}</Text>
+                          ))}
+                      </>
+                    )}
+
+                    <Pressable
+                      onPress={() => setSelectedCard(null)}
+                      style={{ marginTop: 12, alignSelf: 'flex-end' }}
+                    >
+                      <Text style={{ color: theme.colors.primary }}>Close</Text>
+                    </Pressable>
                     </Card.Content>
                   </Card>
                 </Animated.View>
@@ -139,7 +171,7 @@ const MembershipCards = ({ data, status }: Props) => {
 const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: CARD_MARGIN,
-    paddingBottom: CARD_MARGIN * 12,
+    paddingBottom: CARD_MARGIN * 14,
   },
   row: {
     justifyContent: 'space-between',
@@ -153,11 +185,11 @@ const styles = StyleSheet.create({
     margin: 2,
   },
   perksContainer: {
-    marginTop: 6,
+    marginTop: 8,
   },
   perkHeader: {
     marginBottom: 2,
-    fontWeight: 'bold',
+    fontWeight: 600,
     fontSize: 14,
   },
   backdrop: {
