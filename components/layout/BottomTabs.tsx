@@ -1,21 +1,26 @@
+import { RootState } from '@/store';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { toggleDrawer } from '../../store/uiSlice';
 export default function BottomTabs() {
   const router = useRouter();
   const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
+  console.log(user);
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        onPress={async () => {
-          dispatch(toggleDrawer());
-        }}
-      >
-        <MaterialIcons name='menu' size={28} />
-      </TouchableOpacity>
+      {user?.userClubRole?.[0]?.roleName === 'ClubAdmin' && (
+        <TouchableOpacity
+          onPress={async () => {
+            dispatch(toggleDrawer());
+          }}
+        >
+          <MaterialIcons name='menu' size={28} />
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
         <MaterialIcons name='home' size={28} />
@@ -27,16 +32,13 @@ export default function BottomTabs() {
         <MaterialIcons name='person' size={28} />
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => router.replace('/(authenticated)/find-players')}
-      >
-        <MaterialIcons name='group' size={28} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => router.replace('/(authenticated)/player-invitations')}
-      >
-        <MaterialIcons name='inbox' size={28} />
-      </TouchableOpacity>
+      {user?.userClubRole?.[0]?.roleName !== 'ClubAdmin' && (
+        <TouchableOpacity
+          onPress={() => router.replace('/(authenticated)/find-players')}
+        >
+          <MaterialIcons name='group' size={28} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

@@ -1,10 +1,18 @@
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
+import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
+import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -14,11 +22,11 @@ const getGreeting = () => {
 };
 
 const Dashboard = () => {
-  const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
   const greeting = getGreeting();
   const { fetchUser } = useFetchUser();
-
+  const router = useRouter();
+  const { data: invites } = useGetInvitations({ userId: user?.userId });
   useEffect(() => {
     const loadUser = async () => {
       const token = await getToken();
@@ -32,23 +40,42 @@ const Dashboard = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.text}>
-        {greeting}{user?.name ? `, ${user.name.split(' ')[0]}` : ''} 👋
+        {greeting}
+        {user?.username ? `, ${user.username.split(' ')[0]}` : ''} 👋
       </Text>
 
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
-          <Icon name="star-outline" size={24} color="#3F7CFF" />
+          <TouchableOpacity
+            onPress={() => console.log('DUPR Rating icon pressed')}
+          >
+            <Icon name='star-outline' size={24} color='#3F7CFF' />
+          </TouchableOpacity>
           <Text style={styles.statValue}>--</Text>
           <Text style={styles.statLabel}>DUPR Rating</Text>
         </View>
+
         <View style={styles.statItem}>
-          <Icon name="run-fast" size={24} color="#3F7CFF" />
-          <Text style={styles.statValue}>2.0</Text>
+          <TouchableOpacity
+            onPress={() => console.log('Skill Level icon pressed')}
+          >
+            <Icon name='run-fast' size={24} color='#3F7CFF' />
+          </TouchableOpacity>
+          <Text style={styles.statValue}>
+            {user?.playerDetails?.personalRating ?? '-'}
+          </Text>
           <Text style={styles.statLabel}>Skill Level</Text>
         </View>
+
         <View style={styles.statItem}>
-          <Icon name="email-outline" size={24} color="#3F7CFF" />
-          <Text style={styles.statValue}>0</Text>
+          <TouchableOpacity
+            onPress={() =>
+              router.replace('/(authenticated)/player-invitations')
+            }
+          >
+            <Icon name='email-outline' size={24} color='#3F7CFF' />
+          </TouchableOpacity>
+          <Text style={styles.statValue}>{invites?.length}</Text>
           <Text style={styles.statLabel}>Invites</Text>
         </View>
       </View>
@@ -56,22 +83,36 @@ const Dashboard = () => {
       <Text style={styles.quickActionsTitle}>Quick Actions</Text>
 
       <View style={styles.actionsGrid}>
-        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#E6F0FF' }]}> 
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#E6F0FF' }]}
+        >
           <Text style={styles.actionText}>Reserve</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#E0FAEC' }]}> 
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#E0FAEC' }]}
+          onPress={() => router.replace('/(authenticated)/find-players')}
+        >
           <Text style={styles.actionText}>Find Players</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FFF2DB' }]}> 
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#FFF2DB' }]}
+        >
           <Text style={styles.actionText}>Find Game</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#F3E9FF' }]}> 
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#F3E9FF' }]}
+        >
           <Text style={styles.actionText}>My Videos</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#F9F4EC' }]}> 
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#F9F4EC' }]}
+        >
           <Text style={styles.actionText}>History</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FFE8EC' }]}> 
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#FFE8EC' }]}
+          onPress={() => router.replace('/(authenticated)/player-invitations')}
+        >
           <Text style={styles.actionText}>Invites</Text>
         </TouchableOpacity>
       </View>

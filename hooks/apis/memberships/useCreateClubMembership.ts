@@ -17,10 +17,9 @@ interface Perks {
   [key: string]: number | undefined;
 }
   
-  
 export interface MembershipFormValues {
   membershipName: string;
-  duration: 'Monthly';
+  duration: 'Duration';
   price: number;
   perks: Perks;
   customPerks: CustomPerk[];
