@@ -19,12 +19,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Controller, useForm } from 'react-hook-form';
 import { Dropdown } from 'react-native-paper-dropdown';
 import { Picker } from '@react-native-picker/picker';
-import axios from 'axios';
-import Constants from 'expo-constants';
-import { getToken } from '@/shared/helpers/storeToken';
 
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import {useGetClubCoach} from '@/hooks/apis/coach/useGetClubCoach';
+import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay'; // adjust path if needed
 
 type Props = {
   clubId: string;
@@ -109,6 +107,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
 
   const { data: courtData=[] } = useGetClubCourt({ clubId });
   const { data: coachData=[]} = useGetClubCoach({ clubId });
+  const { createSession } = useCreateOpenPlaySession();
 
   const {
     control,
@@ -232,29 +231,9 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
     }
   }, [courtData, coachData, watchedPlayType]);
 
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-
-  //   if (
-  //     !formData.courtId ||
-  //     !formData.startTime ||
-  //     !formData.durationMinutes ||
-  //     !formData.skillLevel ||
-  //     !formData.maxPlayers ||
-  //     !formData.priceForPlay ||
-  //     (formData.playTypeName === "COACH_SESSION" && !coachId)
-  //   ) {
-  //     alert("Please fill in all required fields.");
-  //     return;
-  //   }
-
   const onSubmit = async (data: PlaySession) => {
     setIsLoading(true);
     try {
-      const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
-      const token = await getToken();
-
-      //const startDate = parseDateTime(data.startTime);
       const endDate = data.repeatEndDate ? parseDateTime(data.repeatEndDate) : undefined;
   
       const payload = {
@@ -267,30 +246,19 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
         skillLevel: data.skillLevel,
         maxPlayers: Number(data.maxPlayers),
         eventRepeatType: data.eventRepeatType,
-        registeredPlayers:[],
         ...(data.eventRepeatType !== 'NONE' && {
           repeatInterval: Number(data.repeatInterval),
           repeatEndDate: endDate?.toISOString(),
           ...(data.eventRepeatType === 'WEEKLY' && {
             repeatOnDays: data.repeatOnDays,
-          }),          
+          }),
         }),
         ...(watchedPlayType === 'COACH_SESSION' && {
           coachId: data.coachId,
         }),
       };
   
-      await axios.post(
-        `${BASE_URL}/api/play-type/sessions`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-  
+      await createSession(payload);
       Alert.alert('Success', 'Session created successfully');
       onSuccess();
     } catch (err: any) {
@@ -299,7 +267,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
 
   const onPressSubmit = () => {
     Alert.alert(
@@ -693,9 +661,12 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
                 />
               </>
             )}
-        {/* Date/Time Picker */}
-        {showPicker && (
+        </>
+      )}
+      {/* Date/Time Picker */}
+      {showPicker && (
           <DateTimePicker
+            key={currentField}
             value={(() => {
               const fieldValue = getValues(currentField);
               return fieldValue ? parseDateTime(fieldValue) : new Date();
@@ -705,8 +676,6 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
             onChange={handleDateTimeChange}
           />
         )}
-        </>
-      )}
         </ScrollView>
 
         <View style={styles.buttonContainer}>
