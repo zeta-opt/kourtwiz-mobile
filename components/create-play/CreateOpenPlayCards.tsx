@@ -1,51 +1,46 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Alert, View } from 'react-native';
 import { Text, Card, Button, ActivityIndicator } from 'react-native-paper';
-import { useSelector } from 'react-redux';
 import Constants from 'expo-constants';
-
-import { RootState } from '@/store';
 import useGetOpenPlaySessions from '@/hooks/apis/createPlay/useGetOpenPlaySessions';
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import { useCancelPlaySession } from '@/hooks/apis/createPlay/useCancelPlaySession';
 import { getToken } from '@/shared/helpers/storeToken';
-import { PlaySession, Court } from './types/PlaySessions';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
+type Props = {
+    currentClubId: string;
+    data: any[];
+    status: 'loading' | 'error' | 'success';
+  };
 
-const CreatePlayScreen = () => {
-  const clubId = useSelector(
-    (state: RootState) => state.auth.user?.userClubRole?.[0]?.clubId
-  );
-
-  const { data, status, refetch } = useGetOpenPlaySessions(clubId || '');
-  const { data: courtList } = useGetClubCourt({ clubId: clubId! });
+const CreateOpenPlayCards = ({ currentClubId }: Props) => {
+  const { data, status, refetch } = useGetOpenPlaySessions(currentClubId || '');
+  const { data: courtList } = useGetClubCourt({ clubId: currentClubId! });
   const { cancelSession, status: cancelStatus, cancelledSessionId } = useCancelPlaySession();
 
   const [loadingPlayerFinder, setLoadingPlayerFinder] = useState<string | null>(null);
   const [loadingInvites, setLoadingInvites] = useState<string | null>(null);
 
   const getCourtName = (courtId: string) => {
-    const courts: Court[] = courtList as Court[];
-    const court = courts?.find((court) => String(court.id) === String(courtId));
+    const court = courtList?.find((court) => String(court.id) === String(courtId));
     return court ? court.name : 'Unknown';
   };
 
   const parseStartTime = (startTime: number[] | string) => {
-    let arr: number[];
-    if (typeof startTime === 'string') {
-      // Expecting format like "YYYY,MM,DD,HH,mm"
-      arr = startTime.split(',').map(Number);
-    } else {
-      arr = startTime;
+    // Handle both array format and ISO string format
+    if (Array.isArray(startTime)) {
+      return new Date(
+        startTime[0],
+        startTime[1] - 1,
+        startTime[2],
+        startTime[3],
+        startTime[4]
+      );
+    } else if (typeof startTime === 'string') {
+      return new Date(startTime);
     }
-    return new Date(
-      arr[0],
-      arr[1] - 1,
-      arr[2],
-      arr[3],
-      arr[4]
-    );
+    return new Date();
   };
 
   const handleUsePlayerFinder = async (sessionId: string) => {
@@ -115,7 +110,7 @@ const CreatePlayScreen = () => {
             try {
               await cancelSession(sessionId);
               Alert.alert('Success', 'Session cancelled');
-              refetch();
+              refetch(); // Refresh the session list
             } catch (err: any) {
               Alert.alert('Error', err.message);
             }
@@ -135,7 +130,7 @@ const CreatePlayScreen = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {data?.map((session: PlaySession) => {
+      {data?.map((session) => {
         const filledSlots = session.registeredPlayers?.length ?? 0;
         const date = parseStartTime(session.startTime);
 
@@ -199,6 +194,16 @@ const styles = StyleSheet.create({
   container: {
     padding: 10,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    margin: 16,
+  },
+  headerText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
   card: {
     marginBottom: 15,
   },
@@ -222,4 +227,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreatePlayScreen;
+export default CreateOpenPlayCards;
