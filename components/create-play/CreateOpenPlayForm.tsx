@@ -142,6 +142,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
 
   const unformatPrice = (value: string): string => value.replace(/[^0-9.]/g, '');
 
+
     // Format date to dd/mm/yyyy, hh:mm
     const formatDateTime = (date: Date) => {
       const day = date.getDate().toString().padStart(2, '0');
@@ -240,7 +241,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
         playTypeName: data.playTypeName,
         clubId: clubId,
         courtId: data.courtId,
-        startTime: data.startTime,
+        startTime: parseDateTime(data.startTime).toISOString(),
         durationMinutes: Number(data.durationMinutes),
         priceForPlay: Number(unformatPrice(data.priceForPlay.toString())),
         skillLevel: data.skillLevel,
@@ -248,7 +249,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
         eventRepeatType: data.eventRepeatType,
         ...(data.eventRepeatType !== 'NONE' && {
           repeatInterval: Number(data.repeatInterval),
-          repeatEndDate: endDate?.toISOString(),
+          repeatEndDate: endDate ? endDate.toISOString() : undefined,
           ...(data.eventRepeatType === 'WEEKLY' && {
             repeatOnDays: data.repeatOnDays,
           }),

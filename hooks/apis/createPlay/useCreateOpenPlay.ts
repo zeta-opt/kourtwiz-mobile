@@ -27,12 +27,12 @@ export const useCreateOpenPlaySession = () => {
   const createSession = async (sessionData: OpenPlaySessionData): Promise<void> => {
     try {
       setStatus('loading');
-      const BASE_URL = Constants.expoConfig?.extra?.BASE_URL || '';
+      const BASE_URL = Constants.expoConfig?.extra?.apiUrl || '';
       const token = await getToken();
       if (!token) throw new Error('No token found');
-
       await axios.post(`${BASE_URL}/api/play-type/sessions`, sessionData, {
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
       });
