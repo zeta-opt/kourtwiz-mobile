@@ -22,7 +22,6 @@ type Status = 'idle' | 'loading' | 'success' | 'error';
 export const useCreateOpenPlaySession = () => {
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [refetchFlag, setRefetchFlag] = useState(false);
 
   const createSession = async (sessionData: OpenPlaySessionData): Promise<void> => {
     try {
@@ -32,14 +31,14 @@ export const useCreateOpenPlaySession = () => {
       if (!token) throw new Error('No token found');
       await axios.post(`${BASE_URL}/api/play-type/sessions`, sessionData, {
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: '*/*',
         },
       });
 
       setStatus('success');
       setError(null);
-      setRefetchFlag((prev) => !prev);
     } catch (err: any) {
       console.error('Create session error:', err);
       setStatus('error');
@@ -51,7 +50,5 @@ export const useCreateOpenPlaySession = () => {
     createSession,
     status,
     error,
-    refetchFlag,
-    refetch: () => setRefetchFlag((prev) => !prev),
   };
 };

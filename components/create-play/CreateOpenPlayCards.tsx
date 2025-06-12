@@ -28,7 +28,6 @@ const CreateOpenPlayCards = ({ currentClubId }: Props) => {
   };
 
   const parseStartTime = (startTime: number[] | string) => {
-    // Handle both array format and ISO string format
     if (Array.isArray(startTime)) {
       return new Date(
         startTime[0],
@@ -42,6 +41,19 @@ const CreateOpenPlayCards = ({ currentClubId }: Props) => {
     }
     return new Date();
   };
+  const convertUTCToLocal = (utcDate: Date) => {
+    const localOffset = utcDate.getTimezoneOffset(); // in minutes
+    return new Date(utcDate.getTime() - localOffset * 60 * 1000);
+  };
+  
+  const formatPrice = (value: string | number): string => {
+    if (value === null || value === undefined) return '';
+    const strValue = value.toString();
+    const sanitized = strValue.replace(/[^0-9.]/g, '').replace(/^0+/, '') || '0';
+    const [intPart, decPart] = sanitized.split('.');
+    const intFormatted = intPart ? parseInt(intPart, 10).toLocaleString('en-US') : '0';
+    return decPart !== undefined ? `$${intFormatted}.${decPart.slice(0, 2)}` : `$${intFormatted}`;
+  };  
 
   const handleUsePlayerFinder = async (sessionId: string) => {
     try {
@@ -132,23 +144,20 @@ const CreateOpenPlayCards = ({ currentClubId }: Props) => {
     <ScrollView contentContainerStyle={styles.container}>
       {data?.map((session) => {
         const filledSlots = session.registeredPlayers?.length ?? 0;
-        const date = parseStartTime(session.startTime);
+        const utcDate = parseStartTime(session.startTime);
+        const date = convertUTCToLocal(utcDate);
 
         return (
           <Card key={session.id} style={styles.card}>
             <Card.Content>
-              <Text>Date: {date.toLocaleDateString()}</Text>
-              <Text>
-                Time: {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
+              <Text>Date: {date.toLocaleDateString('en-GB', {weekday: 'long', day:'2-digit', month:'long', year:'numeric' })}</Text>
+              <Text>Time: {date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
               <Text>Play Type: {session.playTypeName}</Text>
               <Text>Skill Level: {session.skillLevel}</Text>
               <Text>Duration(min): {session.durationMinutes}</Text>
-              <Text>Price: ${session.priceForPlay}</Text>
+              <Text>Price: {formatPrice(session.priceForPlay)}</Text>
               <Text>Court: {getCourtName(session.courtId)}</Text>
-              <Text>
-                Slots: {filledSlots}/{session.maxPlayers}
-              </Text>
+              <Text>Slots: {filledSlots}/{session.maxPlayers}</Text>
             </Card.Content>
             <Card.Actions style={styles.cardActions}>
               <View style={styles.firstRow}>
@@ -191,8 +200,9 @@ const CreateOpenPlayCards = ({ currentClubId }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 10,
+  container: { 
+    paddingBottom: 60, 
+    paddingTop: 10 
   },
   headerContainer: {
     flexDirection: 'row',
@@ -205,7 +215,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   card: {
-    marginBottom: 15,
+    margin: 15,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
   cardActions: {
     flexDirection: 'column',
@@ -223,7 +235,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cancelButton: {
-    width: '100%',
+    width: '95%',
   },
 });
 

@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { getToken } from '@/shared/helpers/storeToken';
-
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
@@ -11,24 +9,25 @@ export const useCancelPlaySession = () => {
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
   const [cancelledSessionId, setCancelledSessionId] = useState<string | null>(null);
-  const [refetchFlag, setRefetchFlag] = useState(false);
 
   const cancelSession = async (sessionId: string) => {
+    setStatus('loading');
+    setCancelledSessionId(sessionId);
     try {
-      setStatus('loading');
-      setCancelledSessionId(sessionId);
+      const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
       const token = await getToken();
       if (!token) throw new Error('No token found');
 
       await axios.delete(`${BASE_URL}/api/play-type/sessions/${sessionId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: '*/*',
         },
       });
 
       setStatus('success');
       setError(null);
-      setRefetchFlag((prev) => !prev);
     } catch (err: any) {
       console.error('Cancel session error:', err);
       setStatus('error');
@@ -43,6 +42,5 @@ export const useCancelPlaySession = () => {
     status,
     error,
     cancelledSessionId,
-    refetch: () => setRefetchFlag((prev) => !prev),
   };
 };

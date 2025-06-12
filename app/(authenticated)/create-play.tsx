@@ -11,6 +11,7 @@ const CreatePlayScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const currentClubId = user?.currentActiveClubId;
 
+  const [renderKey, setRenderKey] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const {
     data: PlaySession = [],
@@ -33,6 +34,7 @@ const CreatePlayScreen = () => {
     </View>
 
     <CreateOpenPlayCards
+      key={renderKey}
       currentClubId={currentClubId}
       data={PlaySession ?? []}
       status={status}
@@ -45,7 +47,8 @@ const CreatePlayScreen = () => {
         clubId={currentClubId}
         onClose={() => setShowForm(false)}
         onSuccess={() => {
-          refetch();        
+          refetch();
+          setRenderKey(prev => prev + 1);
           setShowForm(false);
         }}
       />

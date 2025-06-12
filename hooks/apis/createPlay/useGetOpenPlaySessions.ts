@@ -1,8 +1,7 @@
-// hooks/apis/play/useGetOpenPlaySessions.ts
+import { useEffect, useState } from 'react';
 import { getToken } from '@/shared/helpers/storeToken';
 import axios from 'axios';
 import Constants from 'expo-constants';
-import { useEffect, useState } from 'react';
 
 type UseGetSessionsReturn = {
   data: any[] | null;
@@ -25,9 +24,12 @@ const useGetOpenPlaySessions = (clubId: string): UseGetSessionsReturn => {
         const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
         const token = await getToken();
         const res = await axios.get(`${BASE_URL}/api/play-type/sessions/available?clubId=${clubId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+          },
         });
-        setData(res.data);
+        setData([...res.data]);
         setStatus('success');
       } catch (err) {
         console.error('Error fetching sessions:', err);

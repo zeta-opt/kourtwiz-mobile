@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -22,7 +22,7 @@ import { Picker } from '@react-native-picker/picker';
 
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import {useGetClubCoach} from '@/hooks/apis/coach/useGetClubCoach';
-import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay'; // adjust path if needed
+import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay';
 
 type Props = {
   clubId: string;
@@ -142,67 +142,79 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
 
   const unformatPrice = (value: string): string => value.replace(/[^0-9.]/g, '');
 
+  // Format date to dd/mm/yyyy, hh:mm
+  const formatDateTime = (date: Date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
+  };
 
-    // Format date to dd/mm/yyyy, hh:mm
-    const formatDateTime = (date: Date) => {
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      
-      return `${day}/${month}/${year}, ${hours}:${minutes}`;
-    };
-  
-    // Parse dd/mm/yyyy, hh:mm back to Date
-    const parseDateTime = (dateString: string) => {
-      if (!dateString) return new Date();
-      
-      const [datePart, timePart] = dateString.split(', ');
-      const [day, month, year] = datePart.split('/');
-      const [hours, minutes] = timePart?.split(':') || ['00', '00'];
-      
-      return new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes)
-      );
-    };
+  // Parse dd/mm/yyyy, hh:mm back to Date
+  const parseDateTime = (dateString: string) => {
+    if (!dateString) return new Date();
+    
+    const [datePart, timePart] = dateString.split(', ');
+    const [day, month, year] = datePart.split('/');
+    const [hours, minutes] = timePart?.split(':') || ['00', '00'];
+    
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      parseInt(hours),
+      parseInt(minutes)
+    );
+  };
 
-    const handleDateTimePress = (field: 'startTime' | 'repeatEndDate') => {
-      setCurrentField(field);
-      setPickerMode(field === 'repeatEndDate' ? 'date' : 'date');
-      setShowPicker(true);
-    };
-  
-    const handleDateTimeChange = (event: any, selectedDate?: Date) => {
+  const handleDateTimePress = (field: 'startTime' | 'repeatEndDate') => {
+    setCurrentField(field);
+    setPickerMode(field === 'repeatEndDate' ? 'date' : 'date');
+    setShowPicker(true);
+  };
+
+  const tempDateRef = useRef<Date | null>(null);
+  const handleDateTimeChange = (event: any, selectedDate?: Date) => {
+    if (event.type === 'dismissed') {
+      if (pickerMode === 'time') {
+        tempDateRef.current = null;
+        setPickerMode('date');
+      }
       setShowPicker(false);
-      
-      if (event.type === 'dismissed') {
-        return;
-      }
+      return;
+    }
   
-      if (selectedDate) {
-        const formattedDate = formatDateTime(selectedDate);
-        
-        if (currentField === 'startTime') {
-          if (pickerMode === 'date') {
-            setPickerMode('time');
-            setShowPicker(true);
-            return;
-          }
-          
-          // When both date and time are selected
-          setValue('startTime', formattedDate, { shouldValidate: true });
-        } else {
-          // For end date we only care about the date part
-          setValue('repeatEndDate', formattedDate.split(',')[0] + ', 00:00', { shouldValidate: true });
-        }
-      }
-    };
+    if (!selectedDate) return;
   
+    if (currentField === 'repeatEndDate') {
+      // Only pick the date part — no time needed
+      const formatted = formatDateTime(selectedDate).split(',')[0] + ', 00:00';
+      setValue('repeatEndDate', formatted, { shouldValidate: true });
+      setShowPicker(false);
+      return;
+    }
+  
+    // For startTime: Handle date ➜ then time
+    if (pickerMode === 'date') {
+      tempDateRef.current = selectedDate;
+      setPickerMode('time');
+      setShowPicker(true);
+    } else {
+      const fullDate = new Date(tempDateRef.current || new Date());
+      fullDate.setHours(selectedDate.getHours());
+      fullDate.setMinutes(selectedDate.getMinutes());
+  
+      const formatted = formatDateTime(fullDate);
+      setValue('startTime', formatted, { shouldValidate: true });
+  
+      tempDateRef.current = null;
+      setShowPicker(false);
+      setPickerMode('date');
+    }
+  };    
 
   useEffect(() => {
     setModalVisible(visible);
@@ -220,7 +232,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
         }))
       );
     }
-  
+   
     if (watchedPlayType === 'COACH_SESSION' && coachData) {
       setCoaches(
         coachData.map((coach: any) => ({
@@ -297,6 +309,8 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
           Create Play Session
         </Text>
         <ScrollView contentContainerStyle={styles.container}>
+
+        <Text style={styles.subtitle}>Play Type:</Text>
           <Controller
             name="playTypeName"
             control={control}
@@ -326,6 +340,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
             )}
           />
 
+          <Text style={styles.subtitle}>Court Name:</Text>
           <Controller
             name="courtId"
             control={control}
@@ -358,6 +373,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
             <HelperText type="error">{errors.courtId.message}</HelperText>
           )}
 
+        <Text style={styles.subtitle}>Start Time:</Text>
         <Controller
           name="startTime"
           control={control}
@@ -387,6 +403,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
           <HelperText type="error">{errors.startTime.message}</HelperText>
         )}
 
+        <Text style={styles.subtitle}>Duration (Minutes):</Text>
           <Controller
             name="durationMinutes"
             control={control}
@@ -410,6 +427,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
             <HelperText type="error">{errors.durationMinutes.message}</HelperText>
           )}
 
+          <Text style={styles.subtitle}>Price For Play ($):</Text>
           <Controller
             name="priceForPlay"
             control={control}
@@ -434,6 +452,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
             <HelperText type="error">{errors.priceForPlay.message}</HelperText>
           )}
 
+          <Text style={styles.subtitle}>Skill Level:</Text>
           <Controller
             name="skillLevel"
             control={control}
@@ -467,6 +486,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
 
           {watchedPlayType === 'COACH_SESSION' && (
             <>
+            <Text style={styles.subtitle}>Coach:</Text>
               <Controller
                 name="coachId"
                 control={control}
@@ -501,6 +521,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
             </>
           )}
 
+          <Text style={styles.subtitle}>Max Players:</Text>
           <Controller
             name="maxPlayers"
             control={control}
@@ -523,7 +544,8 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
           {errors.maxPlayers && (
             <HelperText type="error">{errors.maxPlayers.message}</HelperText>
           )}
-
+          
+          <Text style={styles.subtitle}>Event Repeat Type</Text>
           <Controller
             name="eventRepeatType"
             control={control}
@@ -713,6 +735,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
     fontWeight: 'bold',
+  },
+  subtitle: {
+    marginTop: 10,
+    textAlign: 'left',
+    fontWeight: '700',
   },
   container: {
     padding: 0,
