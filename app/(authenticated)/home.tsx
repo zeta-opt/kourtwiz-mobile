@@ -27,6 +27,14 @@ const Dashboard = () => {
   const { fetchUser } = useFetchUser();
   const router = useRouter();
   const { data: invites } = useGetInvitations({ userId: user?.userId });
+
+  const pendingCount =
+    invites?.reduce((count, invite) => {
+      if (invite.status === 'PENDING') {
+        return count + 1;
+      }
+      return count;
+    }, 0) ?? '--';
   useEffect(() => {
     const loadUser = async () => {
       const token = await getToken();
@@ -75,7 +83,7 @@ const Dashboard = () => {
           >
             <Icon name='email-outline' size={24} color='#3F7CFF' />
           </TouchableOpacity>
-          <Text style={styles.statValue}>{invites?.length}</Text>
+          <Text style={styles.statValue}>{pendingCount}</Text>
           <Text style={styles.statLabel}>Invites</Text>
         </View>
       </View>
