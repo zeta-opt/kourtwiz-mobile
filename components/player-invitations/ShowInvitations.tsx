@@ -129,8 +129,8 @@ const ShowInvitations = () => {
                     color='red'
                     title={
                       loadingId === invite.id && loadingAction === 'reject'
-                        ? 'Rejecting...'
-                        : 'Reject'
+                        ? 'Declining...'
+                        : 'Decline'
                     }
                     disabled={loadingId === invite.id}
                     onPress={async () => {

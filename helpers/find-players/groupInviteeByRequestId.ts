@@ -1,5 +1,6 @@
 type GroupedInviteInfo = {
   date: string;
+  dateTimeMs: number;
   skillRating: number;
   requestId: string;
   placeToPlay: string;
@@ -20,25 +21,30 @@ export function groupInviteeByRequestId(
       const { requestId, skillRating, placeToPlay, playTime, status } = invite;
 
       if (!acc[requestId]) {
-        const dateStr =
-          Array.isArray(playTime) && playTime.length >= 5
-            ? new Date(
-                playTime[0],
-                playTime[1] - 1, // Month is 0-based
-                playTime[2],
-                playTime[3],
-                playTime[4]
-              ).toLocaleString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-              })
-            : '';
+        let dateStr = '';
+        let dateTimeInMilliseconds = 0; // Initialize for the new key
+
+        if (Array.isArray(playTime) && playTime.length >= 5) {
+          const dateObject = new Date(
+            playTime[0],
+            playTime[1] - 1, // Month is 0-based
+            playTime[2],
+            playTime[3],
+            playTime[4]
+          );
+          dateStr = dateObject.toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          });
+          dateTimeInMilliseconds = dateObject.getTime(); // Get timestamp in milliseconds
+        }
 
         acc[requestId] = {
           date: dateStr,
+          dateTimeMs: dateTimeInMilliseconds, // Assign the new key
           skillRating,
           requestId: requestId,
           placeToPlay,
