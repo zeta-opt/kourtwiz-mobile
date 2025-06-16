@@ -18,7 +18,6 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Controller, useForm } from 'react-hook-form';
 import { Dropdown } from 'react-native-paper-dropdown';
-import { Picker } from '@react-native-picker/picker';
 
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import {useGetClubCoach} from '@/hooks/apis/coach/useGetClubCoach';
@@ -305,81 +304,52 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
         onDismiss={handleDismiss}
         contentContainerStyle={styles.modalContainer}
       >
-        <Text variant="titleLarge" style={styles.title}>
-          Create Play Session
-        </Text>
-        <ScrollView contentContainerStyle={styles.container}>
+        <Text variant="titleLarge" style={styles.title}>Create Play Session</Text>
 
-        <Text style={styles.subtitle}>Play Type:</Text>
+        <ScrollView contentContainerStyle={styles.formContainer}>
           <Controller
             name="playTypeName"
             control={control}
             rules={{ required: 'Play Type is required' }}
-            render={({ field: { value, onChange } }) => (
+            render={({ field }) => (
+            <View style={styles.input}>
               <Dropdown
                 label="Play Type"
                 mode="outlined"
-                placeholder="Play Type"
-                value={value}
-                onSelect={onChange}
+                value={field.value}
+                onSelect={field.onChange}
                 options={PLAY_TYPES}
-                CustomDropdownInput={() => (
-                  <View style={styles.outlinedBox}>
-                    <Picker
-                      selectedValue={value}
-                      onValueChange={onChange}
-                      style={styles.picker}
-                    >
-                      {PLAY_TYPES.map((type) => (
-                        <Picker.Item key={type.value} label={type.label} value={type.value} />
-                      ))}
-                    </Picker>
-                </View>
-                )}
+                error={!!errors.playTypeName}
               />
+            </View>
             )}
           />
+          {errors.playTypeName && <HelperText type="error">{errors.playTypeName.message}</HelperText>}
 
-          <Text style={styles.subtitle}>Court Name:</Text>
           <Controller
             name="courtId"
             control={control}
             rules={{ required: 'Court is required' }}
-            render={({ field: { value, onChange } }) => (
+            render={({ field }) => (
+            <View style={styles.input}>
               <Dropdown
                 label="Court"
                 mode="outlined"
-                value={value}
-                onSelect={onChange}
+                value={field.value}
+                onSelect={field.onChange}
                 options={courts.map(c => ({ label: c.name, value: c.id }))}
-                CustomDropdownInput={() => (
-                  <View style={styles.outlinedBox}>
-                    <Picker
-                      selectedValue={value}
-                      onValueChange={onChange}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Select Court" value="" />
-                      {courts.map((court) => (
-                        <Picker.Item key={court.id} label={court.name} value={court.id} />
-                      ))}
-                    </Picker>
-                  </View>
-                )}
+                error={!!errors.courtId}
               />
+            </View>
             )}
           />
-          {errors.courtId && (
-            <HelperText type="error">{errors.courtId.message}</HelperText>
-          )}
+          {errors.courtId && <HelperText type="error">{errors.courtId.message}</HelperText>}
 
-        <Text style={styles.subtitle}>Start Time:</Text>
-        <Controller
-          name="startTime"
-          control={control}
-          rules={{ required: 'Start time is required' }}
-          render={({ field: { onChange, value } }) => (
-            <View>
+          <Controller
+            name="startTime"
+            control={control}
+            rules={{ required: 'Start time is required' }}
+            render={({ field: { onChange, value } }) => (
               <TextInput
                 label="Start Time"
                 value={value ? formatDateTime(parseDateTime(value)) : ''}
@@ -396,14 +366,10 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
                   />
                 }
               />
-            </View>
-          )}
-        />
-        {errors.startTime && (
-          <HelperText type="error">{errors.startTime.message}</HelperText>
-        )}
+            )}
+          />
+          {errors.startTime && (<HelperText type="error">{errors.startTime.message}</HelperText>)}
 
-        <Text style={styles.subtitle}>Duration (Minutes):</Text>
           <Controller
             name="durationMinutes"
             control={control}
@@ -423,11 +389,8 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
               />
             )}
           />
-          {errors.durationMinutes && (
-            <HelperText type="error">{errors.durationMinutes.message}</HelperText>
-          )}
+          {errors.durationMinutes && (<HelperText type="error">{errors.durationMinutes.message}</HelperText>)}
 
-          <Text style={styles.subtitle}>Price For Play ($):</Text>
           <Controller
             name="priceForPlay"
             control={control}
@@ -448,80 +411,47 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
               />
             )}
           />
-          {errors.priceForPlay && (
-            <HelperText type="error">{errors.priceForPlay.message}</HelperText>
-          )}
-
-          <Text style={styles.subtitle}>Skill Level:</Text>
+          {errors.priceForPlay && (<HelperText type="error">{errors.priceForPlay.message}</HelperText>)}
+            
           <Controller
             name="skillLevel"
             control={control}
             rules={{ required: 'Skill level is required' }}
-            render={({ field: { value, onChange } }) => (
+            render={({ field }) => (
+            <View style={styles.input}>
               <Dropdown
                 label="Skill Level"
                 mode="outlined"
-                value={value}
-                onSelect={onChange}
+                value={field.value}
+                onSelect={field.onChange}
                 options={SKILL_LEVELS}
-                CustomDropdownInput={() => (
-                  <View style={styles.outlinedBox}>
-                    <Picker
-                      selectedValue={value}
-                      onValueChange={onChange}
-                      style={styles.picker}
-                    >
-                      {SKILL_LEVELS.map((level) => (
-                        <Picker.Item key={level.value} label={level.label} value={level.value} />
-                      ))}
-                    </Picker>
-                  </View>
-                )}
+                error={!!errors.skillLevel}
               />
+            </View>
             )}
           />
-          {errors.skillLevel && (
-            <HelperText type="error">{errors.skillLevel.message}</HelperText>
-          )}
+          {errors.skillLevel && <HelperText type="error">{errors.skillLevel.message}</HelperText>}
 
           {watchedPlayType === 'COACH_SESSION' && (
-            <>
-            <Text style={styles.subtitle}>Coach:</Text>
-              <Controller
-                name="coachId"
-                control={control}
-                rules={{ required: 'Coach is required for coach sessions' }}
-                render={({ field: { value, onChange } }) => (
-                  <Dropdown
-                    label="Coach"
-                    mode="outlined"
-                    value={value}
-                    onSelect={onChange}
-                    options={coaches.map(c => ({ label: c.name, value: c.id }))}
-                    CustomDropdownInput={() => (
-                      <View style={styles.outlinedBox}>
-                        <Picker
-                          selectedValue={value}
-                          onValueChange={onChange}
-                          style={styles.picker}
-                        >
-                          <Picker.Item label="Select Coach" value="" />
-                          {coaches.map((coach) => (
-                            <Picker.Item key={coach.id} label={coach.name} value={coach.id} />
-                          ))}
-                        </Picker>
-                      </View>
-                    )}
-                  />
-                )}
-              />
-              {errors.coachId && (
-                <HelperText type="error">{errors.coachId.message}</HelperText>
+            <Controller
+              name="coachId"
+              control={control}
+              rules={{ required: 'Coach is required for coach sessions' }}
+              render={({ field }) => (
+              <View style={styles.input}>
+                <Dropdown
+                  label="Coach"
+                  mode="outlined"
+                  value={field.value}
+                  onSelect={field.onChange}
+                  options={coaches.map(c => ({ label: c.name, value: c.id }))}
+                />
+              </View>
               )}
-            </>
+            />
           )}
+          {errors.coachId && <HelperText type="error">{errors.coachId.message}</HelperText>}
 
-          <Text style={styles.subtitle}>Max Players:</Text>
           <Controller
             name="maxPlayers"
             control={control}
@@ -541,37 +471,25 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
               />
             )}
           />
-          {errors.maxPlayers && (
-            <HelperText type="error">{errors.maxPlayers.message}</HelperText>
-          )}
+          {errors.maxPlayers && (<HelperText type="error">{errors.maxPlayers.message}</HelperText>)}
           
-          <Text style={styles.subtitle}>Event Repeat Type</Text>
           <Controller
             name="eventRepeatType"
             control={control}
-            render={({ field: { value, onChange } }) => (
-              <Dropdown
-                label="Repeat Type"
-                mode="outlined"
-                value={value}
-                onSelect={onChange}
-                options={EVENT_REPEAT_TYPES}
-                CustomDropdownInput={() => (
-                  <View style={styles.outlinedBox}>
-                    <Picker
-                      selectedValue={value}
-                      onValueChange={onChange}
-                      style={styles.picker}
-                    >
-                      {EVENT_REPEAT_TYPES.map((type) => (
-                        <Picker.Item key={type.value} label={type.label} value={type.value} />
-                      ))}
-                    </Picker>
-                  </View>
-                )}
-              />
+            render={({ field }) => (
+              <View style={styles.input}>
+                <Dropdown
+                  label="Repeat Type"
+                  mode="outlined"
+                  value={field.value}
+                  onSelect={field.onChange}
+                  options={EVENT_REPEAT_TYPES}
+                  error={!!errors.eventRepeatType}
+                />
+              </View>
             )}
           />
+          {errors.eventRepeatType && (<HelperText type="error">{errors.eventRepeatType.message}</HelperText>)}
 
           {watchedRepeatType !== 'NONE' && (
             <>
@@ -594,16 +512,13 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
                   />
                 )}
               />
-              {errors.repeatInterval && (
-                <HelperText type="error">{errors.repeatInterval.message}</HelperText>
-              )}
+              {errors.repeatInterval && (<HelperText type="error">{errors.repeatInterval.message}</HelperText>)}
 
             <Controller
               name="repeatEndDate"
               control={control}
               rules={{ required: 'End date is required for repeating events' }}
               render={({ field: { onChange, value } }) => (
-                <View>
                   <TextInput
                     label="Repeat End Date"
                     value={value ? formatDateTime(parseDateTime(value)).split(',')[0] : ''}
@@ -620,70 +535,56 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
                       />
                     }
                   />
-                </View>
               )}
             />
-            {errors.repeatEndDate && (
-              <HelperText type="error">{errors.repeatEndDate.message}</HelperText>
-            )}
+            {errors.repeatEndDate && (<HelperText type="error">{errors.repeatEndDate.message}</HelperText>)}
 
-            {watchedRepeatType === 'WEEKLY' && (
-              <>
-                <Controller
-                  name="repeatOnDays"
-                  control={control}
-                  rules={{ required: 'Select at least one weekday' }}
-                  render={({ field: { value = [], onChange } }) => (
-                    <>
-                      <Pressable onPress={() => setShowWeekDaysDropdown(true)}>
-                        <TextInput
-                          label="Repeat On Days"
-                          value={value.join(', ')}
-                          editable={false}
-                          mode="outlined"
-                          style={styles.input}
-                          right={
-                            <TextInput.Icon 
-                              icon="chevron-down" 
-                              onPress={() => setShowWeekDaysDropdown(true)} 
-                            />
-                          }
-                          error={!!errors.repeatOnDays}
+          {watchedRepeatType === 'WEEKLY' && (
+            <Controller
+              name="repeatOnDays"
+              control={control}
+              rules={{ required: 'Select at least one weekday' }}
+              render={({ field }) => (
+                <>
+                  <Pressable onPress={() => setShowWeekDaysDropdown(true)}>
+                    <TextInput
+                      label="Repeat On Days"
+                      value={field.value?.join(', ')}
+                      editable={false}
+                      mode="outlined"
+                      style={styles.input}
+                      right={<TextInput.Icon icon="chevron-down" onPress={() => setShowWeekDaysDropdown(true)} />}
+                      error={!!errors.repeatOnDays}
+                    />
+                  </Pressable>
+                  <Portal>
+                    <Modal
+                      visible={showWeekDaysDropdown}
+                      onDismiss={() => setShowWeekDaysDropdown(false)}
+                      contentContainerStyle={styles.weekDaysModal}
+                    >
+                      <Text style={styles.label}>Select Days</Text>
+                      {WEEK_DAYS.map((day) => (
+                        <Checkbox.Item
+                          key={day.value}
+                          label={day.label}
+                          status={field.value?.includes(day.value) ? 'checked' : 'unchecked'}
+                          onPress={() => {
+                            const updated = field.value?.includes(day.value)
+                              ? field.value.filter((d) => d !== day.value)
+                              : [...(field.value ?? []), day.value];
+                            field.onChange(updated);
+                          }}
                         />
-                      </Pressable>
-                      <Portal>
-                        <Modal
-                          visible={showWeekDaysDropdown}
-                          onDismiss={() => setShowWeekDaysDropdown(false)}
-                          contentContainerStyle={styles.weekDaysModal}
-                        >
-                          <Text style={styles.label}>Select Days</Text>
-                          {WEEK_DAYS.map((day) => (
-                            <Checkbox.Item
-                              key={day.value}
-                              label={day.label}
-                              status={value.includes(day.value) ? 'checked' : 'unchecked'}
-                              onPress={() => {
-                                const updated = value.includes(day.value)
-                                  ? value.filter((d) => d !== day.value)
-                                  : [...value, day.value];
-                                onChange(updated);
-                              }}
-                            />
-                          ))}
-                          <Button onPress={() => setShowWeekDaysDropdown(false)}>Done</Button>
-                        </Modal>
-                      </Portal>
-                      {errors.repeatOnDays && (
-                        <HelperText type="error">
-                          {errors.repeatOnDays.message}
-                        </HelperText>
-                      )}
-                    </>
-                  )}
-                />
-              </>
-            )}
+                      ))}
+                      <Button onPress={() => setShowWeekDaysDropdown(false)}>Done</Button>
+                    </Modal>
+                  </Portal>
+                  {errors.repeatOnDays && <HelperText type="error">{errors.repeatOnDays.message}</HelperText>}
+                </>
+              )}
+            />
+          )}
         </>
       )}
       {/* Date/Time Picker */}
@@ -736,19 +637,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   },
-  subtitle: {
-    marginTop: 10,
-    textAlign: 'left',
-    fontWeight: '700',
-  },
-  container: {
-    padding: 0,
+  formContainer: {
+    paddingBottom: 20,
   },
   input: {
-    marginBottom: 10,
-  },
-  picker: {
-    width: '100%',
     marginBottom: 10,
   },
   buttonContainer: {
@@ -791,7 +683,8 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: 'bold',
     fontSize: 16,
-    marginBottom: 4,
+    marginBottom: 20,
+    textAlign:'center'
   },
 });
 
