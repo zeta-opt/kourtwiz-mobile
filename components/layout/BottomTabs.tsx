@@ -12,7 +12,6 @@ export default function BottomTabs() {
 
   return (
     <View style={styles.container}>
-      {user?.userClubRole?.[0]?.roleName === 'ClubAdmin' && (
         <TouchableOpacity
           onPress={async () => {
             dispatch(toggleDrawer());
@@ -20,7 +19,6 @@ export default function BottomTabs() {
         >
           <MaterialIcons name='menu' size={28} />
         </TouchableOpacity>
-      )}
 
       <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
         <MaterialIcons name='home' size={28} />
