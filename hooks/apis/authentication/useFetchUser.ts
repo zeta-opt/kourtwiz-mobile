@@ -2,7 +2,7 @@ import { getToken } from '@/shared/helpers/storeToken';
 import Constants from 'expo-constants';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { login } from '../../../store/authSlice'; // path may vary
+import { login } from '../../../store/authSlice'; 
 
 export const useFetchUser = () => {
   const dispatch = useDispatch();
