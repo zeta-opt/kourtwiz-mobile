@@ -1,5 +1,5 @@
 import { View, StyleSheet } from "react-native";
-import { Text } from "react-native-paper";
+import { Text, Card } from "react-native-paper";
 
 export type WaitlistCardProps = {
   id: string;
@@ -23,28 +23,31 @@ const WaitlistCard = ({
     .toString()
     .padStart(2, "0")}`;
 
-  return (
-    <View style={styles.card}>
-      <Text variant="titleMedium">{courtName}</Text>
-      <Text>Date: {formattedDate}</Text>
-      <Text>Time: {formattedTime}</Text>
-      <Text>Duration: {durationMinutes} min</Text>
-      <Text>Skill Level: {skillLevel}</Text>
-    </View>
-  );
-};
+    return (
+      <Card style={styles.card}>
+        <View style={styles.cardContent}>
+          <Text><Text style={styles.label}>Court:</Text> {courtName}</Text>
+          <Text><Text style={styles.label}>Date:</Text> {formattedDate}</Text>
+          <Text><Text style={styles.label}>Time:</Text> {formattedTime}</Text>
+          <Text><Text style={styles.label}>Duration:</Text> {durationMinutes} min</Text>
+          <Text><Text style={styles.label}>Skill Level:</Text> {skillLevel}</Text>
+        </View>
+      </Card>
+    );
+  };
 
 export default WaitlistCard;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    margin: 12,
+  },
+  cardContent: {
+    margin: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  label: {
+    fontWeight: "700",
   },
 });

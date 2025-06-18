@@ -97,16 +97,9 @@ const styles = StyleSheet.create({
     margin: 12,
   },
   cardContent: {
-    margin:10,
+    margin: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 4,
   },
   label: {
     fontWeight: '700',
@@ -121,7 +114,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   cancelButton: {
-    margin: 10,
+    margin: 12,
   },
 });
 

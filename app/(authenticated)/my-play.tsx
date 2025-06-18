@@ -15,8 +15,6 @@ export default function MyPlay() {
     refetch,
   } = useGetOpenplayBookings(userId ?? '');
 
-  console.log('clubBookingData:', clubBookingData);
-
   return (
     <View style={styles.container}>
       <OpenPlayBookingCards
@@ -33,6 +31,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 12,
-    paddingBottom: 40,
   },
 });

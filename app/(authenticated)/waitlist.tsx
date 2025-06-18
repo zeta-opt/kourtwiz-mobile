@@ -18,9 +18,7 @@ const WaitlistPage = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text variant="headlineMedium" style={styles.heading}>
-        My Waitlist
-      </Text>
+      <Text style={styles.heading}>My Waitlist</Text>
 
       {waitlistData && waitlistData.length > 0 ? (
           waitlistData.map((item, index) => (
@@ -39,12 +37,16 @@ const WaitlistPage = () => {
 export default WaitlistPage;
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-  },
   heading: {
-    marginBottom: 16,
-    fontWeight: "bold",
+    textAlign: 'center',
+    fontSize: 20,
+    marginVertical: 20,
+    fontWeight: 'bold',
+  },
+  container: {
+    flex: 1,
+    padding: 12,
+    paddingBottom: 40,
   },
   noData: {
     marginTop: 20,
