@@ -93,6 +93,7 @@ const Dashboard = () => {
       <View style={styles.actionsGrid}>
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#E6F0FF' }]}
+          onPress={() => router.replace('/(authenticated)/court-booking')}
         >
           <Text style={styles.actionText}>Reserve</Text>
         </TouchableOpacity>

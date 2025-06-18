@@ -133,6 +133,7 @@ export default function LoginUser() {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    backgroundColor:'#0365A9'
   },
   overlay: {
     flex: 1,

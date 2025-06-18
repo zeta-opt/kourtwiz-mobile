@@ -3,11 +3,13 @@ import { createSlice } from '@reduxjs/toolkit';
 interface AuthState {
   isAuthenticated: boolean;
   user: any | null; // /me response type can be updated later with real shape
+  token: string | null;
 }
 
 const initialState: AuthState = {
   isAuthenticated: false,
   user: null,
+  token: null,
 };
 
 export const authSlice = createSlice({
