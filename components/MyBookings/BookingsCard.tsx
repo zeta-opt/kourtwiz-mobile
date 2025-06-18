@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { usePayBooking } from '@/hooks/apis/memberBookings/usePayBooking';
-import { useCancelBooking } from '@/hooks/apis/memberBookings/useCancelBooking';
-import { usePayGuest } from '@/hooks/apis/memberBookings/usePayGuest';
 import { useActivateEntryMode } from '@/hooks/apis/memberBookings/useActivateEntry';
+import { useCancelBooking } from '@/hooks/apis/memberBookings/useCancelBooking';
+import { usePayBooking } from '@/hooks/apis/memberBookings/usePayBooking';
+import { usePayGuest } from '@/hooks/apis/memberBookings/usePayGuest';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AddGuestModal from './AddGuestModal';
 import ViewGuestDetails from './ViewGuestDetails';
 
@@ -22,12 +23,17 @@ const BookingCard = ({ booking, courts, status, refetch }: Props) => {
   const [startHour, startMin] = booking.startTime;
   const [endHour, endMin] = booking.endTime;
 
-  const formattedDate = `${day.toString().padStart(2, '0')}-${month.toString().padStart(2, '0')}-${year}`;
-  const formattedTime = `${startHour}:${startMin.toString().padStart(2, '0')} - ${endHour}:${endMin.toString().padStart(2, '0')}`;
+  const formattedDate = `${day.toString().padStart(2, '0')}-${month
+    .toString()
+    .padStart(2, '0')}-${year}`;
+  const formattedTime = `${startHour}:${startMin
+    .toString()
+    .padStart(2, '0')} - ${endHour}:${endMin.toString().padStart(2, '0')}`;
 
   const courtName =
     status === 'success'
-      ? courts?.find(court => court.id === booking.courtId)?.name || booking.courtId
+      ? courts?.find((court) => court.id === booking.courtId)?.name ||
+        booking.courtId
       : 'Loading...';
 
   const { pay, status: payStatus } = usePayBooking();
@@ -35,7 +41,9 @@ const BookingCard = ({ booking, courts, status, refetch }: Props) => {
   const { payGuest, status: payGuestStatus } = usePayGuest();
   const { activateEntryMode, isActivating } = useActivateEntryMode(refetch);
 
-  const guestList = Array.isArray(booking.totalGuestList) ? booking.totalGuestList : [];
+  const guestList = Array.isArray(booking.totalGuestList)
+    ? booking.totalGuestList
+    : [];
 
   const isToday = () => {
     const today = new Date();
@@ -95,18 +103,53 @@ const BookingCard = ({ booking, courts, status, refetch }: Props) => {
         },
       ]}
     >
-      <Text style={styles.label}>Booking ID: <Text style={styles.value}>{booking.id}</Text></Text>
-      <Text style={styles.label}>User: <Text style={styles.value}>{booking.userName}</Text></Text>
-      <Text style={styles.label}>Date: <Text style={styles.value}>{formattedDate}</Text></Text>
-      <Text style={styles.label}>Time: <Text style={styles.value}>{formattedTime}</Text></Text>
-      <Text style={styles.label}>Status: <Text style={styles.value}>{booking.status}</Text></Text>
-      <Text style={styles.label}>Court Name: <Text style={styles.value}>{courtName}</Text></Text>
-      <Text style={styles.label}>Paid: <Text style={styles.value}>{booking.paid ? 'Yes' : 'No'}</Text></Text>
-      <Text style={styles.label}>Guests Paid: <Text style={styles.value}>{booking.guestsPaid ? 'Yes' : 'No'}</Text></Text>
+      <Text style={styles.label}>
+        <MaterialCommunityIcons name='identifier' size={16} /> Booking ID:{' '}
+        <Text style={styles.value}>{booking.id}</Text>
+      </Text>
+
+      <Text style={styles.label}>
+        <MaterialCommunityIcons name='account-outline' size={16} /> User:{' '}
+        <Text style={styles.value}>{booking.userName}</Text>
+      </Text>
+
+      <Text style={styles.label}>
+        <MaterialCommunityIcons name='calendar' size={16} /> Date:{' '}
+        <Text style={styles.value}>{formattedDate}</Text>
+      </Text>
+
+      <Text style={styles.label}>
+        <MaterialCommunityIcons name='clock-outline' size={16} /> Time:{' '}
+        <Text style={styles.value}>{formattedTime}</Text>
+      </Text>
+
+      <Text style={styles.label}>
+        <MaterialCommunityIcons name='check-decagram-outline' size={16} />{' '}
+        Status: <Text style={styles.value}>{booking.status}</Text>
+      </Text>
+
+      <Text style={styles.label}>
+        <MaterialCommunityIcons name='tennis' size={16} /> Court Name:{' '}
+        <Text style={styles.value}>{courtName}</Text>
+      </Text>
+
+      <Text style={styles.label}>
+        <MaterialCommunityIcons name='credit-card-outline' size={16} /> Paid:{' '}
+        <Text style={styles.value}>{booking.paid ? 'Yes' : 'No'}</Text>
+      </Text>
+
+      <Text style={styles.label}>
+        <MaterialCommunityIcons name='account-cash-outline' size={16} /> Guests
+        Paid:{' '}
+        <Text style={styles.value}>{booking.guestsPaid ? 'Yes' : 'No'}</Text>
+      </Text>
 
       <View style={styles.row}>
         <TouchableOpacity
-          style={[styles.buttonHalf, { backgroundColor: booking.paid ? '#9e9e9e' : '#4caf50' }]}
+          style={[
+            styles.buttonHalf,
+            { backgroundColor: booking.paid ? '#9e9e9e' : '#4caf50' },
+          ]}
           onPress={handlePay}
           disabled={booking.paid || payStatus === 'loading'}
         >
@@ -130,7 +173,7 @@ const BookingCard = ({ booking, courts, status, refetch }: Props) => {
         </TouchableOpacity>
       </View>
 
-      {(isToday() && isBeforeEndTime()) && (
+      {isToday() && isBeforeEndTime() && (
         <TouchableOpacity
           style={[
             styles.button,
@@ -194,7 +237,8 @@ const BookingCard = ({ booking, courts, status, refetch }: Props) => {
 const styles = StyleSheet.create({
   card: {
     width: '90%',
-    backgroundColor: '#e3f2fd',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E7EB',
     padding: 16,
     marginVertical: 8,
     borderRadius: 10,

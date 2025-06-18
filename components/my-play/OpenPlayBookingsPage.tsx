@@ -1,7 +1,8 @@
-import { View, ScrollView, Alert, StyleSheet } from 'react-native';
-import { Text, Card, Button, ActivityIndicator } from 'react-native-paper';
 import { useCancelBooking } from '@/hooks/apis/bookings/useCancelBooking';
+import { MaterialCommunityIcons } from '@expo/vector-icons'; // for Expo
 import { memo } from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Button, Card, Text } from 'react-native-paper';
 
 export type Booking = {
   id: string;
@@ -54,25 +55,62 @@ function OpenPlayBookingCards({ userId, bookings, status, refetch }: Props) {
       <Text style={styles.heading}>Your Play Bookings</Text>
 
       {status === 'loading' ? (
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size='large' color='#007bff' />
       ) : status === 'error' ? (
         <Text style={styles.error}>Error loading bookings.</Text>
       ) : bookings.length > 0 ? (
         bookings?.map((booking, index) => (
           <Card key={booking.bookingId || index} style={styles.card}>
             <View style={styles.cardContent}>
-                <Text><Text style={styles.label}>Play Type:</Text> {booking.playTypeName}</Text>
-                <Text><Text style={styles.label}>Court:</Text> {booking.courtName}</Text>
-                <Text><Text style={styles.label}>Duration:</Text> {booking.durationMinutes} minutes</Text>
-                <Text><Text style={styles.label}>Skill Level:</Text> {booking.skillLevel}</Text>
-                <Text><Text style={styles.label}>Max Players:</Text> {booking.maxPlayers}</Text>
-                <Text><Text style={styles.label}>Slots Filled:</Text> {booking.registeredPlayers?.length ?? 0}</Text>
+              <Text>
+                <MaterialCommunityIcons
+                  name='gamepad-variant-outline'
+                  size={16}
+                />{' '}
+                <Text style={styles.label}>Play Type:</Text>{' '}
+                {booking.playTypeName}
+              </Text>
+
+              <Text>
+                <MaterialCommunityIcons name='tennis' size={16} />{' '}
+                <Text style={styles.label}>Court:</Text> {booking.courtName}
+              </Text>
+
+              <Text>
+                <MaterialCommunityIcons name='timer-outline' size={16} />{' '}
+                <Text style={styles.label}>Duration:</Text>{' '}
+                {booking.durationMinutes} minutes
+              </Text>
+
+              <Text>
+                <MaterialCommunityIcons name='star-circle-outline' size={16} />{' '}
+                <Text style={styles.label}>Skill Level:</Text>{' '}
+                {booking.skillLevel}
+              </Text>
+
+              <Text>
+                <MaterialCommunityIcons
+                  name='account-group-outline'
+                  size={16}
+                />{' '}
+                <Text style={styles.label}>Max Players:</Text>{' '}
+                {booking.maxPlayers}
+              </Text>
+
+              <Text>
+                <MaterialCommunityIcons
+                  name='account-check-outline'
+                  size={16}
+                />{' '}
+                <Text style={styles.label}>Slots Filled:</Text>{' '}
+                {booking.registeredPlayers?.length ?? 0}
+              </Text>
             </View>
             <Button
               onPress={() => handleCancelBooking(booking.bookingId)}
               loading={isCanceling}
               style={styles.cancelButton}
-              mode="contained"
+              mode='contained'
               disabled={isCanceling}
             >
               {isCanceling ? 'Canceling...' : 'Cancel'}

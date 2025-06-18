@@ -1,6 +1,7 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
-import { Text, Card } from "react-native-paper";
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Card, Text } from 'react-native-paper';
 
 export type WaitlistCardProps = {
   id: string;
@@ -20,28 +21,49 @@ const WaitlistCard = ({
 }: WaitlistCardProps) => {
   const [year, month, day, hour, minute] = startTime;
   const formattedDate = `${day}/${month}/${year}`;
-  const formattedTime = `${hour.toString().padStart(2, "0")}:${minute
+  const formattedTime = `${hour.toString().padStart(2, '0')}:${minute
     .toString()
-    .padStart(2, "0")}`;
+    .padStart(2, '0')}`;
 
-    return (
-      <Card style={styles.card}>
-        <View style={styles.cardContent}>
-          <Text><Text style={styles.label}>Court:</Text> {courtName}</Text>
-          <Text><Text style={styles.label}>Date:</Text> {formattedDate}</Text>
-          <Text><Text style={styles.label}>Time:</Text> {formattedTime}</Text>
-          <Text><Text style={styles.label}>Duration:</Text> {durationMinutes} min</Text>
-          <Text><Text style={styles.label}>Skill Level:</Text> {skillLevel}</Text>
-        </View>
-      </Card>
-    );
-  };
+  return (
+    <Card style={styles.card}>
+      <View style={styles.cardContent}>
+        <Text>
+          <MaterialCommunityIcons name='tennis' size={16} />{' '}
+          <Text style={styles.label}>Court:</Text> {courtName}
+        </Text>
+
+        <Text>
+          <MaterialCommunityIcons name='calendar' size={16} />{' '}
+          <Text style={styles.label}>Date:</Text> {formattedDate}
+        </Text>
+
+        <Text>
+          <MaterialCommunityIcons name='clock-outline' size={16} />{' '}
+          <Text style={styles.label}>Time:</Text> {formattedTime}
+        </Text>
+
+        <Text>
+          <MaterialCommunityIcons name='timer-outline' size={16} />{' '}
+          <Text style={styles.label}>Duration:</Text> {durationMinutes} min
+        </Text>
+
+        <Text>
+          <MaterialCommunityIcons name='star-circle-outline' size={16} />{' '}
+          <Text style={styles.label}>Skill Level:</Text> {skillLevel}
+        </Text>
+      </View>
+    </Card>
+  );
+};
 
 export default WaitlistCard;
 
 const styles = StyleSheet.create({
   card: {
     margin: 12,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E7EB',
   },
   cardContent: {
     margin: 12,
@@ -49,6 +71,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   label: {
-    fontWeight: "700",
+    fontWeight: '700',
   },
 });
