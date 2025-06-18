@@ -5,12 +5,21 @@ import { Button, Card, Text, useTheme } from 'react-native-paper';
 type Props = {
   columns: string[];
   rows: Record<string, string>[];
-  onJoinPlay: (id: string) => void;
+  onJoinPlay: (id: string, isFull: boolean) => void;
   loadingId: string | null;
 };
 
 const JoinPlayCards = ({ columns, rows, onJoinPlay, loadingId }: Props) => {
   const theme = useTheme();
+  const buttonMessage = (isRegistered: boolean, isFull: boolean): string => {
+    if (!isRegistered && !isFull) {
+      return 'Join Play';
+    } else if (!isRegistered && isFull) {
+      return 'Join Waitlist';
+    } else {
+      return 'Joined';
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={{ padding: 10 }}>
@@ -45,12 +54,12 @@ const JoinPlayCards = ({ columns, rows, onJoinPlay, loadingId }: Props) => {
               >
                 <Button
                   mode='contained'
-                  onPress={() => onJoinPlay(row.id)}
+                  onPress={() => onJoinPlay(row.id, !!row.isFull)}
                   style={{ marginTop: 10 }}
-                  disabled={!!row['buttonDisable']}
+                  disabled={!!row['isPlayerRegistered']}
                   loading={row.id === loadingId}
                 >
-                  {!!row['buttonDisable'] ? 'Joined' : 'Join Play'}
+                  {buttonMessage(!!row['isPlayerRegistered'], !!row.isFull)}
                 </Button>
               </View>
             </View>

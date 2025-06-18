@@ -32,7 +32,7 @@ export default function JoinPlay() {
   ];
   // console.log('play data : ', playsData);
   // console.log('courts data : ', courtsData);
-  const handleJoinPlay = async (id: string) => {
+  const handleJoinPlay = async (id: string, isFull: boolean) => {
     setLoadingId(id);
     await joinPlaySession({
       userId,
@@ -41,7 +41,7 @@ export default function JoinPlay() {
         onSuccess: () => {
           Toast.show({
             type: 'success',
-            text1: 'joined!',
+            text1: isFull ? 'Joined wait list' : 'joined play',
             topOffset: 100,
           });
           refetch();
@@ -92,7 +92,8 @@ export default function JoinPlay() {
         'max slots': play.maxPlayers,
         'filled slots': play.registeredPlayers?.length,
         action: play.playTypeName.split('_').join(' ').toLowerCase(),
-        buttonDisable:
+        isFull: play.registeredPlayers?.length >= play.maxPlayers,
+        isPlayerRegistered:
           play.registeredPlayers?.some((id: string) => id === userId) ?? false,
       };
     });
