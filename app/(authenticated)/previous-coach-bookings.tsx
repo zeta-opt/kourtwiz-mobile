@@ -25,6 +25,7 @@ const PreviousCoachBookingsPage = () => {
           <PreviousCoachBookingCard 
           key={booking.id} {...booking} 
           refetch={refetch}
+          clubId={booking.clubId}
           />
         ))
       ) : (
