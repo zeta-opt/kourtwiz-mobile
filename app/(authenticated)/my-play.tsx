@@ -1,14 +1,35 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { useSelector } from 'react-redux';
+
+import { useGetOpenplayBookings } from '@/hooks/apis/bookings/useGetOpenplayBookings';
+import OpenPlayBookingCards from '@/components/my-play/OpenPlayBookingsPage';
+import { RootState } from '@/store';
 
 export default function MyPlay() {
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userId = user?.userId;
+
+  const {
+    data: clubBookingData = [],
+    status,
+    refetch,
+  } = useGetOpenplayBookings(userId ?? '');
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>🏡 Welcome to MyPlay!</Text>
+      <OpenPlayBookingCards
+        userId={userId ?? ''}
+        bookings={clubBookingData ?? []}
+        status={status}
+        refetch={refetch}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 24 },
+  container: {
+    flex: 1,
+    padding: 12,
+  },
 });

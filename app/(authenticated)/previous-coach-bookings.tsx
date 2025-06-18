@@ -1,14 +1,56 @@
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { ScrollView, StyleSheet } from "react-native";
+import { Text } from "react-native-paper";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { useGetPreviousCoachBookings } from "@/hooks/apis/bookings/useGetUsersPreviousCoachBookings";
+import PreviousCoachBookingCard from "@/components/previous-coach-bookings/PreviousCoachBookingCard";
+import LoaderScreen from "@/shared/components/Loader/LoaderScreen";
 
-export default function PreviouCoachBookings() {
+const PreviousCoachBookingsPage = () => {
+  const user = useSelector((state: RootState) => state.auth.user);
+  const userId = user?.userId ?? "";
+
+  const { data: bookings, status, refetch } = useGetPreviousCoachBookings(userId);
+
+  if (status === "loading") return <LoaderScreen />;
+  if (status === "error") return <Text style={styles.error}>Error loading coach bookings.</Text>;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>🏡 Welcome to Previous Coach Bookings!</Text>
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.heading}>Previous Coach Bookings</Text>
+
+      {bookings && bookings.length > 0 ? (
+        bookings.map((booking: any) => (
+          <PreviousCoachBookingCard 
+          key={booking.id} {...booking} 
+          refetch={refetch}
+          />
+        ))
+      ) : (
+        <Text style={styles.noData}>No previous coach bookings found.</Text>
+      )}
+    </ScrollView>
   );
-}
+};
+
+export default PreviousCoachBookingsPage;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 24 },
+  container: {
+    padding: 16,
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  noData: {
+    fontStyle: "italic",
+    marginTop: 20,
+  },
+  error: {
+    color: "red",
+    padding: 16,
+  },
 });
