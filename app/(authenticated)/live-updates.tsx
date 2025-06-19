@@ -1,14 +1,24 @@
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import LiveUpdatesDashboardCards from "@/components/live-updates/LiveUpdatesDashboardCards";
 
-export default function LiveUpdates() {
+const LiveUpdatesDashboardPage = () => {
+  const setBookings = (bookings: any[]) => {
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>🏡 Welcome to Live Updates!</Text>
+      <LiveUpdatesDashboardCards setBookings={setBookings} />
     </View>
   );
-}
+};
+
+export default LiveUpdatesDashboardPage;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 24 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F9FAFB", // Optional subtle background
+    padding: 12,
+  },
 });
