@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { Card, Text } from "react-native-paper";
 import { useGetClubCoach } from "@/hooks/apis/coach/useGetClubCoach";
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export type UserPreviousBooking = {
     id: string;
@@ -41,10 +42,32 @@ const PreviousCoachBookingCard = ({
   return (
     <Card style={styles.card}>
       <View style={styles.cardContent}>
-        <Text><Text style={styles.label}>Coach Name:</Text> {coachName}</Text>
-         <Text><Text style={styles.label}>Date:</Text> {formatDate(date)}</Text>
-         <Text><Text style={styles.label}>Start Time:</Text> {formatTime(startTime)}</Text>
-        <Text><Text style={styles.label}>End Time:</Text> {formatTime(endTime)}</Text>
+      <Text style={styles.row}>
+        <MaterialCommunityIcons name="account-tie-outline" size={16} color="#333" />{" "}
+          <Text style={styles.label}>Coach:</Text>{" "}
+          {coachName === "Coach not found" ? (
+            <Text style={styles.warningText}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="darkred" />{" "}
+              Coach not found
+            </Text>
+          ) : (
+            <Text style={styles.normalText}>{coachName}</Text>
+          )}
+        </Text>
+  
+        <Text style={styles.row}>
+          <MaterialCommunityIcons name="calendar" size={16} color="#333" />{" "}
+          <Text style={styles.label}>Date:</Text>{" "}
+          <Text style={styles.normalText}>{formatDate(date)}</Text>
+        </Text>
+  
+        <Text style={styles.row}>
+          <MaterialCommunityIcons name="clock-outline" size={16} color="#333" />{" "}
+          <Text style={styles.label}>Time:</Text>{" "}
+          <Text style={styles.normalText}>
+            {formatTime(startTime)} - {formatTime(endTime)}
+          </Text>
+        </Text>
       </View>
     </Card>
   );
@@ -52,16 +75,40 @@ const PreviousCoachBookingCard = ({
 
 export default PreviousCoachBookingCard;
 
+
 const styles = StyleSheet.create({
   card: {
-    margin: 12,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    marginBottom: 12,
+    marginHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB", // light border
+    elevation: 4,
   },
   cardContent: {
-    margin: 12,
+    flexDirection: "column",
+    alignItems: "flex-start",
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
+  },
+  row: {
+    marginBottom: 8,
   },
   label: {
     fontWeight: "700",
+    color: "#000",
+  },
+  icon: {
+    color: "#4B5563", // icon color
+    fontSize: 16,
+    marginRight: 4,
+  },
+  normalText: {
+    color: "#000",
+  },
+  warningText: {
+    color: 'darkred', // warning red
+    fontWeight: "600",
   },
 });

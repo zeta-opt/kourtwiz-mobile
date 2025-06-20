@@ -15,6 +15,7 @@ const PreviousCoachBookingsPage = () => {
 
   if (status === "loading") return <LoaderScreen />;
   if (status === "error") return <Text style={styles.error}>Error loading coach bookings.</Text>;
+  
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -25,7 +26,6 @@ const PreviousCoachBookingsPage = () => {
           <PreviousCoachBookingCard 
           key={booking.id} {...booking} 
           refetch={refetch}
-          clubId={booking.clubId}
           />
         ))
       ) : (
