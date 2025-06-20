@@ -16,6 +16,28 @@ const isNowPlaying = (date:number[], start:number[], end:number[]) => {
     return now >= startTime && now <= endTime;
   };
 
+  const formatFullDateTime = (date: Date) => {
+    const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = date.toLocaleDateString("en-US", { month: "long" });
+    const year = date.getFullYear();
+  
+    const hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+    const isPM = hours >= 12;
+    const displayHour = String(((hours + 11) % 12 + 1)).padStart(2, "0");
+    const ampm = isPM ? "pm" : "am";
+  
+    const offsetMinutes = date.getTimezoneOffset();
+    const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+    const offsetMins = Math.abs(offsetMinutes) % 60;
+    const sign = offsetMinutes <= 0 ? "+" : "-";
+    const gmtOffset = `GMT${sign}${offsetHours}:${String(offsetMins).padStart(2, "0")}`;
+  
+    return `${dayName} ${day} ${month} ${year} at ${displayHour}:${minutes}:${seconds} ${ampm} ${gmtOffset}`;
+  };  
+  
 interface LiveUpdatesDashboardProps {
   setBookings: (bookings: any[]) => void;
 }
@@ -87,12 +109,11 @@ const LiveUpdatesDashboardCards: React.FC<LiveUpdatesDashboardProps> = ({ setBoo
     }
   };
 
-
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Live Court Updates</Text>
-      <Text style={styles.time}>{currentTime.toLocaleString()}</Text>
+      <Text style={styles.time}>{formatFullDateTime(currentTime)}</Text>
+      <ScrollView contentContainerStyle={styles.container}>
 
       {currentBookings.map((booking) => {
         const participants = booking.participants ?? [];
