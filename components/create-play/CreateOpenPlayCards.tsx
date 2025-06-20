@@ -150,14 +150,54 @@ const CreateOpenPlayCards = ({ currentClubId }: Props) => {
         return (
           <Card key={session.id} style={styles.card}>
             <Card.Content>
-              <Text>Date: {date.toLocaleDateString('en-GB', {weekday: 'long', day:'2-digit', month:'long', year:'numeric' })}</Text>
-              <Text>Time: {date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
-              <Text>Play Type: {session.playTypeName}</Text>
-              <Text>Skill Level: {session.skillLevel}</Text>
-              <Text>Duration(min): {session.durationMinutes}</Text>
-              <Text>Price: {formatPrice(session.priceForPlay)}</Text>
-              <Text>Court: {getCourtName(session.courtId)}</Text>
-              <Text>Slots: {filledSlots}/{session.maxPlayers}</Text>
+              <Text>
+                <Text style={styles.label}>Date: </Text>
+                {date.toLocaleDateString("en-GB", {
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </Text>
+
+              <Text>
+                <Text style={styles.label}>Time: </Text>
+                {date.toLocaleTimeString("en-GB", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+              </Text>
+
+              <Text>
+                <Text style={styles.label}>Play Type: </Text>
+                {session.playTypeName}
+              </Text>
+
+              <Text>
+                <Text style={styles.label}>Skill Level: </Text>
+                {session.skillLevel}
+              </Text>
+
+              <Text>
+                <Text style={styles.label}>Duration (min): </Text>
+                {session.durationMinutes}
+              </Text>
+
+              <Text>
+                <Text style={styles.label}>Price: </Text>
+                {formatPrice(session.priceForPlay)}
+              </Text>
+
+              <Text>
+                <Text style={styles.label}>Court: </Text>
+                {getCourtName(session.courtId)}
+              </Text>
+
+              <Text>
+                <Text style={styles.label}>Slots: </Text>
+                {filledSlots}/{session.maxPlayers}
+              </Text>
             </Card.Content>
             <Card.Actions style={styles.cardActions}>
               <View style={styles.firstRow}>
@@ -237,6 +277,9 @@ const styles = StyleSheet.create({
   cancelButton: {
     width: '95%',
   },
+  label: {
+    fontWeight: "700",
+  },  
 });
 
 export default CreateOpenPlayCards;
