@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   View,
   Pressable,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Avatar, Text, useTheme } from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
 import { MaterialIcons } from '@expo/vector-icons';
 import { logout } from '@/store/authSlice';
+import SwitchClub from './SwitchClub';
 
 const Header = () => {
   const theme = useTheme();
@@ -33,8 +35,16 @@ const Header = () => {
 
   return (
     <SafeAreaView>
+      {/* If menu is visible, wrap whole screen in overlay */}
+      {showMenu && (
+        <TouchableWithoutFeedback onPress={() => setShowMenu(false)}>
+          <View style={styles.overlay} />
+        </TouchableWithoutFeedback>
+      )}
+
       <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
         <Text style={styles.title}>{selectedClubname}</Text>
+
         <View style={styles.profileWrapper}>
           <TouchableOpacity
             style={styles.profileButton}
@@ -46,6 +56,7 @@ const Header = () => {
 
           {showMenu && (
             <View style={styles.menuContainer}>
+              <SwitchClub onCloseMenu={() => setShowMenu(false)} />
               <Pressable onPress={handleLogout} style={styles.menuItem}>
                 <Text style={styles.menuText}>Logout</Text>
               </Pressable>
@@ -88,14 +99,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 35,
     right: 0,
-    backgroundColor: '#fff', 
+    backgroundColor: '#fff',
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
-    minWidth: 120,
+    minWidth: 160,
     paddingVertical: 4,
     zIndex: 9999,
   },
@@ -107,8 +118,12 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 16,
-    color: '#000', 
+    color: '#000',
     fontWeight: '500',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 500, // Below the menuContainer but above screen
   },
 });
 
