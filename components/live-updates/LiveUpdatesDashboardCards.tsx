@@ -132,11 +132,6 @@ const LiveUpdatesDashboardCards: React.FC<LiveUpdatesDashboardProps> = ({ setBoo
             paid: booking.guestsPaid,
         }));
 
-        const tooltipContent = [
-          membersInfo,
-          ...guestsInfo.map((g) => ({ name: `${g.name} (Guest)`, paid: g.paid })),
-        ];
-
         return (
           <Card key={booking.id} style={styles.card}>
             <Card.Content>
@@ -147,16 +142,7 @@ const LiveUpdatesDashboardCards: React.FC<LiveUpdatesDashboardProps> = ({ setBoo
                 onPress={() => setSelectedBookingInfo({ members: membersInfo, guests: guestsInfo })}
               >
                 <View style={[styles.circle, colorStyle]} />
-                <View>
-                  {tooltipContent.map((p, idx) => (
-                    <Text
-                      key={idx}
-                      style={p.paid ? styles.paidName : styles.unpaidName}
-                    >
-                      {p.name}
-                    </Text>
-                  ))}
-                </View>
+                <Text style={styles.tapHint}>Tap to view players</Text>
               </TouchableOpacity>
 
               {allPaid ? (
@@ -252,6 +238,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 10,
   },
+  tapHint: {
+    color: "#dfeaff",
+    fontSize: 14,
+  },
   circle: {
     width: 20,
     height: 20,
@@ -283,7 +273,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   requestButton: {
-    backgroundColor: "#ff6f00",
+    backgroundColor: "#f58758",
     paddingVertical: 6,
     paddingHorizontal: 12,
     color: "#fff",
@@ -301,7 +291,7 @@ const styles = StyleSheet.create({
   lightsOff: {
     marginTop: 10,
     fontWeight: "600",
-    color: "#ff3d00",
+    color: "#ff5100",
   },    
   lightsText: {
     marginTop: 10,
