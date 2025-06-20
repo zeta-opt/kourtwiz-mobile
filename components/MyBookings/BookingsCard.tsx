@@ -2,22 +2,27 @@ import { useActivateEntryMode } from '@/hooks/apis/memberBookings/useActivateEnt
 import { useCancelBooking } from '@/hooks/apis/memberBookings/useCancelBooking';
 import { usePayBooking } from '@/hooks/apis/memberBookings/usePayBooking';
 import { usePayGuest } from '@/hooks/apis/memberBookings/usePayGuest';
+import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AddGuestModal from './AddGuestModal';
 import ViewGuestDetails from './ViewGuestDetails';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 type Props = {
   booking: any;
-  courts: Record<string, any>[];
-  status: 'loading' | 'error' | 'success';
   refetch?: () => void;
 };
 
-const BookingCard = ({ booking, courts, status, refetch }: Props) => {
+const BookingCard = ({ booking, refetch }: Props) => {
+  const { user } = useSelector((state: RootState) => state.auth);
   const [guestModalVisible, setGuestModalVisible] = useState(false);
   const [guestDetailsVisible, setGuestDetailsVisible] = useState(false);
+  const clubId = user?.currentActiveClubId ?? '';
+
+  const { data: courts = [], status } = useGetClubCourt({ clubId });
 
   const [year, month, day] = booking.date;
   const [startHour, startMin] = booking.startTime;
@@ -30,11 +35,11 @@ const BookingCard = ({ booking, courts, status, refetch }: Props) => {
     .toString()
     .padStart(2, '0')} - ${endHour}:${endMin.toString().padStart(2, '0')}`;
 
-  const courtName =
-    status === 'success'
-      ? courts?.find((court) => court.id === booking.courtId)?.name ||
-        booking.courtId
-      : 'Loading...';
+  const courtName = clubId
+    ? status === 'success'
+      ? courts?.find((court) => court.id === booking.courtId)?.name || 'Unknown Court'
+      : 'Loading...'
+    : 'No Club';
 
   const { pay, status: payStatus } = usePayBooking();
   const { cancel, status: cancelStatus } = useCancelBooking();
@@ -104,43 +109,42 @@ const BookingCard = ({ booking, courts, status, refetch }: Props) => {
       ]}
     >
       <Text style={styles.label}>
-        <MaterialCommunityIcons name='identifier' size={16} /> Booking ID:{' '}
+        <MaterialCommunityIcons name="identifier" size={16} /> Booking ID:{' '}
         <Text style={styles.value}>{booking.id}</Text>
       </Text>
 
       <Text style={styles.label}>
-        <MaterialCommunityIcons name='account-outline' size={16} /> User:{' '}
+        <MaterialCommunityIcons name="account-outline" size={16} /> User:{' '}
         <Text style={styles.value}>{booking.userName}</Text>
       </Text>
 
       <Text style={styles.label}>
-        <MaterialCommunityIcons name='calendar' size={16} /> Date:{' '}
+        <MaterialCommunityIcons name="calendar" size={16} /> Date:{' '}
         <Text style={styles.value}>{formattedDate}</Text>
       </Text>
 
       <Text style={styles.label}>
-        <MaterialCommunityIcons name='clock-outline' size={16} /> Time:{' '}
+        <MaterialCommunityIcons name="clock-outline" size={16} /> Time:{' '}
         <Text style={styles.value}>{formattedTime}</Text>
       </Text>
 
       <Text style={styles.label}>
-        <MaterialCommunityIcons name='check-decagram-outline' size={16} />{' '}
-        Status: <Text style={styles.value}>{booking.status}</Text>
+        <MaterialCommunityIcons name="check-decagram-outline" size={16} /> Status:{' '}
+        <Text style={styles.value}>{booking.status}</Text>
       </Text>
 
       <Text style={styles.label}>
-        <MaterialCommunityIcons name='tennis' size={16} /> Court Name:{' '}
+        <MaterialCommunityIcons name="tennis" size={16} /> Court Name:{' '}
         <Text style={styles.value}>{courtName}</Text>
       </Text>
 
       <Text style={styles.label}>
-        <MaterialCommunityIcons name='credit-card-outline' size={16} /> Paid:{' '}
+        <MaterialCommunityIcons name="credit-card-outline" size={16} /> Paid:{' '}
         <Text style={styles.value}>{booking.paid ? 'Yes' : 'No'}</Text>
       </Text>
 
       <Text style={styles.label}>
-        <MaterialCommunityIcons name='account-cash-outline' size={16} /> Guests
-        Paid:{' '}
+        <MaterialCommunityIcons name="account-cash-outline" size={16} /> Guests Paid:{' '}
         <Text style={styles.value}>{booking.guestsPaid ? 'Yes' : 'No'}</Text>
       </Text>
 
