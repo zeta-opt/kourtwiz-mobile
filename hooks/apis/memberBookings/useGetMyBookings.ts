@@ -1,3 +1,4 @@
+import { getToken } from "@/shared/helpers/storeToken";
 import React from "react";
 import axios from "axios";
 import Constants from "expo-constants";
@@ -7,7 +8,6 @@ type useBookingsReturn = {
     status: 'loading' | 'error' | 'success';
     refetch: () => void;  
 };
-import { getToken } from "@/shared/helpers/storeToken";
 
 export const useGetMyBookings = ({
     userId,
@@ -38,7 +38,6 @@ export const useGetMyBookings = ({
                     }
                 );
                 setData(response.data);
-                console.log(data);
                 setStatus('success');
             } catch (error) {
                 console.error('Failed to fetch bookings:', error);
