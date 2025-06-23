@@ -1,4 +1,5 @@
 import { getToken, storeToken } from "@/shared/helpers/storeToken";
+import  Constants  from "expo-constants";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -12,8 +13,9 @@ import {
 } from "react-native";
 
 const UserProfile = () => {
-  const [preferredPlaces, setPreferredPlaces] = useState([]);
-  const [selectedPlaces, setSelectedPlaces] = useState([]);
+  type Place = { id: string; name: string };
+  const [preferredPlaces, setPreferredPlaces] = useState<Place[]>([]);
+  const [selectedPlaces, setSelectedPlaces] = useState<string[]>([]);
   const [userData, setUserData] = useState({
     name: "",
     email: "",
@@ -29,12 +31,13 @@ const UserProfile = () => {
     userId: "",
   });
   const [showModal, setShowModal] = useState(false);
-  const [suggestedPlaces, setSuggestedPlaces] = useState([]);
+  const [suggestedPlaces, setSuggestedPlaces] = useState<Place[]>([]);
+  const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
   useEffect(() => {
     const loginAndGetToken = async () => {
       try {
-        const loginRes = await fetch("http://44.216.113.234:8080/login", {
+        const loginRes = await fetch(`${BASE_URL}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -45,7 +48,7 @@ const UserProfile = () => {
         const loginJson = await loginRes.json();
         await storeToken(loginJson.token);
         return loginJson.token;
-      } catch (err) {
+      } catch {
         throw new Error("Failed to login and get token");
       }
     };
@@ -55,14 +58,14 @@ const UserProfile = () => {
         let token = await getToken();
         console.log("🔐 Token:", token);
 
-        let meRes = await fetch("http://44.216.113.234:8080/users/me", {
+        let meRes = await fetch(`${BASE_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!meRes.ok) {
           console.warn("/me failed, trying login...");
           token = await loginAndGetToken();
-          meRes = await fetch("http://44.216.113.234:8080/users/me", {
+          meRes = await fetch(`${BASE_URL}/users/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
         }
@@ -78,14 +81,14 @@ const UserProfile = () => {
         }));
 
         const profileRes = await fetch(
-          `http://44.216.113.234:8080/users/${meData.userId}`
+          `${BASE_URL}/users/${meData.userId}`
         );
         if (!profileRes.ok) throw new Error("/users/:id failed");
         const profileDetails = await profileRes.json();
         setUserData((prev) => ({ ...prev, ...profileDetails }));
 
         const placesRes = await fetch(
-          `http://44.216.113.234:8080/users/preferredPlacesToPlay?id=${meData.userId}`
+          `${BASE_URL}/users/preferredPlacesToPlay?id=${meData.userId}`
         );
         const raw = await placesRes.text();
 
@@ -109,7 +112,7 @@ const UserProfile = () => {
           }).toString();
 
           const nearbyRes = await fetch(
-            `http://44.216.113.234:8080/api/import/nearbyaddress?${addressParams}`
+            `${BASE_URL}/api/import/nearbyaddress?${addressParams}`
           );
           if (!nearbyRes.ok) throw new Error("Nearby places fetch failed");
           const nearby = await nearbyRes.json();
@@ -124,9 +127,9 @@ const UserProfile = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [BASE_URL]);
 
-  const handleSelectPlace = (placeId) => {
+  const handleSelectPlace = (placeId:string) => {
     setSelectedPlaces((prev) =>
       prev.includes(placeId)
         ? prev.filter((id) => id !== placeId)
@@ -149,7 +152,7 @@ const UserProfile = () => {
       };
 
       const response = await fetch(
-        `http://44.216.113.234:8080/users/${userData.userId}`,
+        `${BASE_URL}/users/${userData.userId}`,
         {
           method: "PUT",
           headers: {
@@ -254,7 +257,7 @@ const UserProfile = () => {
                 }}
                 onPress={() => handleSelectPlace(place.id)}
               >
-                <Text>{place.Name || place.name || "Unnamed Place"}</Text>
+                <Text>{place.name || "Unnamed Place"}</Text>
               </TouchableOpacity>
             ))}
             <Button title="Save" onPress={handleSavePlaces} />
