@@ -1,6 +1,6 @@
-import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import Constants from 'expo-constants';
 import {
   ActivityIndicator,
   Image,
@@ -13,10 +13,10 @@ import { useSignup } from '../SignupContext';
 
 const DoneStep = () => {
   const { data } = useSignup();
-  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(false);
+  const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
   useEffect(() => {
     if (!data.email || !data.phone) {
@@ -49,7 +49,7 @@ const DoneStep = () => {
 
     console.log('Sending signup payload:', payload);
 
-    fetch('http://44.216.113.234:8080/users', {
+    fetch(`${BASE_URL}/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -69,7 +69,7 @@ const DoneStep = () => {
         setLoading(false);
         setError(true);
       });
-  }, []);
+  }, [data, BASE_URL]);
 
   const handleDone = () => {
     if (success) {

@@ -1,7 +1,8 @@
-// src/api.ts
 import axios from "axios";
+import  Constants  from "expo-constants";
 
-const BASE_URL = "http://44.216.113.234:8080";
+
+const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
 export const sendPhoneOtp = (phone: string) =>
   axios.post(`${BASE_URL}/otp/send-sms`, null, {
