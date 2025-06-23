@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { z } from 'zod';
 import { useSignup } from '../SignupContext';
+import Constants from 'expo-constants';
 
 const schema = z.object({
   zip: z.string().min(5, 'ZIP code is required'),
@@ -32,9 +33,15 @@ const AddressStep = ({
   const [city, setCity] = useState(data.city || '');
   const [state, setState] = useState(data.state || '');
   const [country, setCountry] = useState(data.country || 'US');
-  const [errors, setErrors] = useState({});
-  const [nearbyPlaces, setNearbyPlaces] = useState([]);
-  const [selectedPlaces, setSelectedPlaces] = useState([]);
+  const [errors, setErrors] = useState<{ zip?: string; address?: string }>({});
+  type Place = {
+    id: string;
+    name?: string;
+    Name?: string;
+  };
+  
+  const [nearbyPlaces, setNearbyPlaces] = useState<Place[]>([]);
+  const [selectedPlaces, setSelectedPlaces] = useState<string[]>([]);
   const [showPlaces, setShowPlaces] = useState(false);
   const handleZipLookup = async (zipCode: string) => {
     setZip(zipCode);
@@ -72,8 +79,10 @@ const AddressStep = ({
         limit: '10',
       });
 
+      const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
+
       const res = await fetch(
-        `http://44.216.113.234:8080/api/import/nearbyaddress?${params}`
+        `${BASE_URL}/api/import/nearbyaddress?${params}`
       );
       if (!res.ok) throw new Error('Failed to fetch places');
       const data = await res.json();
@@ -88,9 +97,9 @@ const AddressStep = ({
     if (!showPlaces) {
       const result = schema.safeParse({ zip, address });
       if (!result.success) {
-        const fieldErrors = {};
+        const fieldErrors: Record<string, string> = {};
         result.error.errors.forEach((err) => {
-          fieldErrors[err.path[0]] = err.message;
+          fieldErrors[err.path[0] as string] = err.message;
         });
         setErrors(fieldErrors);
         Alert.alert('Validation Error', result.error.errors[0].message);
@@ -105,7 +114,7 @@ const AddressStep = ({
     }
   };
 
-  const handleSelectPlace = (placeId) => {
+  const handleSelectPlace = (placeId:string) => {
     console.log('selecting place : ', placeId);
     setSelectedPlaces((prev) =>
       prev.includes(placeId)

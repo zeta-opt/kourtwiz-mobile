@@ -16,7 +16,7 @@ type SignupData = {
   preferredTime: string;
   rating: number;
   profileImage: string | null;
-  preferredPlaces: [];
+  preferredPlaces: string[];
 };
 
 type SignupContextType = {
