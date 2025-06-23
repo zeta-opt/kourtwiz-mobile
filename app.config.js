@@ -26,7 +26,8 @@ export default {
 
     android: {
       package: 'com.kourtwiz.mobile',
-      versionCode: 1, // Bump on each new Android build
+      versionCode: 1,
+      permissions: ['READ_CONTACTS'],
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#ffffff',
