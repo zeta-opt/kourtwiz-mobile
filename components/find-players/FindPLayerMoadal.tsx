@@ -7,7 +7,7 @@ import {
   setContactList,
 } from '@/store/playerFinderSlice';
 import * as Contacts from 'expo-contacts';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {
@@ -187,10 +187,6 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
                     await Contacts.getContactsAsync({
                       fields: [Contacts.Fields.PhoneNumbers],
                     });
-                  console.log(
-                    'contact list data : ',
-                    JSON.stringify(simplifyContacts(contactsList))
-                  );
                   dispatch(setContactList(simplifyContacts(contactsList)));
                   dispatch(openSelectContactsModal());
                   dispatch(closePlayerFinderModal());

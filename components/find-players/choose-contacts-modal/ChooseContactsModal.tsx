@@ -102,7 +102,7 @@ const ChooseContactsModal = () => {
             <Text>No matching contacts.</Text>
           ) : (
             filteredContacts.map((contact: Contact, index: number) => {
-              const key = `${contact.contactName}_${contact.contactPhoneNumber}`;
+              const key = `${contact.contactName}_${contact.contactPhoneNumber}_${index}`;
               const isChecked = !!selected[key];
               return (
                 <View key={key} style={{ marginBottom: 12 }}>
