@@ -17,7 +17,6 @@ import {
   IconButton,
   Modal,
   Portal,
-  ProgressBar,
   Text,
 } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
@@ -27,6 +26,7 @@ import {
   openSelectContactsModal,
 } from '../../store/uiSlice';
 import ChoosePlayersPool from './choose-players-pool/ChoosePlayersPool';
+import Slider from '@react-native-community/slider';
 
 const totalSteps = 6;
 type Props = {
@@ -43,6 +43,8 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
   const userId = user?.userId;
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(new Date());
+  const [playEndTime, setPlayEndTime] = useState<Date | null>(null);
+  const [isEndPickerVisible, setEndPickerVisibility] = useState(false);
   const [skillLevel, setSkillLevel] = useState(1);
   const [playerCount, setPlayerCount] = useState(1);
   const [submitted, setSubmitted] = useState(false);
@@ -54,11 +56,13 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
     useRequestPlayerFinder();
   console.log('Component mounted');
   const handleSubmit = async () => {
+    const finalEndTime = playEndTime || new Date(date.getTime() + 60 * 60 * 1000);
     requestPlayerFinder({
       finderData: {
         requestorId: userId,
         placeToPlay: placeToPlay,
         playTime: date.toISOString(),
+        playEndTime: finalEndTime.toISOString(),
         playersNeeded: playerCount,
         skillRating: skillLevel,
         preferredContacts: preferredContacts,
@@ -79,57 +83,98 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
       },
     });
   };
+  interface SliderColorFunction {
+    (value: number): string;
+  }
+
+  const getSliderColor: SliderColorFunction = (value) => {
+    if (value <= 2) return '#f4d03f';        // Light Green
+    if (value <= 3) return '#90ee90';        // Yellow
+    if (value <= 4) return '#f39c12';        // Orange
+    return '#e74c3c';                        // Red
+  };
+
   const renderStepContent = () => {
     switch (step) {
       case 1:
         return <ChoosePlayersPool />;
-      case 2:
-        return (
-          <View>
-            <Button onPress={() => setDatePickerVisibility(true)}>
-              Select Date and Time
-            </Button>
-
-            <DateTimePickerModal
-              isVisible={isDatePickerVisible}
-              mode='datetime'
-              date={date}
-              onConfirm={(selectedDate) => {
-                setDate(selectedDate);
-                setDatePickerVisibility(false);
-              }}
-              onCancel={() => setDatePickerVisibility(false)}
-              display='inline'
-            />
-
-            <Text variant='bodyMedium' style={{ marginTop: 8 }}>
-              📅 Selected:{' '}
-              {new Intl.DateTimeFormat('en-US', {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              }).format(date)}
-            </Text>
-          </View>
-        );
+        case 2:
+          return (
+            <View>
+              <Button onPress={() => setDatePickerVisibility(true)}>
+                Select Start Date and Time
+              </Button>
+        
+              <DateTimePickerModal
+                isVisible={isDatePickerVisible}
+                mode='datetime'
+                date={date}
+                onConfirm={(selectedDate) => {
+                  setDate(selectedDate);
+                  setDatePickerVisibility(false);
+                }}
+                onCancel={() => setDatePickerVisibility(false)}
+                display='spinner'
+              />
+        
+              <Text variant='bodyMedium' style={{ marginTop: 8 }}>
+                📅 Start Time:{' '}
+                {new Intl.DateTimeFormat('en-US', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                }).format(date)}
+              </Text>
+        
+              <Button onPress={() => setEndPickerVisibility(true)} style={{ marginTop: 16 }}>
+                Select End Time
+              </Button>
+        
+              <DateTimePickerModal
+                isVisible={isEndPickerVisible}
+                mode='time'
+                date={playEndTime || date}
+                onConfirm={(selectedTime) => {
+                  const newEndTime = new Date(date);
+                  newEndTime.setHours(selectedTime.getHours());
+                  newEndTime.setMinutes(selectedTime.getMinutes());
+                  newEndTime.setSeconds(0);
+                  setPlayEndTime(newEndTime);
+                  setEndPickerVisibility(false);
+                }}
+                onCancel={() => setEndPickerVisibility(false)}
+                display='spinner'
+              />
+        
+              {playEndTime && (
+                <Text variant='bodyMedium' style={{ marginTop: 8 }}>
+                  ⏱️ End Time:{' '}
+                  {new Intl.DateTimeFormat('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  }).format(playEndTime)}
+                </Text>
+              )}
+            </View>
+          );        
       case 3:
+        const sliderColor = getSliderColor(skillLevel);
+      
         return (
-          <View>
+          <View style={styles.container}>
             <Text variant='titleMedium'>Skill Level</Text>
-            <ProgressBar
-              progress={skillLevel / 5}
-              color={skillLevel > 3.8 ? 'red' : 'green'}
-              style={styles.sliderBar}
+      
+            <Slider
+              style={styles.slider}
+              minimumValue={1}
+              maximumValue={5}
+              step={0.1}
+              value={skillLevel}
+              minimumTrackTintColor={sliderColor}
+              maximumTrackTintColor="#ccc"
+              thumbTintColor={sliderColor}
+              onValueChange={(value) => setSkillLevel(value)}
             />
-            <Button
-              onPress={() => setSkillLevel(Math.min(skillLevel + 0.2, 5))}
-            >
-              Slide +
-            </Button>
-            <Button
-              onPress={() => setSkillLevel(Math.max(skillLevel - 0.2, 1))}
-            >
-              Slide -
-            </Button>
+      
             <Text>Selected: {skillLevel.toFixed(1)}</Text>
           </View>
         );
@@ -285,6 +330,13 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     zIndex: 100,
+  },
+  container: {
+    padding: 16,
+  },
+  slider: {
+    width: '100%',
+    height: 100,
   },
   progressContainer: {
     flexDirection: 'row',
