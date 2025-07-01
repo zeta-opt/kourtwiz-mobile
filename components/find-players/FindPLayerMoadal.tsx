@@ -18,8 +18,9 @@ import {
   Modal,
   Portal,
   Text,
+  Dialog,
+  Portal as PaperPortal,
 } from 'react-native-paper';
-import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   closePlayerFinderModal,
@@ -29,10 +30,12 @@ import ChoosePlayersPool from './choose-players-pool/ChoosePlayersPool';
 import Slider from '@react-native-community/slider';
 
 const totalSteps = 6;
+
 type Props = {
   visible: boolean;
   refetch: () => void;
 };
+
 const MultiStepInviteModal = ({ visible, refetch }: Props) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -49,6 +52,8 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
   const [playerCount, setPlayerCount] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [conflictDialogVisible, setConflictDialogVisible] = useState(false);
+
   const goToNext = () => setStep((prev) => Math.min(prev + 1, totalSteps));
   const goToPrevious = () => setStep((prev) => Math.max(prev - 1, 1));
   const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
@@ -60,12 +65,12 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
     requestPlayerFinder({
       finderData: {
         requestorId: userId,
-        placeToPlay: placeToPlay,
+        placeToPlay,
         playTime: date.toISOString(),
         playEndTime: finalEndTime.toISOString(),
         playersNeeded: playerCount,
         skillRating: skillLevel,
-        preferredContacts: preferredContacts,
+        preferredContacts,
       },
       callbacks: {
         onSuccess: () => {
@@ -74,95 +79,81 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
           setSubmitted(true);
         },
         onError: () => {
-          dispatch(closePlayerFinderModal());
-          Toast.show({
-            type: 'error',
-            text1: 'Failed to invite!',
-          });
+          setConflictDialogVisible(true);
         },
       },
     });
   };
-  interface SliderColorFunction {
-    (value: number): string;
-  }
 
-  const getSliderColor: SliderColorFunction = (value) => {
-    if (value <= 2) return '#f4d03f';        // Light Green
-    if (value <= 3) return '#90ee90';        // Yellow
-    if (value <= 4) return '#f39c12';        // Orange
-    return '#e74c3c';                        // Red
+  const getSliderColor = (value: number): string => {
+    if (value <= 2) return '#f4d03f';
+    if (value <= 3) return '#90ee90';
+    if (value <= 4) return '#f39c12';
+    return '#e74c3c';
   };
 
   const renderStepContent = () => {
     switch (step) {
       case 1:
         return <ChoosePlayersPool />;
-        case 2:
-          return (
-            <View>
-              <Button onPress={() => setDatePickerVisibility(true)}>
-                Select Start Date and Time
-              </Button>
-        
-              <DateTimePickerModal
-                isVisible={isDatePickerVisible}
-                mode='datetime'
-                date={date}
-                onConfirm={(selectedDate) => {
-                  setDate(selectedDate);
-                  setDatePickerVisibility(false);
-                }}
-                onCancel={() => setDatePickerVisibility(false)}
-                display='spinner'
-              />
-        
+      case 2:
+        return (
+          <View>
+            <Button onPress={() => setDatePickerVisibility(true)}>
+              Select Start Date and Time
+            </Button>
+            <DateTimePickerModal
+              isVisible={isDatePickerVisible}
+              mode='datetime'
+              date={date}
+              onConfirm={(selectedDate) => {
+                setDate(selectedDate);
+                setDatePickerVisibility(false);
+              }}
+              onCancel={() => setDatePickerVisibility(false)}
+              display='spinner'
+            />
+            <Text variant='bodyMedium' style={{ marginTop: 8 }}>
+              📅 Start Time:{' '}
+              {new Intl.DateTimeFormat('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              }).format(date)}
+            </Text>
+            <Button onPress={() => setEndPickerVisibility(true)} style={{ marginTop: 16 }}>
+              Select End Time
+            </Button>
+            <DateTimePickerModal
+              isVisible={isEndPickerVisible}
+              mode='time'
+              date={playEndTime || date}
+              onConfirm={(selectedTime) => {
+                const newEndTime = new Date(date);
+                newEndTime.setHours(selectedTime.getHours());
+                newEndTime.setMinutes(selectedTime.getMinutes());
+                newEndTime.setSeconds(0);
+                setPlayEndTime(newEndTime);
+                setEndPickerVisibility(false);
+              }}
+              onCancel={() => setEndPickerVisibility(false)}
+              display='spinner'
+            />
+            {playEndTime && (
               <Text variant='bodyMedium' style={{ marginTop: 8 }}>
-                📅 Start Time:{' '}
+                ⏱️ End Time:{' '}
                 {new Intl.DateTimeFormat('en-US', {
                   dateStyle: 'medium',
                   timeStyle: 'short',
-                }).format(date)}
+                }).format(playEndTime)}
               </Text>
-        
-              <Button onPress={() => setEndPickerVisibility(true)} style={{ marginTop: 16 }}>
-                Select End Time
-              </Button>
-        
-              <DateTimePickerModal
-                isVisible={isEndPickerVisible}
-                mode='time'
-                date={playEndTime || date}
-                onConfirm={(selectedTime) => {
-                  const newEndTime = new Date(date);
-                  newEndTime.setHours(selectedTime.getHours());
-                  newEndTime.setMinutes(selectedTime.getMinutes());
-                  newEndTime.setSeconds(0);
-                  setPlayEndTime(newEndTime);
-                  setEndPickerVisibility(false);
-                }}
-                onCancel={() => setEndPickerVisibility(false)}
-                display='spinner'
-              />
-        
-              {playEndTime && (
-                <Text variant='bodyMedium' style={{ marginTop: 8 }}>
-                  ⏱️ End Time:{' '}
-                  {new Intl.DateTimeFormat('en-US', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                  }).format(playEndTime)}
-                </Text>
-              )}
-            </View>
-          );        
+            )}
+          </View>
+        );
       case 3:
         const sliderColor = getSliderColor(skillLevel);
-      
         return (
           <View style={styles.container}>
             <Text variant='titleMedium'>Skill Level</Text>
-      
             <Slider
               style={styles.slider}
               minimumValue={1}
@@ -174,7 +165,6 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
               thumbTintColor={sliderColor}
               onValueChange={(value) => setSkillLevel(value)}
             />
-      
             <Text>Selected: {skillLevel.toFixed(1)}</Text>
           </View>
         );
@@ -213,9 +203,7 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
                     right={() => (
                       <IconButton
                         icon='close'
-                        onPress={() => {
-                          dispatch(removePreferredContact(index));
-                        }}
+                        onPress={() => dispatch(removePreferredContact(index))}
                       />
                     )}
                   />
@@ -228,10 +216,9 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
               onPress={async () => {
                 const { status } = await Contacts.requestPermissionsAsync();
                 if (status === 'granted') {
-                  const { data: contactsList } =
-                    await Contacts.getContactsAsync({
-                      fields: [Contacts.Fields.PhoneNumbers],
-                    });
+                  const { data: contactsList } = await Contacts.getContactsAsync({
+                    fields: [Contacts.Fields.PhoneNumbers],
+                  });
                   console.log(
                     'contact list data : ',
                     JSON.stringify(simplifyContacts(contactsList))
@@ -301,9 +288,7 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
       <Modal
         visible={visible}
         onDismiss={() => dispatch(closePlayerFinderModal())}
-        contentContainerStyle={{
-          ...styles.modalContent,
-        }}
+        contentContainerStyle={styles.modalContent}
       >
         <View style={styles.progressContainer}>
           {[...Array(totalSteps)].map((_, i) => (
@@ -321,6 +306,24 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
           {step < totalSteps && <Button onPress={goToNext}>Next</Button>}
         </View>
       </Modal>
+
+      {/* Booking conflict dialog */}
+      <PaperPortal>
+        <Dialog
+          visible={conflictDialogVisible}
+          onDismiss={() => setConflictDialogVisible(false)}
+        >
+          <Dialog.Title>Booking Conflict</Dialog.Title>
+          <Dialog.Content>
+            <Text variant='bodyMedium'>
+              You already have a booking at this time. Please choose another slot.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setConflictDialogVisible(false)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </PaperPortal>
     </Portal>
   );
 };
