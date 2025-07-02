@@ -14,6 +14,8 @@ import {
 } from "react-native";
 import { Button, Text, TextInput } from "react-native-paper";
 import { z } from "zod";
+import React, { useState } from "react";
+import ForgotPasswordModal from "@/components/login/ForgotPasswordModal";
 
 // 📄 Zod validation schema
 const loginSchema = z.object({
@@ -34,6 +36,9 @@ export default function LoginUser() {
 
   const { login, status } = useLoginUser();
   const { fetchUser, status: userFetchStatus } = useFetchUser();
+
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSuccess = async (resData: any) => {
     console.log("✅ Login Success. Token:", resData.token);
@@ -102,9 +107,15 @@ export default function LoginUser() {
                 label="Password"
                 value={value}
                 onChangeText={onChange}
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 style={styles.input}
                 error={!!errors.password}
+                right={
+                  <TextInput.Icon
+                    icon={showPassword ? "eye-off" : "eye"}
+                    onPress={() => setShowPassword(!showPassword)}
+                  />
+                }
               />
             )}
           />
@@ -112,7 +123,7 @@ export default function LoginUser() {
             <Text style={styles.error}>{errors.password.message}</Text>
           )}
 
-          <TouchableOpacity onPress={() => console.log("Forgot Password?")}>
+          <TouchableOpacity onPress={() => setShowForgotPassword(true)}>
             <Text style={styles.forgot}>Forgot Password?</Text>
           </TouchableOpacity>
 
@@ -126,6 +137,12 @@ export default function LoginUser() {
           </Button>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        visible={showForgotPassword}
+        onDismiss={() => setShowForgotPassword(false)}
+      />
     </ImageBackground>
   );
 }
@@ -133,7 +150,7 @@ export default function LoginUser() {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    backgroundColor:'#0365A9'
+    backgroundColor: "#0365A9",
   },
   overlay: {
     flex: 1,

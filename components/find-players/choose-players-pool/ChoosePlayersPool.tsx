@@ -6,34 +6,35 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   closePlayerFinderModal,
   openPreferredPlaceModal,
+  openSearchPlaceModal,
 } from '../../../store/uiSlice';
 
 const ChoosePlayersPool = () => {
   const dispatch = useDispatch();
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
-  const handleOpenPreferredPlaces = () => {
-    console.log('clicked !');
-    setSelectedCard(0);
+
+  const handleCardSelection = (cardIndex: number, modalAction: () => void) => {
+    setSelectedCard(cardIndex);
     dispatch(closePlayerFinderModal());
-    dispatch(openPreferredPlaceModal());
+    modalAction();
   };
+
   return (
     <View>
+      {/* Preferred Places */}
       <Card
-        key={0}
-        onPress={() => {
-          handleOpenPreferredPlaces();
-        }}
+        onPress={() => handleCardSelection(0, () => dispatch(openPreferredPlaceModal()))}
         style={[styles.optionCard, selectedCard === 0 && styles.selectedCard]}
       >
         <Card.Content>
-          <Text>Choose from preferred players</Text>
+          <Text>Choose from Preferred Places</Text>
         </Card.Content>
       </Card>
+
+      {/* Search Places */}
       <Card
-        key={1}
-        onPress={() => setSelectedCard(1)}
+        onPress={() => handleCardSelection(1, () => dispatch(openSearchPlaceModal()))}
         style={[styles.optionCard, selectedCard === 1 && styles.selectedCard]}
       >
         <Card.Content>
@@ -41,18 +42,17 @@ const ChoosePlayersPool = () => {
         </Card.Content>
       </Card>
       <Card
-        key={2}
         onPress={() => setSelectedCard(2)}
         style={[styles.optionCard, selectedCard === 2 && styles.selectedCard]}
       >
         <Card.Content>
-          <Text>Choose on map</Text>
+          <Text>Choose on Map</Text>
         </Card.Content>
       </Card>
       {placeToPlay && (
-        <Card key={3} style={[styles.optionCard, styles.selectedCard]}>
+        <Card style={[styles.optionCard, styles.selectedCard]}>
           <Card.Content>
-            <Text>{placeToPlay}</Text>
+            <Text>📍 {placeToPlay}</Text>
           </Card.Content>
         </Card>
       )}
