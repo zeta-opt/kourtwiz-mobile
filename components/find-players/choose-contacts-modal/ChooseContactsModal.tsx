@@ -25,7 +25,7 @@ const ChooseContactsModal = () => {
   const visible = useSelector(
     (state: RootState) => state.ui.selectContactsModal
   );
-  const { contactList, preferredContacts } = useSelector(
+  const { contactList, preferredContacts, playersNeeded } = useSelector(
     (state: RootState) => state.playerFinder
   );
   const dispatch = useDispatch();
@@ -35,12 +35,10 @@ const ChooseContactsModal = () => {
 
   useEffect(() => {
     const selectedTemp: Record<string, Contact> = {};
-
     preferredContacts.forEach((contact) => {
       const key = `${contact.contactName}_${contact.contactPhoneNumber}`;
       selectedTemp[key] = contact;
     });
-
     setSelected(selectedTemp);
   }, [preferredContacts]);
 
@@ -59,11 +57,16 @@ const ChooseContactsModal = () => {
   const toggleSelection = (key: string, contact: Contact) => {
     setSelected((prev) => {
       const updated = { ...prev };
+
       if (updated[key]) {
         delete updated[key];
       } else {
+        if (Object.keys(updated).length >= (playersNeeded || 0)) {
+          return updated; // Prevent adding more than allowed
+        }
         updated[key] = contact;
       }
+
       return updated;
     });
   };
@@ -85,7 +88,6 @@ const ChooseContactsModal = () => {
       >
         <Text style={styles.heading}>Choose preferred contacts</Text>
 
-        {/* 🔍 Search input */}
         <TextInput
           placeholder='Search by name or number'
           value={searchText}
@@ -93,7 +95,6 @@ const ChooseContactsModal = () => {
           style={styles.searchInput}
         />
 
-        {/* 📋 Contact list */}
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
@@ -104,6 +105,8 @@ const ChooseContactsModal = () => {
             filteredContacts.map((contact: Contact, index: number) => {
               const key = `${contact.contactName}_${contact.contactPhoneNumber}`;
               const isChecked = !!selected[key];
+              const isDisabled = !isChecked && Object.keys(selected).length >= (playersNeeded || 0);
+
               return (
                 <View key={key} style={{ marginBottom: 12 }}>
                   <Text style={styles.nameText}>{contact.contactName}</Text>
@@ -111,8 +114,11 @@ const ChooseContactsModal = () => {
                     <Checkbox
                       status={isChecked ? 'checked' : 'unchecked'}
                       onPress={() => toggleSelection(key, contact)}
+                      disabled={isDisabled}
                     />
-                    <Text>{contact.contactPhoneNumber}</Text>
+                    <Text style={{ color: isDisabled ? 'lightgray' : 'black' }}>
+                      {contact.contactPhoneNumber}
+                    </Text>
                   </View>
                   {index < filteredContacts.length - 1 && (
                     <Divider style={{ marginTop: 8 }} />
@@ -123,7 +129,6 @@ const ChooseContactsModal = () => {
           )}
         </ScrollView>
 
-        {/* ✅ Selected summary */}
         {Object.keys(selected).length > 0 && (
           <View style={{ marginTop: 16 }}>
             <Text style={styles.selectedHeading}>
@@ -137,7 +142,6 @@ const ChooseContactsModal = () => {
           </View>
         )}
 
-        {/* 🚀 Submit button */}
         <Button
           mode='contained'
           onPress={handleSubmit}
