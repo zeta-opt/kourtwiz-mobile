@@ -133,14 +133,12 @@ const FindPlayerLayout = () => {
                   <Text style={styles.blackText}>{gameInvite.date}</Text>
                   <Text style={styles.greyText}>
                     {
-                      gameInvite.Requests.filter(
-                        (invite: any) => invite.status !== 'DECLINED'
-                      ).length
+                      gameInvite.playersNeeded
                     } players invited
                   </Text>
 
                   <Text style={styles.greenText}>
-                    Accepted: {gameInvite.accepted}/{gameInvite.Requests.filter((invite: any) => invite.status !== 'DECLINED').length}
+                    Accepted: {gameInvite.accepted}/{gameInvite.playersNeeded}
                   </Text>
                 </View>
                 <View style={styles.cardRight}>
