@@ -7,6 +7,7 @@ type GroupedInviteInfo = {
   pending: number;
   accepted: number;
   Requests: any[];
+  playersNeeded: number;
 };
 
 export function groupInviteeByRequestId(
@@ -51,6 +52,7 @@ export function groupInviteeByRequestId(
           pending: 0,
           accepted: 0,
           Requests: [],
+          playersNeeded: invite.playersNeeded,
         };
       }
 
