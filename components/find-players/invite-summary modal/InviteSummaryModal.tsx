@@ -29,6 +29,7 @@ const statusIconMap: Record<string, string> = {
 
 const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
   // console.log('data : ', data);
+  const organizerName = data?.Requests?.[0]?.inviteeName ?? 'Unknown';
   return (
     <Portal>
       <Modal
@@ -65,6 +66,15 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
                 </View>
               );
             })}
+              <Divider style={{ marginVertical: 10 }} />
+              <Text style={styles.subHeading}>Organizer</Text>
+              <View style={styles.playerRow}>
+                <IconButton icon='account-circle' iconColor='#6a1b9a' size={20} />
+                <Text style={[styles.playerText, styles.organizerName]}>
+                  {organizerName}
+                </Text>
+              </View>
+
 
             <Button
               onPress={handleClose}
@@ -115,6 +125,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'gray',
   },
+  organizerName: {
+  color: '#6a1b9a', // a deep purple
+  fontWeight: '600',
+},
+
 });
 
 export default InviteSummaryModal;
