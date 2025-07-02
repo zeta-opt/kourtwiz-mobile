@@ -15,11 +15,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   closePreferredPlaceModal,
   openPlayerFinderModal,
+  closeSearchPlaceModal,
 } from '../../store/uiSlice';
 import ChooseContactsModal from './choose-contacts-modal/ChooseContactsModal';
 import MultiStepInviteModal from './FindPLayerMoadal';
 import InviteSummaryModal from './invite-summary modal/InviteSummaryModal';
 import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
+import SearchPlacesModal from './search-places-modal/SearchPlacesModal';
 
 const FindPlayerLayout = () => {
   const dispatch = useDispatch();
@@ -29,7 +31,7 @@ const FindPlayerLayout = () => {
   // State to manage sorting visual (for UI only, no sorting logic yet)
   const [isAscendingSort, setIsAscendingSort] = useState(true);
 
-  const { playerFinderModal, preferredPlaceModal } = useSelector(
+  const { playerFinderModal, preferredPlaceModal, searchPlaceModal } = useSelector(
     (state: RootState) => state.ui
   );
   const { user } = useSelector((state: RootState) => state.auth);
@@ -133,17 +135,11 @@ const FindPlayerLayout = () => {
                   <Text style={styles.blackText}>{gameInvite.date}</Text>
                   <Text style={styles.greyText}>
                     {
-                      gameInvite.Requests.filter(
-                        (invite: any) => invite.status !== 'DECLINED'
-                      ).length
-                    } players invited
-                    {
                       gameInvite.playersNeeded
                     } players invited
                   </Text>
-
                   <Text style={styles.greenText}>
-                    Accepted: {gameInvite.accepted}/{gameInvite.playersNeeded}
+                    Accepted: {gameInvite.accepted} / {gameInvite.playersNeeded}
                   </Text>
                 </View>
                 <View style={styles.cardRight}>
@@ -169,6 +165,13 @@ const FindPlayerLayout = () => {
         handleClose={() => {
           dispatch(openPlayerFinderModal());
           dispatch(closePreferredPlaceModal());
+        }}
+      />
+      <SearchPlacesModal
+        visible={searchPlaceModal}
+        handleClose={() => {
+          dispatch(openPlayerFinderModal());
+          dispatch(closeSearchPlaceModal());
         }}
       />
       <InviteSummaryModal

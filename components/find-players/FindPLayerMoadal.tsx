@@ -5,9 +5,10 @@ import {
   removePreferredContact,
   resetPlayerFinderData,
   setContactList,
+  setPlayersNeeded,
 } from '@/store/playerFinderSlice';
 import * as Contacts from 'expo-contacts';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {
@@ -48,7 +49,8 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
   const [date, setDate] = useState(new Date());
   const [playEndTime, setPlayEndTime] = useState<Date | null>(null);
   const [isEndPickerVisible, setEndPickerVisibility] = useState(false);
-  const [skillLevel, setSkillLevel] = useState(1);
+  const getDefaultSkillLevel = () => user?.playerDetails?.personalRating ?? 1;
+  const [skillLevel, setSkillLevel] = useState<number>(getDefaultSkillLevel());
   const [playerCount, setPlayerCount] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -156,10 +158,10 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
             <Text variant='titleMedium'>Skill Level</Text>
             <Slider
               style={styles.slider}
-              minimumValue={1}
+              minimumValue={0}
               maximumValue={5}
               step={0.1}
-              value={skillLevel}
+              value={skillLevel ?? 1}
               minimumTrackTintColor={sliderColor}
               maximumTrackTintColor="#ccc"
               thumbTintColor={sliderColor}
@@ -224,6 +226,7 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
                     JSON.stringify(simplifyContacts(contactsList))
                   );
                   dispatch(setContactList(simplifyContacts(contactsList)));
+                  dispatch(setPlayersNeeded(playerCount));
                   dispatch(openSelectContactsModal());
                   dispatch(closePlayerFinderModal());
                 }
@@ -257,7 +260,7 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
                 labelStyle={{ color: 'white' }}
                 onPress={() => {
                   setDate(new Date());
-                  setSkillLevel(1);
+                  setSkillLevel(getDefaultSkillLevel());
                   setPlayerCount(1);
                   setStep(1);
                   setSubmitted(false);
