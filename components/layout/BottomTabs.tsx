@@ -9,16 +9,19 @@ export default function BottomTabs() {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   console.log(user);
+  const hasRoles = user?.userClubRole?.length > 0;
 
   return (
     <View style={styles.container}>
+      {hasRoles && (
         <TouchableOpacity
           onPress={async () => {
             dispatch(toggleDrawer());
           }}
         >
-          <MaterialIcons name='menu' size={28} />
+          <MaterialIcons name="menu" size={28} />
         </TouchableOpacity>
+      )}
 
       <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
         <MaterialIcons name='home' size={28} />
