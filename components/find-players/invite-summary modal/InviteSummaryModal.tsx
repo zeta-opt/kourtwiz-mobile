@@ -1,5 +1,10 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  ListRenderItemInfo,
+} from 'react-native';
 import {
   Button,
   Divider,
@@ -8,6 +13,10 @@ import {
   Portal,
   Text,
 } from 'react-native-paper';
+import { GetCommentPlayerFinder } from '../comment-layout/GetCommentPlayerFinder';
+import { PostCommentPlayerFinder } from '../comment-layout/PostCommentPlayerFinder';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 type Props = {
   visible: boolean;
@@ -28,8 +37,15 @@ const statusIconMap: Record<string, string> = {
 };
 
 const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
-  // console.log('data : ', data);
   const organizerName = data?.Requests?.[0]?.inviteeName ?? 'Unknown';
+  const requestId = data?.requestId || data?.Requests?.[0]?.requestId;
+  const { user } = useSelector((state: RootState) => state.auth);
+  console.log('🧑‍💻 InviteSummaryModal Data:', data);
+  console.log(user);
+  const userId = user?.userId || "Unknown User";
+
+  const players = data?.Requests ?? [];
+
   return (
     <Portal>
       <Modal
@@ -38,18 +54,23 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
         contentContainerStyle={styles.container}
       >
         {data ? (
-          <ScrollView>
-            <Text style={styles.heading}>{data.placeToPlay}</Text>
-            <Text>Date: {data.date}</Text>
-            <Text>Skill Rating: {data.skillRating}</Text>
-
-            <Divider style={{ marginVertical: 10 }} />
-            <Text style={styles.subHeading}>Players</Text>
-
-            {data.Requests?.map((player: any) => {
-              const status = player.status?.toUpperCase() || 'PENDING';
+          <FlatList
+            data={players}
+            keyExtractor={(item: any) => item?.id ?? Math.random().toString()}
+            contentContainerStyle={{ paddingBottom: 60 }}
+            ListHeaderComponent={
+              <>
+                <Text style={styles.heading}>{data.placeToPlay}</Text>
+                <Text>Date: {data.date}</Text>
+                <Text>Skill Rating: {data.skillRating}</Text>
+                <Divider style={{ marginVertical: 10 }} />
+                <Text style={styles.subHeading}>Players</Text>
+              </>
+            }
+            renderItem={({ item }: ListRenderItemInfo<any>) => {
+              const status = item.status?.toUpperCase() || 'PENDING';
               return (
-                <View key={player.id} style={styles.playerRow}>
+                <View style={styles.playerRow}>
                   <IconButton
                     icon={statusIconMap[status] || 'help-circle'}
                     iconColor={statusColorMap[status] || 'gray'}
@@ -61,29 +82,57 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
                       { color: statusColorMap[status] || 'gray' },
                     ]}
                   >
-                    {player.name}: {status}
+                    {item.name}: {status}
                   </Text>
                 </View>
               );
-            })}
-              <Divider style={{ marginVertical: 10 }} />
-              <Text style={styles.subHeading}>Organizer</Text>
-              <View style={styles.playerRow}>
-                <IconButton icon='account-circle' iconColor='#6a1b9a' size={20} />
-                <Text style={[styles.playerText, styles.organizerName]}>
-                  {organizerName}
-                </Text>
+            }}
+            ListFooterComponent={
+              <View>
+                <Divider style={{ marginVertical: 10 }} />
+                <Text style={styles.subHeading}>Organizer</Text>
+                <View style={styles.playerRow}>
+                  <IconButton
+                    icon="account-circle"
+                    iconColor="#6a1b9a"
+                    size={20}
+                  />
+                  <Text style={[styles.playerText, styles.organizerName]}>
+                    {organizerName}
+                  </Text>
+                </View>
+
+                {requestId && (
+                  <>
+                    <Divider style={{ marginVertical: 10 }} />
+                    <Text style={styles.subHeading}>Comments</Text>
+                    <GetCommentPlayerFinder requestId={requestId} />
+                  </>
+                )}
+
+                {userId && requestId && (
+                  <>
+                    <Divider style={{ marginVertical: 10 }} />
+                    <PostCommentPlayerFinder
+                      requestId={requestId}
+                      userId={userId}
+                      onSuccess={() => {
+                        console.log('✅ Comment submitted!');
+                      }}
+                    />
+                  </>
+                )}
+
+                <Button
+                  onPress={handleClose}
+                  mode="contained"
+                  style={{ marginTop: 20 }}
+                >
+                  Close
+                </Button>
               </View>
-
-
-            <Button
-              onPress={handleClose}
-              mode='contained'
-              style={{ marginTop: 20 }}
-            >
-              Close
-            </Button>
-          </ScrollView>
+            }
+          />
         ) : (
           <Text style={styles.emptyText}>No data to show.</Text>
         )}
@@ -98,7 +147,7 @@ const styles = StyleSheet.create({
     margin: 20,
     borderRadius: 10,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: '90%',
   },
   heading: {
     fontSize: 20,
@@ -126,10 +175,9 @@ const styles = StyleSheet.create({
     color: 'gray',
   },
   organizerName: {
-  color: '#6a1b9a', // a deep purple
-  fontWeight: '600',
-},
-
+    color: '#6a1b9a',
+    fontWeight: '600',
+  },
 });
 
 export default InviteSummaryModal;
