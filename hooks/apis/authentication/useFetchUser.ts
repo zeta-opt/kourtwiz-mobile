@@ -25,7 +25,7 @@ export const useFetchUser = () => {
       if (!response.ok) throw new Error('Failed to fetch user data');
 
       const userData = await response.json();
-      dispatch(login(userData));
+      dispatch(login({ user: userData, token }));
       setStatus('success');
     } catch (err: any) {
       console.error(err.message);

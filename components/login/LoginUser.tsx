@@ -48,7 +48,7 @@ export default function LoginUser() {
     try {
       await fetchUser();
       console.log("✅ User fetched successfully");
-      router.push("/(authenticated)/home");
+      router.replace("/(authenticated)/home");
     } catch (e) {
       console.error("❌ Failed to fetch user after login", e);
     }

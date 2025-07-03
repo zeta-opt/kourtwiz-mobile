@@ -30,7 +30,7 @@ const Header = () => {
   const handleLogout = () => {
     dispatch(logout());
     setShowMenu(false);
-    router.replace('/login');
+    router.replace('/');
   };
 
   return (

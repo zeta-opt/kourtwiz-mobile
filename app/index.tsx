@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 import { router } from "expo-router";
 import {
   Dimensions,
@@ -12,6 +15,15 @@ const bgImage = require("../assets/images/kourtwiz_login_bg.png");
 const logoImage = require("../assets/images/kourtwiz_logo_new.png");
 
 export default function WelcomeScreen() {
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log("✅ Already authenticated. Redirecting to home...");
+      router.replace("/(authenticated)/home");
+    }
+  }, [isAuthenticated]);
+
   return (
     <ImageBackground
       source={bgImage}
@@ -40,8 +52,6 @@ export default function WelcomeScreen() {
             Signup
           </Button>
         </View>
-
-       
       </View>
       <Image source={logoImage} style={styles.logo} resizeMode="contain" />
     </ImageBackground>
