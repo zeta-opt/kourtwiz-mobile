@@ -3,23 +3,17 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { getToken } from '@/shared/helpers/storeToken';
 
-type UpdateCommentPayload = {
-  commentId: string;
-  userId: string;
-  newText: string;
-};
-
-type UseUpdateCommentReturn = {
+type UseDeleteCommentReturn = {
   status: 'idle' | 'loading' | 'success' | 'error';
   error: string | null;
-  update: (payload: UpdateCommentPayload) => Promise<void>;
+  remove: (commentId: string, userId: string) => Promise<void>;
 };
 
-export const useUpdateComment = (): UseUpdateCommentReturn => {
+export const useDeleteComment = (): UseDeleteCommentReturn => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  const update = async ({ commentId, userId, newText }: UpdateCommentPayload) => {
+  const remove = async (commentId: string, userId: string) => {
     setStatus('loading');
     setError(null);
 
@@ -30,29 +24,24 @@ export const useUpdateComment = (): UseUpdateCommentReturn => {
       if (!BASE_URL) throw new Error('BASE_URL is undefined');
       if (!token) throw new Error('Missing token');
 
-      await axios.put(
-        `${BASE_URL}/api/player-finder/comments/${commentId}`,
-        {
-          userId,
-          newText,
-        },
+      await axios.delete(
+        `${BASE_URL}/api/player-finder/comments/${commentId}?userId=${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
-            'Content-Type': 'application/json',
           },
         }
       );
 
-      console.log('✅ Comment updated');
+      console.log('🗑️ Comment deleted');
       setStatus('success');
     } catch (err: any) {
-      console.error('❌ Error updating comment:', err?.response?.data || err.message);
+      console.error('❌ Error deleting comment:', err?.response?.data || err.message);
       setError(err?.response?.data?.message || 'Something went wrong');
       setStatus('error');
     }
   };
 
-  return { status, error, update };
+  return { status, error, remove };
 };

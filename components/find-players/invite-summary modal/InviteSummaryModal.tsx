@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -40,11 +40,16 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
   const organizerName = data?.Requests?.[0]?.inviteeName ?? 'Unknown';
   const requestId = data?.requestId || data?.Requests?.[0]?.requestId;
   const { user } = useSelector((state: RootState) => state.auth);
-  console.log('🧑‍💻 InviteSummaryModal Data:', data);
-  console.log(user);
-  const userId = user?.userId || "Unknown User";
+  const userId = user?.userId || 'Unknown User';
 
   const players = data?.Requests ?? [];
+
+  const commentMapRef = useRef<Map<string, string>>(new Map());
+
+  const handleMapReady = (map: Map<string, string>) => {
+    commentMapRef.current = map;
+    console.log('📦 Exported comment map:', map);
+  };
 
   return (
     <Portal>
@@ -92,11 +97,7 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
                 <Divider style={{ marginVertical: 10 }} />
                 <Text style={styles.subHeading}>Organizer</Text>
                 <View style={styles.playerRow}>
-                  <IconButton
-                    icon="account-circle"
-                    iconColor="#6a1b9a"
-                    size={20}
-                  />
+                  <IconButton icon="account-circle" iconColor="#6a1b9a" size={20} />
                   <Text style={[styles.playerText, styles.organizerName]}>
                     {organizerName}
                   </Text>
@@ -106,7 +107,11 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
                   <>
                     <Divider style={{ marginVertical: 10 }} />
                     <Text style={styles.subHeading}>Comments</Text>
-                    <GetCommentPlayerFinder requestId={requestId} />
+                   <GetCommentPlayerFinder
+                    requestId={requestId}
+                    userId={userId}
+                    onMapReady={handleMapReady}
+                  />
                   </>
                 )}
 

@@ -1,77 +1,115 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
-  Button,
-  ActivityIndicator,
-  FlatList,
   StyleSheet,
+  TextInput,
+  Button,
+  Alert,
 } from 'react-native';
 import { useGetComments } from '@/hooks/apis/player-finder/useGetPlayerFinderComments';
+import { useUpdateComment } from '@/hooks/apis/player-finder/useUpdatePlayerFinderComment';
+import { useDeleteComment } from '@/hooks/apis/player-finder/useDeletePlayerFinderComment';
 
 type Props = {
   requestId: string;
+  userId: string;
+  onMapReady?: (map: Map<string, string>) => void;
 };
 
-export const GetCommentPlayerFinder: React.FC<Props> = ({ requestId }) => {
+export const GetCommentPlayerFinder: React.FC<Props> = ({
+  requestId,
+  userId,
+  onMapReady,
+}) => {
   const { data, status, refetch } = useGetComments(requestId);
-  // console.log('Comments data:', data);
-  const commentIdToUserIdMap = React.useMemo(() => {
-  return new Map(data?.map((comment: any) => [comment.id, comment.userId]) ?? []);
-}, [data]);
+  const { update, status: updateStatus } = useUpdateComment();
+  const { remove, status: deleteStatus } = useDeleteComment();
 
-// console.log('🗺️ CommentID → UserID Map:', commentIdToUserIdMap);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [newText, setNewText] = useState('');
 
-  if (status === 'loading') {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size='large' color='#0000ff' />
-        <Text>Loading comments...</Text>
-      </View>
+  const commentIdToUserIdMap = useMemo(() => {
+    const map = new Map(
+      data?.map((comment: any) => [comment.id, comment.userId]) ?? []
     );
-  }
+    if (onMapReady) onMapReady(map);
+    return map;
+  }, [data]);
 
-  if (status === 'error') {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Failed to load comments.</Text>
-        <Button title='Retry' onPress={refetch} />
-      </View>
-    );
-  }
+  const handleUpdate = async (commentId: string) => {
+    await update({ commentId, userId, newText });
+    setEditingCommentId(null);
+    refetch();
+  };
 
-  if (!data || data.length === 0) {
-    return (
-      <View style={styles.centered}>
-        <Text>No comments found.</Text>
-        <Button title='Refresh' onPress={refetch} />
-      </View>
-    );
-  }
-  
+  const handleDelete = async (commentId: string) => {
+    Alert.alert('Confirm Delete', 'Are you sure you want to delete this comment?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await remove(commentId, userId);
+          refetch();
+        },
+      },
+    ]);
+  };
+
+  if (status === 'loading') return <Text>Loading comments...</Text>;
+  if (status === 'error') return <Text>Failed to load comments.</Text>;
 
   return (
-    <FlatList
-      data={data}
-      keyExtractor={(item) => item.id}
-      onRefresh={refetch}
-      refreshing={status === 'loading'}
-      renderItem={({ item }) => (
-        <View style={styles.commentCard}>
-          <Text style={styles.userName}>{item.userName}</Text>
-          <Text style={styles.commentText}>{item.commentText}</Text>
+    <View>
+      {data?.map((comment) => (
+        <View key={comment.id} style={styles.commentCard}>
+          <Text style={styles.userName}>{comment.userName}</Text>
+          {editingCommentId === comment.id ? (
+            <>
+              <TextInput
+                value={newText}
+                onChangeText={setNewText}
+                style={styles.input}
+                placeholder="Update your comment"
+              />
+              <Button
+                title="Submit"
+                onPress={() => handleUpdate(comment.id)}
+                disabled={updateStatus === 'loading'}
+              />
+              <Button title="Cancel" onPress={() => setEditingCommentId(null)} />
+            </>
+          ) : (
+            <>
+              <Text>{comment.commentText}</Text>
+              {comment.userId === userId && (
+                <View style={styles.actionRow}>
+                  <Button
+                    title="Edit"
+                    onPress={() => {
+                      setEditingCommentId(comment.id);
+                      setNewText(comment.commentText);
+                    }}
+                  />
+                  <View style={{ width: 10 }} />
+                  <Button
+                    title="Delete"
+                    color="red"
+                    onPress={() => handleDelete(comment.id)}
+                    disabled={deleteStatus === 'loading'}
+                  />
+                </View>
+              )}
+            </>
+          )}
         </View>
-      )}
-    />
+      ))}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
   commentCard: {
     backgroundColor: '#f1f1f1',
     padding: 12,
@@ -80,19 +118,19 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 4,
   },
-  commentText: {
-    fontSize: 14,
-    marginBottom: 4,
+  input: {
+    borderColor: '#ccc',
+    borderWidth: 1,
+    marginVertical: 8,
+    padding: 8,
+    borderRadius: 4,
+    backgroundColor: '#fff',
   },
-  timestamp: {
-    fontSize: 12,
-    color: 'gray',
-  },
-  errorText: {
-    color: 'red',
-    marginBottom: 8,
+  actionRow: {
+    flexDirection: 'row',
+    marginTop: 8,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
   },
 });
