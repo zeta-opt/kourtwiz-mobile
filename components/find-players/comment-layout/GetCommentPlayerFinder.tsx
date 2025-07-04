@@ -6,6 +6,7 @@ import {
   TextInput,
   Button,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useGetComments } from '@/hooks/apis/player-finder/useGetPlayerFinderComments';
 import { useUpdateComment } from '@/hooks/apis/player-finder/useUpdatePlayerFinderComment';
@@ -27,6 +28,7 @@ export const GetCommentPlayerFinder: React.FC<Props> = ({
   const { remove, status: deleteStatus } = useDeleteComment();
 
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [menuVisibleId, setMenuVisibleId] = useState<string | null>(null);
   const [newText, setNewText] = useState('');
 
   const commentIdToUserIdMap = useMemo(() => {
@@ -64,7 +66,47 @@ export const GetCommentPlayerFinder: React.FC<Props> = ({
     <View>
       {data?.map((comment) => (
         <View key={comment.id} style={styles.commentCard}>
-          <Text style={styles.userName}>{comment.userName}</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.userName}>{comment.userName}</Text>
+
+            {comment.userId === userId && (
+              <View style={styles.menuContainer}>
+                <TouchableOpacity
+                  onPress={() =>
+                    setMenuVisibleId(menuVisibleId === comment.id ? null : comment.id)
+                  }
+                >
+                  <Text style={styles.dots}>⋮</Text>
+                </TouchableOpacity>
+
+                {menuVisibleId === comment.id && (
+                  <View style={styles.popupMenu}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setEditingCommentId(comment.id);
+                        setNewText(comment.commentText);
+                        setMenuVisibleId(null);
+                      }}
+                    >
+                      <Text style={styles.popupItem}>✏️ Edit</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.separator} />
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        handleDelete(comment.id);
+                        setMenuVisibleId(null);
+                      }}
+                    >
+                      <Text style={[styles.popupItem, { color: 'red' }]}>🗑️ Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+
           {editingCommentId === comment.id ? (
             <>
               <TextInput
@@ -81,27 +123,7 @@ export const GetCommentPlayerFinder: React.FC<Props> = ({
               <Button title="Cancel" onPress={() => setEditingCommentId(null)} />
             </>
           ) : (
-            <>
-              <Text>{comment.commentText}</Text>
-              {comment.userId === userId && (
-                <View style={styles.actionRow}>
-                  <Button
-                    title="Edit"
-                    onPress={() => {
-                      setEditingCommentId(comment.id);
-                      setNewText(comment.commentText);
-                    }}
-                  />
-                  <View style={{ width: 10 }} />
-                  <Button
-                    title="Delete"
-                    color="red"
-                    onPress={() => handleDelete(comment.id)}
-                    disabled={deleteStatus === 'loading'}
-                  />
-                </View>
-              )}
-            </>
+            <Text>{comment.commentText}</Text>
           )}
         </View>
       ))}
@@ -114,23 +136,58 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f1f1',
     padding: 12,
     marginVertical: 6,
-    borderRadius: 8,
+    borderRadius: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   userName: {
     fontWeight: 'bold',
+    fontSize: 16,
+  },
+  dots: {
+    fontSize: 22,
+    padding: 8,
+    textAlign: 'center',
+  },
+  menuContainer: {
+    position: 'relative',
+    alignItems: 'flex-end',
+  },
+  popupMenu: {
+    position: 'absolute',
+    top: 32,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 10,
+    minWidth: 130,
+  },
+  popupItem: {
+    fontSize: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginVertical: 4,
   },
   input: {
     borderColor: '#ccc',
     borderWidth: 1,
     marginVertical: 8,
-    padding: 8,
-    borderRadius: 4,
+    padding: 10,
+    borderRadius: 6,
     backgroundColor: '#fff',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    marginTop: 8,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
   },
 });
