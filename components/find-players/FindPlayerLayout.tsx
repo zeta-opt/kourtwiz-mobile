@@ -72,9 +72,9 @@ const FindPlayerLayout = () => {
   };
 
   // Function to format time from an array of numbers
-  const formatTime = (timeArray: number[]) => {
-    if (!timeArray || timeArray.length < 6) return '';
-    const [year, month, day, hour, minute] = timeArray;
+  const formatTimeArray = (timeArr: number[]) => {
+    if (!Array.isArray(timeArr) || timeArr.length < 5) return 'Invalid Time';
+    const [year, month, day, hour, minute] = timeArr;
     const date = new Date(year, month - 1, day, hour, minute);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
@@ -151,7 +151,7 @@ const FindPlayerLayout = () => {
                     {/* Date-Time Display */}
                     {request?.playEndTime?.length ? (
                       <Text style={styles.blackText}>
-                        {gameInvite.date} - {formatTime(request.playEndTime)}
+                        {gameInvite.date} - {formatTimeArray(request.playEndTime)}
                       </Text>
                     ) : null}
 

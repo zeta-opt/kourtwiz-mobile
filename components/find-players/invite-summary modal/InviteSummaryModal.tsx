@@ -39,6 +39,13 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
 
   const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
 
+  const formatTimeArray = (timeArr: number[]) => {
+    if (!Array.isArray(timeArr) || timeArr.length < 5) return 'Invalid Time';
+    const [year, month, day, hour, minute] = timeArr;
+    const date = new Date(year, month - 1, day, hour, minute);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };  
+
   return (
     <Portal>
       <Modal
@@ -50,7 +57,9 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
           <>
             <View>
               <Text style={styles.heading}>{data.placeToPlay}</Text>
-              <Text>Date: {data.date}</Text>
+              <Text>
+                {data.date} - {formatTimeArray(data.Requests?.[0]?.playEndTime)}
+              </Text>
               <Text>Skill Rating: {data.skillRating}</Text>
 
               <Divider style={{ marginVertical: 10 }} />
@@ -203,7 +212,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   closeButton: {
-    marginTop: 2,
+    margin: -10,
     borderRadius: 20,
   },
 });
