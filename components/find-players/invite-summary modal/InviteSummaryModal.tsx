@@ -27,6 +27,13 @@ const statusIconMap: Record<string, string> = {
   DECLINED: 'close-circle',
 };
 
+const formatTime = (timeArray: number[]) => {
+  if (!timeArray || timeArray.length < 6) return '';
+  const [year, month, day, hour, minute] = timeArray;
+  const date = new Date(year, month - 1, day, hour, minute);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
 const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
   // console.log('data : ', data);
   const organizerName = data?.Requests?.[0]?.inviteeName ?? 'Unknown';
@@ -40,7 +47,9 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
         {data ? (
           <ScrollView>
             <Text style={styles.heading}>{data.placeToPlay}</Text>
-            <Text>Date: {data.date}</Text>
+            <Text>
+              {data.date} - {formatTime(data.Requests[0].playEndTime)}
+            </Text>
             <Text>Skill Rating: {data.skillRating}</Text>
 
             <Divider style={{ marginVertical: 10 }} />
