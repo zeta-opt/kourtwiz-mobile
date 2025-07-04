@@ -157,12 +157,12 @@ const FindPlayerLayout = () => {
 
                     {/* Players invited */}
                     <Text style={styles.greyText}>
-                      {gameInvite.playersNeeded} players invited
+                      {request.playersNeeded} players invited
                     </Text>
 
                     {/* Accepted count */}
                     <Text style={styles.greenText}>
-                      Accepted: {gameInvite.accepted} / {gameInvite.playersNeeded}
+                      Accepted: {gameInvite.accepted} / {request.playersNeeded}
                     </Text>
                   </View>
                   <View style={styles.cardRight}>
