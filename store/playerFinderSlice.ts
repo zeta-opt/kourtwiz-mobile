@@ -1,4 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const CONTACT_LIST_KEY = 'cachedContactList';
 
 // Define the shape of a single preferred contact
 interface Contact {
@@ -10,11 +13,13 @@ interface Contact {
 interface PlayerFinderState {
   requestorId: string | null;
   placeToPlay: string | null;
-  playTime: string | null; // Keeping as string for now, could be Date if parsed
+  playTime: string | null;
+  playEndTime?: string | null;
   playersNeeded: number | null;
   skillRating: number | null;
   preferredContacts: Contact[];
   contactList: Contact[];
+  isContactLoading: boolean;
 }
 
 // Initial state for the player finder data
@@ -22,14 +27,16 @@ const initialState: PlayerFinderState = {
   requestorId: null,
   placeToPlay: null,
   playTime: null,
+  playEndTime: null,
   playersNeeded: null,
   skillRating: null,
   preferredContacts: [],
   contactList: [],
+  isContactLoading: false,
 };
 
 const playerFinderDataSlice = createSlice({
-  name: 'playerFinderData', // A distinct name for this slice
+  name: 'playerFinderData',
   initialState,
   reducers: {
     // Action to set the requestorId
@@ -43,6 +50,10 @@ const playerFinderDataSlice = createSlice({
     // Action to set the playTime
     setPlayTime: (state, action: PayloadAction<string | null>) => {
       state.playTime = action.payload;
+    },
+    // Action to set the playEndTime
+    setPlayEndTime: (state, action: PayloadAction<string | null>) => {
+      state.playEndTime = action.payload;
     },
     // Action to set the playersNeeded
     setPlayersNeeded: (state, action: PayloadAction<number | null>) => {
@@ -74,17 +85,26 @@ const playerFinderDataSlice = createSlice({
     setPreferredContacts: (state, action: PayloadAction<Contact[]>) => {
       state.preferredContacts = action.payload;
     },
+    // Cache contact list in AsyncStorage
     setContactList: (state, action: PayloadAction<Contact[]>) => {
       console.log('setting contact list ');
       state.contactList = action.payload;
+      AsyncStorage.setItem(CONTACT_LIST_KEY, JSON.stringify(action.payload)).catch(console.error);
     },
+    // Load from AsyncStorage
+    loadContactListFromStorage: (state, action: PayloadAction<Contact[]>) => {
+      state.contactList = action.payload;
+    },
+    // Action to remove the contact list and clear AsyncStorage
     removeContactList: (state) => {
       state.contactList = [];
+      AsyncStorage.removeItem(CONTACT_LIST_KEY).catch(console.error);
     },
+    setContactLoading: (state, action: PayloadAction<boolean>) => {
+      state.isContactLoading = action.payload;
+    },    
     // Action to reset all player finder data to its initial state
-    resetPlayerFinderData: (state) => {
-      return initialState;
-    },
+    resetPlayerFinderData: () => initialState,
   },
 });
 
@@ -92,6 +112,7 @@ export const {
   setRequestorId,
   setPlaceToPlay,
   setPlayTime,
+  setPlayEndTime,
   setPlayersNeeded,
   setSkillRating,
   addPreferredContact,
@@ -99,8 +120,25 @@ export const {
   updatePreferredContact,
   setPreferredContacts,
   setContactList,
+  loadContactListFromStorage,
   removeContactList,
+  setContactLoading,
   resetPlayerFinderData,
 } = playerFinderDataSlice.actions;
+
+export const loadCachedContacts = () => async (dispatch: any) => {
+  dispatch(setContactLoading(true));
+  try {
+    const json = await AsyncStorage.getItem(CONTACT_LIST_KEY);
+    if (json) {
+      const contacts = JSON.parse(json);
+      dispatch(loadContactListFromStorage(contacts));
+    }
+  } catch (error) {
+    console.error('Failed to load contacts from storage', error);
+  } finally {
+    dispatch(setContactLoading(false));
+  }
+};
 
 export default playerFinderDataSlice.reducer;

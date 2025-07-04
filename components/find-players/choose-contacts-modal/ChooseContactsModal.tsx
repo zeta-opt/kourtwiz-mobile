@@ -1,5 +1,5 @@
-import { RootState } from '@/store';
-import { setPreferredContacts } from '@/store/playerFinderSlice';
+import { RootState, AppDispatch } from '@/store';
+import { setPreferredContacts, loadCachedContacts } from '@/store/playerFinderSlice';
 import {
   closeSelectContactsModal,
   openPlayerFinderModal,
@@ -13,6 +13,7 @@ import {
   Modal,
   Portal,
   Text,
+  ActivityIndicator,
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -28,7 +29,8 @@ const ChooseContactsModal = () => {
   const { contactList, preferredContacts, playersNeeded } = useSelector(
     (state: RootState) => state.playerFinder
   );
-  const dispatch = useDispatch();
+  const isContactLoading = useSelector((state: RootState) => state.playerFinder.isContactLoading);
+  const dispatch = useDispatch<AppDispatch>();
 
   const [selected, setSelected] = useState<Record<string, Contact>>({});
   const [searchText, setSearchText] = useState('');
@@ -94,40 +96,46 @@ const ChooseContactsModal = () => {
           onChangeText={setSearchText}
           style={styles.searchInput}
         />
+        {isContactLoading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginVertical: 20 }}>
+            <ActivityIndicator size="large" />
+            <Text>Loading contacts...</Text>
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {filteredContacts.length === 0 ? (
+              <Text>No matching contacts.</Text>
+            ) : (
+              filteredContacts.map((contact: Contact, index: number) => {
+                const key = `${contact.contactName}_${contact.contactPhoneNumber}_${index}`;
+                const isChecked = !!selected[key];
+                const isDisabled = !isChecked && Object.keys(selected).length >= (playersNeeded || 0);
 
-        <ScrollView
-          style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {filteredContacts.length === 0 ? (
-            <Text>No matching contacts.</Text>
-          ) : (
-            filteredContacts.map((contact: Contact, index: number) => {
-              const key = `${contact.contactName}_${contact.contactPhoneNumber}_${index}`;
-              const isChecked = !!selected[key];
-              const isDisabled = !isChecked && Object.keys(selected).length >= (playersNeeded || 0);
-
-              return (
-                <View key={key} style={{ marginBottom: 12 }}>
-                  <Text style={styles.nameText}>{contact.contactName}</Text>
-                  <View style={styles.checkboxRow}>
-                    <Checkbox
-                      status={isChecked ? 'checked' : 'unchecked'}
-                      onPress={() => toggleSelection(key, contact)}
-                      disabled={isDisabled}
-                    />
-                    <Text style={{ color: isDisabled ? 'lightgray' : 'black' }}>
-                      {contact.contactPhoneNumber}
-                    </Text>
+                return (
+                  <View key={key} style={{ marginBottom: 12 }}>
+                    <Text style={styles.nameText}>{contact.contactName}</Text>
+                    <View style={styles.checkboxRow}>
+                      <Checkbox
+                        status={isChecked ? 'checked' : 'unchecked'}
+                        onPress={() => toggleSelection(key, contact)}
+                        disabled={isDisabled}
+                      />
+                      <Text style={{ color: isDisabled ? 'lightgray' : 'black' }}>
+                        {contact.contactPhoneNumber}
+                      </Text>
+                    </View>
+                    {index < filteredContacts.length - 1 && (
+                      <Divider style={{ marginTop: 8 }} />
+                    )}
                   </View>
-                  {index < filteredContacts.length - 1 && (
-                    <Divider style={{ marginTop: 8 }} />
-                  )}
-                </View>
-              );
-            })
-          )}
-        </ScrollView>
+                );
+              })
+            )}
+          </ScrollView>
+        )}
 
         {Object.keys(selected).length > 0 && (
           <View style={{ marginTop: 16 }}>
@@ -149,6 +157,13 @@ const ChooseContactsModal = () => {
           style={styles.submitButton}
         >
           Select
+        </Button>
+        <Button
+          mode="outlined"
+          onPress={() => dispatch(loadCachedContacts())}
+          style={styles.refreshButton}
+        >
+          Refresh Contacts
         </Button>
       </Modal>
     </Portal>
@@ -201,4 +216,8 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 12,
   },
+  refreshButton: {
+    marginTop: 8,
+    borderColor: '#6200ee',
+  },  
 });

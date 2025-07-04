@@ -1,9 +1,10 @@
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { useFilteredAndSortedInvites } from '@/hooks/playerfinder/filterInvitations';
-import { RootState } from '@/store';
-import React, { useState } from 'react';
+import { RootState, AppDispatch } from '@/store';
+import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { loadCachedContacts } from '@/store/playerFinderSlice';
 import {
   Button,
   Card,
@@ -24,7 +25,10 @@ import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal'
 import SearchPlacesModal from './search-places-modal/SearchPlacesModal';
 
 const FindPlayerLayout = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
+  useEffect(() => {
+    dispatch(loadCachedContacts());
+  }, [dispatch]);
   const [selectedInvite, setSelectedInvite] = useState<any>(null);
   const [openInviteSummaryModel, setOpenInviteSummaryModel] = useState(false);
   const [filterStatus, setFilterStatus] = useState('ALL');
@@ -67,6 +71,14 @@ const FindPlayerLayout = () => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
+  // Function to format time from an array of numbers
+  const formatTime = (timeArray: number[]) => {
+    if (!timeArray || timeArray.length < 6) return '';
+    const [year, month, day, hour, minute] = timeArray;
+    const date = new Date(year, month - 1, day, hour, minute);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -119,43 +131,55 @@ const FindPlayerLayout = () => {
             No invites found for this filter.
           </Text>
         ) : (
-          Object.values(filteredGroupedInvites).map((gameInvite) => (
-            <Card
-              key={gameInvite.requestId}
-              style={styles.card}
-              onPress={() => {
-                console.log('game invite : ', gameInvite);
-                setSelectedInvite(gameInvite);
-                setOpenInviteSummaryModel(true);
-              }}
-            >
-              <Card.Content style={styles.cardContent}>
-                <View style={styles.cardLeft}>
-                  <Text variant='titleMedium'>{gameInvite.placeToPlay}</Text>
-                  <Text style={styles.blackText}>{gameInvite.date}</Text>
-                  <Text style={styles.greyText}>
-                    {
-                      gameInvite.playersNeeded
-                    } players invited
-                  </Text>
-                  <Text style={styles.greenText}>
-                    Accepted: {gameInvite.accepted} / {gameInvite.playersNeeded}
-                  </Text>
-                </View>
-                <View style={styles.cardRight}>
-                  <IconButton
-                    icon={
-                      gameInvite.pending !== 0
-                        ? 'clock-outline'
-                        : 'check-circle-outline'
-                    }
-                    iconColor={gameInvite.pending !== 0 ? 'orange' : 'green'}
-                    size={28}
-                  />
-                </View>
-              </Card.Content>
-            </Card>
-          ))
+          Object.values(filteredGroupedInvites).map((gameInvite) => {
+            const request = gameInvite.Requests?.[0];
+
+            return (
+              <Card
+                key={gameInvite.requestId}
+                style={styles.card}
+                onPress={() => {
+                  console.log('game invite : ', gameInvite);
+                  setSelectedInvite(gameInvite);
+                  setOpenInviteSummaryModel(true);
+                }}
+              >
+                <Card.Content style={styles.cardContent}>
+                  <View style={styles.cardLeft}>
+                    <Text variant="titleMedium">{gameInvite.placeToPlay}</Text>
+
+                    {/* Date-Time Display */}
+                    {request?.playEndTime?.length ? (
+                      <Text style={styles.blackText}>
+                        {gameInvite.date} - {formatTime(request.playEndTime)}
+                      </Text>
+                    ) : null}
+
+                    {/* Players invited */}
+                    <Text style={styles.greyText}>
+                      {gameInvite.playersNeeded} players invited
+                    </Text>
+
+                    {/* Accepted count */}
+                    <Text style={styles.greenText}>
+                      Accepted: {gameInvite.accepted} / {gameInvite.playersNeeded}
+                    </Text>
+                  </View>
+                  <View style={styles.cardRight}>
+                    <IconButton
+                      icon={
+                        gameInvite.pending !== 0
+                          ? 'clock-outline'
+                          : 'check-circle-outline'
+                      }
+                      iconColor={gameInvite.pending !== 0 ? 'orange' : 'green'}
+                      size={28}
+                    />
+                  </View>
+                </Card.Content>
+              </Card>
+            );
+          })
         )}
       </ScrollView>
       <ChooseContactsModal />
