@@ -8,6 +8,7 @@ import {
   View,
   Pressable,
   TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import { Avatar, Text, useTheme } from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
@@ -28,9 +29,27 @@ const Header = () => {
     )?.clubName || 'Kourtwiz';
 
   const handleLogout = () => {
-    dispatch(logout());
-    setShowMenu(false);
-    router.replace('/login');
+    Alert.alert(
+      'Confirm Logout',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => {}, // Do nothing
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: () => {
+            dispatch(logout());
+            setShowMenu(false);
+            router.replace('/');
+          },
+          style: 'destructive',
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (

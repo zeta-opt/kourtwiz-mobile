@@ -218,9 +218,10 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
               onPress={async () => {
                 const { status } = await Contacts.requestPermissionsAsync();
                 if (status === 'granted') {
-                  const { data: contactsList } = await Contacts.getContactsAsync({
-                    fields: [Contacts.Fields.PhoneNumbers],
-                  });
+                  const { data: contactsList } =
+                    await Contacts.getContactsAsync({
+                      fields: [Contacts.Fields.PhoneNumbers],
+                    });
                   console.log(
                     'contact list data : ',
                     JSON.stringify(simplifyContacts(contactsList))

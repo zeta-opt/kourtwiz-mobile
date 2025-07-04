@@ -1,8 +1,6 @@
-// components/CalendarWeekView.tsx
 import React from 'react';
-import WeekView from 'react-native-week-view';
+import { Calendar } from 'react-native-big-calendar';
 import { useCalendarContext } from '../CalendarContext';
-
 
 const CalendarWeekView = () => {
   const {
@@ -15,7 +13,6 @@ const CalendarWeekView = () => {
 
   const handleGridClick = (datetime: Date) => {
     if (selectedRole === 'admin') {
-        console.log("grid click")
       setSelectedEvent(null);
       setSelectedDate(datetime);
       setOpenModal(true);
@@ -29,20 +26,25 @@ const CalendarWeekView = () => {
     }
   };
 
+  const transformedEvents = events.map((evt) => ({
+    title: evt.title,
+    start: new Date(evt.startDate),
+    end: new Date(evt.endDate),
+    color:
+      evt.gender === 'Male'
+        ? '#2196F3'
+        : evt.gender === 'Female'
+        ? '#E91E63'
+        : '#9E9E9E',
+  }));
+
   return (
-    <WeekView
-      events={events.map(evt => ({
-        id: evt.id,
-        description: evt.title,
-        startDate: evt.startDate,
-        endDate: evt.endDate,
-        
-        color: evt.gender === 'Male' ? '#2196F3' : evt.gender === 'Female' ? '#E91E63' : '#9E9E9E'
-      }))}
-      selectedDate={new Date()}
-      numberOfDays={7}
-      onGridClick={handleGridClick}
-      onEventPress={handleEventPress}
+    <Calendar
+      events={transformedEvents}
+      mode='week'
+      height={600}
+      onPressCell={handleGridClick}
+      onPressEvent={handleEventPress}
     />
   );
 };

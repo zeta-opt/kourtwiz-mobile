@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { format, addMinutes, parse } from 'date-fns';
-import axios from 'axios';
 import { getToken } from '@/shared/helpers/storeToken';
+import { Picker } from '@react-native-picker/picker';
+import axios from 'axios';
+import { addMinutes, format, parse } from 'date-fns';
+import React, { useState } from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface BookingModalProps {
   visible: boolean;
@@ -33,12 +33,14 @@ const BookingModal: React.FC<BookingModalProps> = ({
   const [duration, setDuration] = useState(30);
 
   const handleBook = async () => {
-    console.log("court ID", courtId, clubId, userId)
- 
-    const start = parse(`${format(date, 'yyyy-MM-dd')} ${startTime}`, 'yyyy-MM-dd hh:mm a', new Date());
-    const end = addMinutes(start, duration);
-    
+    console.log('court ID', courtId, clubId, userId);
 
+    const start = parse(
+      `${format(date, 'yyyy-MM-dd')} ${startTime}`,
+      'yyyy-MM-dd hh:mm a',
+      new Date()
+    );
+    const end = addMinutes(start, duration);
 
     const body = {
       userId,
@@ -51,35 +53,49 @@ const BookingModal: React.FC<BookingModalProps> = ({
     };
 
     try {
-        const token = await getToken();
-        if (!token) {
-          console.error("❌ No token returned from getToken()");
-          return;
-        }
-        console.log("✅ token", token);
-      
-        const res = await axios.post('https://api.vddette.com/api/bookings', body, {
+      const token = await getToken();
+      if (!token) {
+        console.error('❌ No token returned from getToken()');
+        return;
+      }
+      console.log('✅ token', token);
+
+      const res = await axios.post(
+        'https://api.vddette.com/api/bookings',
+        body,
+        {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-        });
-      
-        console.log("✅ booking success", res.data);
-        onClose();
-        onSuccess();
-      } catch (err: any) {
-        console.error('❌ Booking failed', err?.response?.data || err.message);
-      }
+        }
+      );
+
+      console.log('✅ booking success', res.data);
+      onClose();
+      onSuccess();
+    } catch (err: any) {
+      console.error('❌ Booking failed', err?.response?.data || err.message);
+    }
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType='slide'
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
         <View style={styles.modalContent}>
           <Text style={styles.title}>Book</Text>
-          <Text>Date: <Text style={styles.bold}>{format(date, 'EEE MMM dd yyyy')}</Text></Text>
-          <Text>Start Time: <Text style={styles.bold}>{startTime}</Text></Text>
+          <Text>
+            Date:{' '}
+            <Text style={styles.bold}>{format(date, 'EEE MMM dd yyyy')}</Text>
+          </Text>
+          <Text>
+            Start Time: <Text style={styles.bold}>{startTime}</Text>
+          </Text>
 
           <Text style={{ marginTop: 10 }}>Select Duration:</Text>
           <Picker

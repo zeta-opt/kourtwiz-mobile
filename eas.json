@@ -6,9 +6,26 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
-        "API_URL": "https://api.vddette.com"
+        "API_URL": "https://api.vddette.com",
+        "API_BASE_URL": "https://api.vddette.com"
+      }
+    },
+    "preview": {
+      "channel": "preview",
+      "distribution": "internal"
+    },
+    "production": {
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
       }
     }
+  },
+  "submit": {
+    "production": {}
   }
 }

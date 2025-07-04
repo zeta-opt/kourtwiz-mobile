@@ -108,8 +108,10 @@ const Dashboard = () => {
         >
           <Text style={styles.actionText}>Find Game</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#F3E9FF' }]}
+          onPress={() => router.replace('/(authenticated)/calendar')}
         >
           <Text style={styles.actionText}>My Videos</Text>
         </TouchableOpacity>
