@@ -262,7 +262,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
                   <DateTimePicker
                     value={value || new Date()}
                     mode='date'
-                    display='default'
+                    display='spinner'
                     maximumDate={new Date()}
                     onChange={handleDateChange}
                   />

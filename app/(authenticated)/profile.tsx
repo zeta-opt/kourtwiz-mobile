@@ -356,7 +356,7 @@ const UserProfile = () => {
                  <DateTimePicker
                    value={userData.dateOfBirth ? new Date(userData.dateOfBirth) : new Date()}
                    mode="date"
-                   display="default"
+                   display="spinner"
                    onChange={handleDateChange}
                    maximumDate={new Date()}
                  />

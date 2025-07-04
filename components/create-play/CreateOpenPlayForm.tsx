@@ -596,7 +596,7 @@ export const CreateOpenPlayForm = ({ clubId ,onClose, onSuccess, visible }: Prop
               return fieldValue ? parseDateTime(fieldValue) : new Date();
             })()}
             mode={pickerMode}
-            display="default"
+            display="spinner"
             onChange={handleDateTimeChange}
           />
         )}
