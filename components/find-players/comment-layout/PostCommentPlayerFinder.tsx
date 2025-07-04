@@ -1,5 +1,15 @@
-import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Alert, Text, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  Alert,
+  Text,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
+import { IconButton } from 'react-native-paper';
+import * as ImagePicker from 'expo-image-picker';
 import { usePostComment } from '@/hooks/apis/player-finder/usePostPlayerFinderComment';
 
 type Props = {
@@ -14,42 +24,91 @@ export const PostCommentPlayerFinder: React.FC<Props> = ({
   onSuccess,
 }) => {
   const [commentText, setCommentText] = useState('');
+  const [image, setImage] = useState<{
+    uri: string;
+    name: string;
+    type: string;
+  } | null>(null);
+
   const { submit, status, error } = usePostComment();
 
   const handlePost = async () => {
-    if (!commentText.trim()) {
-      Alert.alert('Please enter a comment');
+    if (!commentText.trim() && !image) {
+      Alert.alert('Validation', 'Please enter a comment or pick an image.');
       return;
     }
 
     try {
-      console.log('📨 Posting comment:', { requestId, userId, commentText });
+      await submit({
+        requestId,
+        userId,
+        commentText: commentText.trim(),
+        image: image || null,
+      });
 
-      await submit({ requestId, userId, commentText });
-
+      // Reset only on success
       setCommentText('');
-      onSuccess(); // refresh UI
-    } catch (err) {
-      console.error('❌ Failed to post comment', err);
-      Alert.alert('Error', 'Failed to post comment');
+      setImage(null);
+      onSuccess();
+    } catch {
+      Alert.alert('Error', 'Failed to post comment.');
+    }
+  };
+
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      base64: false,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const picked = result.assets[0];
+      setImage({
+        uri: picked.uri,
+        name: picked.fileName || picked.uri.split('/').pop() || 'image.jpg',
+        type: picked.type || 'image/jpeg',
+      });
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Add a Comment:</Text>
-      <TextInput
-        value={commentText}
-        onChangeText={setCommentText}
-        placeholder="Write a comment..."
-        style={styles.input}
-        multiline
-      />
-      {status === 'loading' ? (
-        <ActivityIndicator size="small" color="#6200ee" />
-      ) : (
-        <Button title="Post" onPress={handlePost} />
+
+      <View style={styles.row}>
+        <TextInput
+          value={commentText}
+          onChangeText={setCommentText}
+          placeholder="Write a comment..."
+          multiline
+          style={styles.input}
+        />
+
+        <IconButton
+          icon="camera"
+          iconColor="#6200ee"
+          size={24}
+          onPress={handlePickImage}
+        />
+
+        {status === 'loading' ? (
+          <ActivityIndicator size="small" color="#6200ee" />
+        ) : (
+          <IconButton
+            icon="send"
+            iconColor="#6200ee"
+            size={24}
+            onPress={handlePost}
+            disabled={!commentText.trim() && !image}
+          />
+        )}
+      </View>
+
+      {image && (
+        <Image source={{ uri: image.uri }} style={styles.previewImage} />
       )}
+
       {status === 'error' && (
         <Text style={styles.errorText}>{error || 'Something went wrong'}</Text>
       )}
@@ -66,15 +125,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 6,
   },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   input: {
+    flex: 1,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 6,
-    padding: 10,
-    minHeight: 60,
-    textAlignVertical: 'top',
+    padding: 8,
+    minHeight: 40,
+    maxHeight: 100,
     backgroundColor: 'white',
-    marginBottom: 10,
+    textAlignVertical: 'top',
+  },
+  previewImage: {
+    width: 100,
+    height: 100,
+    marginTop: 8,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
   },
   errorText: {
     color: 'red',

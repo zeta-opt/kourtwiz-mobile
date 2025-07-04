@@ -8,6 +8,7 @@ type Comment = {
   userId: string;
   userName: string;
   commentText: string;
+  imageUrl?: string;
 };
 
 type UseGetCommentsReturn = {

@@ -1,136 +1,152 @@
-import React, { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Button,
-  Alert,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, Modal, Pressable, TouchableOpacity } from 'react-native';
 import { useGetComments } from '@/hooks/apis/player-finder/useGetPlayerFinderComments';
-import { useUpdateComment } from '@/hooks/apis/player-finder/useUpdatePlayerFinderComment';
-import { useDeleteComment } from '@/hooks/apis/player-finder/useDeletePlayerFinderComment';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 type Props = {
   requestId: string;
-  userId: string;
-  onMapReady?: (map: Map<string, string>) => void;
+  onRefetchAvailable: (refetch: () => void) => void;
 };
 
 export const GetCommentPlayerFinder: React.FC<Props> = ({
   requestId,
-  userId,
-  onMapReady,
+  onRefetchAvailable,
 }) => {
   const { data, status, refetch } = useGetComments(requestId);
-  const { update, status: updateStatus } = useUpdateComment();
-  const { remove, status: deleteStatus } = useDeleteComment();
+  const { user } = useSelector((state: RootState) => state.auth);
 
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [newText, setNewText] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalImageUri, setModalImageUri] = useState<string | null>(null);
 
-  const commentIdToUserIdMap = useMemo(() => {
-    const map = new Map(
-      data?.map((comment: any) => [comment.id, comment.userId]) ?? []
-    );
-    if (onMapReady) onMapReady(map);
-    return map;
-  }, [data]);
-
-  const handleUpdate = async (commentId: string) => {
-    await update({ commentId, userId, newText });
-    setEditingCommentId(null);
-    refetch();
+  const openModal = (uri: string) => {
+    setModalImageUri(uri);
+    setModalVisible(true);
   };
 
-  const handleDelete = async (commentId: string) => {
-    Alert.alert('Confirm Delete', 'Are you sure you want to delete this comment?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await remove(commentId, userId);
-          refetch();
-        },
-      },
-    ]);
-  };
+  useEffect(() => {
+    onRefetchAvailable(refetch);
+  }, []);
 
-  if (status === 'loading') return <Text>Loading comments...</Text>;
-  if (status === 'error') return <Text>Failed to load comments.</Text>;
+  if (status === 'loading') return <Text style={styles.infoText}>Loading comments...</Text>;
+  if (status === 'error') return <Text style={styles.infoText}>Failed to load comments.</Text>;
+  if (!data || data.length === 0) return <Text style={styles.infoText}>No comments yet.</Text>;
 
   return (
     <View>
-      {data?.map((comment) => (
-        <View key={comment.id} style={styles.commentCard}>
-          <Text style={styles.userName}>{comment.userName}</Text>
-          {editingCommentId === comment.id ? (
-            <>
-              <TextInput
-                value={newText}
-                onChangeText={setNewText}
-                style={styles.input}
-                placeholder="Update your comment"
-              />
-              <Button
-                title="Submit"
-                onPress={() => handleUpdate(comment.id)}
-                disabled={updateStatus === 'loading'}
-              />
-              <Button title="Cancel" onPress={() => setEditingCommentId(null)} />
-            </>
-          ) : (
-            <>
-              <Text>{comment.commentText}</Text>
-              {comment.userId === userId && (
-                <View style={styles.actionRow}>
-                  <Button
-                    title="Edit"
-                    onPress={() => {
-                      setEditingCommentId(comment.id);
-                      setNewText(comment.commentText);
-                    }}
-                  />
-                  <View style={{ width: 10 }} />
-                  <Button
-                    title="Delete"
-                    color="red"
-                    onPress={() => handleDelete(comment.id)}
-                    disabled={deleteStatus === 'loading'}
-                  />
-                </View>
+      {data.map((comment) => {
+        const isOwnMessage = comment.userId === user?.userId;
+        const hasText = !!comment.commentText?.trim();
+        const hasImage = !!comment.image;
+        const imageUri = hasImage ? `data:image/jpeg;base64,${comment.image}` : null;
+
+        if (!hasText && !hasImage) return null;
+
+        return (
+          <View
+            key={comment.id}
+            style={[
+              styles.commentWrapper,
+              isOwnMessage ? styles.alignRight : styles.alignLeft,
+            ]}
+          >
+            <View
+              style={[
+                styles.commentBubble,
+                isOwnMessage ? styles.ownBubble : styles.otherBubble,
+              ]}
+            >
+              <Text style={styles.userName}>{comment.userName}</Text>
+              {hasText && <Text style={styles.commentText}>{comment.commentText}</Text>}
+              {imageUri && (
+                <Pressable onPress={() => openModal(imageUri)}>
+                  <Image source={{ uri: imageUri }} style={styles.commentImage} />
+                </Pressable>
               )}
-            </>
+            </View>
+          </View>
+        );
+      })}
+
+      <Modal visible={modalVisible} transparent={true} animationType="fade">
+        <View style={styles.modalBackground}>
+          <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+            <Text style={styles.closeText}>X</Text>
+          </TouchableOpacity>
+          {modalImageUri && (
+            <Image source={{ uri: modalImageUri }} style={styles.fullImage} resizeMode="contain" />
           )}
         </View>
-      ))}
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  commentCard: {
+  infoText: {
+    fontSize: 14,
+    color: 'gray',
+    paddingVertical: 5,
+    textAlign: 'center',
+  },
+  commentWrapper: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  alignRight: {
+    justifyContent: 'flex-end',
+  },
+  alignLeft: {
+    justifyContent: 'flex-start',
+  },
+  commentBubble: {
+    maxWidth: '75%',
+    borderRadius: 10,
+    padding: 8,
+  },
+  ownBubble: {
+    backgroundColor: '#d1e7dd',
+    borderTopRightRadius: 0,
+  },
+  otherBubble: {
     backgroundColor: '#f1f1f1',
-    padding: 12,
-    marginVertical: 6,
-    borderRadius: 8,
+    borderTopLeftRadius: 0,
   },
   userName: {
-    fontWeight: 'bold',
+    fontWeight: '600',
+    fontSize: 12,
+    color: '#444',
+    marginBottom: 2,
   },
-  input: {
-    borderColor: '#ccc',
-    borderWidth: 1,
-    marginVertical: 8,
-    padding: 8,
-    borderRadius: 4,
-    backgroundColor: '#fff',
+  commentText: {
+    fontSize: 14,
+    color: '#333',
   },
-  actionRow: {
-    flexDirection: 'row',
-    marginTop: 8,
-    justifyContent: 'flex-start',
+  commentImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 8,
+    marginTop: 6,
+    alignSelf: 'center',
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: '#000000dd',
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  fullImage: {
+    width: '90%',
+    height: '80%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 2,
+  },
+  closeText: {
+    fontSize: 24,
+    color: 'white',
   },
 });

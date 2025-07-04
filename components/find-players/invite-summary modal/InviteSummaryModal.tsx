@@ -1,10 +1,5 @@
-import React, { useRef } from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  ListRenderItemInfo,
-} from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import {
   Button,
   Divider,
@@ -13,10 +8,10 @@ import {
   Portal,
   Text,
 } from 'react-native-paper';
-import { GetCommentPlayerFinder } from '../comment-layout/GetCommentPlayerFinder';
-import { PostCommentPlayerFinder } from '../comment-layout/PostCommentPlayerFinder';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import { GetCommentPlayerFinder } from '../comment-layout/GetCommentPlayerFinder';
+import { PostCommentPlayerFinder } from '../comment-layout/PostCommentPlayerFinder';
 
 type Props = {
   visible: boolean;
@@ -37,19 +32,12 @@ const statusIconMap: Record<string, string> = {
 };
 
 const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
+  const { user } = useSelector((state: RootState) => state.auth);
   const organizerName = data?.Requests?.[0]?.inviteeName ?? 'Unknown';
   const requestId = data?.requestId || data?.Requests?.[0]?.requestId;
-  const { user } = useSelector((state: RootState) => state.auth);
-  const userId = user?.userId || 'Unknown User';
+  const userId = user?.userId || 'Unknown';
 
-  const players = data?.Requests ?? [];
-
-  const commentMapRef = useRef<Map<string, string>>(new Map());
-
-  const handleMapReady = (map: Map<string, string>) => {
-    commentMapRef.current = map;
-    console.log('📦 Exported comment map:', map);
-  };
+  const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
 
   return (
     <Portal>
@@ -59,85 +47,86 @@ const InviteSummaryModal = ({ visible, handleClose, data }: Props) => {
         contentContainerStyle={styles.container}
       >
         {data ? (
-          <FlatList
-            data={players}
-            keyExtractor={(item: any) => item?.id ?? Math.random().toString()}
-            contentContainerStyle={{ paddingBottom: 60 }}
-            ListHeaderComponent={
-              <>
-                <Text style={styles.heading}>{data.placeToPlay}</Text>
-                <Text>Date: {data.date}</Text>
-                <Text>Skill Rating: {data.skillRating}</Text>
-                <Divider style={{ marginVertical: 10 }} />
-                <Text style={styles.subHeading}>Players</Text>
-              </>
-            }
-            renderItem={({ item }: ListRenderItemInfo<any>) => {
-              const status = item.status?.toUpperCase() || 'PENDING';
-              return (
-                <View style={styles.playerRow}>
-                  <IconButton
-                    icon={statusIconMap[status] || 'help-circle'}
-                    iconColor={statusColorMap[status] || 'gray'}
-                    size={20}
-                  />
-                  <Text
-                    style={[
-                      styles.playerText,
-                      { color: statusColorMap[status] || 'gray' },
-                    ]}
-                  >
-                    {item.name}: {status}
-                  </Text>
-                </View>
-              );
-            }}
-            ListFooterComponent={
-              <View>
-                <Divider style={{ marginVertical: 10 }} />
-                <Text style={styles.subHeading}>Organizer</Text>
-                <View style={styles.playerRow}>
-                  <IconButton icon="account-circle" iconColor="#6a1b9a" size={20} />
-                  <Text style={[styles.playerText, styles.organizerName]}>
-                    {organizerName}
-                  </Text>
-                </View>
+          <>
+            <View>
+              <Text style={styles.heading}>{data.placeToPlay}</Text>
+              <Text>Date: {data.date}</Text>
+              <Text>Skill Rating: {data.skillRating}</Text>
 
-                {requestId && (
-                  <>
-                    <Divider style={{ marginVertical: 10 }} />
-                    <Text style={styles.subHeading}>Comments</Text>
-                   <GetCommentPlayerFinder
+              <Divider style={{ marginVertical: 10 }} />
+
+              {/* Section: Players */}
+              <Text style={styles.sectionLabel}>Players</Text>
+              <View style={styles.playersContainer}>
+                <ScrollView>
+                  {data.Requests?.map((player: any) => {
+                    const status = player.status?.toUpperCase() || 'PENDING';
+                    return (
+                      <View key={player.id} style={styles.row}>
+                        <Text style={[styles.nameText, { color: statusColorMap[status] || 'gray' }]}>
+                          {player.name}
+                        </Text>
+                        <View style={styles.roleInfo}>
+                          <IconButton
+                            icon={statusIconMap[status] || 'help-circle'}
+                            iconColor={statusColorMap[status] || 'gray'}
+                            size={18}
+                          />
+                          <Text style={{ color: statusColorMap[status] || 'gray' }}>{status}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Section: Organizer */}
+              <Text style={styles.sectionLabel}>Organizer</Text>
+              <View style={[styles.row, { marginTop: 4 }]}>
+                <Text style={[styles.nameText, styles.organizerName]}>{organizerName}</Text>
+                <Text style={[styles.organizerName]}>Organizer</Text>
+              </View>
+
+              {/* Comments */}
+              {requestId && (
+                <>
+                  <Divider style={{ marginVertical: 10 }} />
+                  <Text style={styles.subHeading}>Comments</Text>
+
+                  <View style={styles.commentsContainer}>
+                    <ScrollView>
+                      <GetCommentPlayerFinder
+                        requestId={requestId}
+                        onRefetchAvailable={(ref) => setRefetchComments(() => ref)}
+                      />
+                    </ScrollView>
+                  </View>
+                </>
+              )}
+
+              {/* Add Comment */}
+              {userId && requestId && (
+                <>
+                  <Divider style={{ marginVertical: 10 }} />
+                  <PostCommentPlayerFinder
                     requestId={requestId}
                     userId={userId}
-                    onMapReady={handleMapReady}
+                    onSuccess={() => {
+                      refetchComments();
+                    }}
                   />
-                  </>
-                )}
+                </>
+              )}
 
-                {userId && requestId && (
-                  <>
-                    <Divider style={{ marginVertical: 10 }} />
-                    <PostCommentPlayerFinder
-                      requestId={requestId}
-                      userId={userId}
-                      onSuccess={() => {
-                        console.log('✅ Comment submitted!');
-                      }}
-                    />
-                  </>
-                )}
-
-                <Button
-                  onPress={handleClose}
-                  mode="contained"
-                  style={{ marginTop: 20 }}
-                >
-                  Close
-                </Button>
-              </View>
-            }
-          />
+              <Button
+                onPress={handleClose}
+                mode="contained"
+                style={styles.closeButton}
+              >
+                Close
+              </Button>
+            </View>
+          </>
         ) : (
           <Text style={styles.emptyText}>No data to show.</Text>
         )}
@@ -153,24 +142,50 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     maxHeight: '90%',
+    justifyContent: 'space-between',
   },
   heading: {
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 4,
   },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'gray',
+    marginBottom: 6,
+    marginTop: 8,
+  },
   subHeading: {
     fontSize: 16,
     fontWeight: '500',
     color: 'gray',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  playerRow: {
+  playersContainer: {
+    maxHeight: 150,
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+    padding: 5,
+    marginBottom: 10,
+  },
+  row: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 4,
   },
-  playerText: {
+  nameText: {
+    fontSize: 14,
+  },
+  roleInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  organizerName: {
+    color: '#6a1b9a',
+    fontWeight: '600',
     fontSize: 14,
   },
   emptyText: {
@@ -179,9 +194,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'gray',
   },
-  organizerName: {
-    color: '#6a1b9a',
-    fontWeight: '600',
+  commentsContainer: {
+    height: 200,
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+    padding: 5,
+    marginBottom: 5,
+  },
+  closeButton: {
+    marginTop: 2,
+    borderRadius: 20,
   },
 });
 
