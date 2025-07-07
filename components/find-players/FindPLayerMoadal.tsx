@@ -212,25 +212,11 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
             <Button
               mode='contained'
               style={{ marginVertical: 8 }}
-              onPress={async () => {
-                const { status } = await Contacts.requestPermissionsAsync();
-                if (status === 'granted') {
-                  const { data: contactsList } =
-                    await Contacts.getContactsAsync({
-                      fields: [Contacts.Fields.PhoneNumbers],
-                    });
-                  console.log(
-                    'contact list data : ',
-                    JSON.stringify(simplifyContacts(contactsList))
-                  );
-                  dispatch(setContactList(simplifyContacts(contactsList)));
-                  dispatch(setPlayersNeeded(playerCount));
-                  dispatch(openSelectContactsModal());
-                  dispatch(closePlayerFinderModal());
-                }
+              onPress={() => {
+                dispatch(setPlayersNeeded(playerCount));
                 dispatch(closePlayerFinderModal());
                 setTimeout(() => {
-                  dispatch(openSelectContactsModal()); // This triggers loadContacts from inside modal
+                  dispatch(openSelectContactsModal());
                 }, 300);
               }}
             >
