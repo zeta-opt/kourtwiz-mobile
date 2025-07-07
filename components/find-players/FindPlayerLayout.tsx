@@ -4,7 +4,7 @@ import { useFilteredAndSortedInvites } from '@/hooks/playerfinder/filterInvitati
 import { RootState, AppDispatch } from '@/store';
 import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { loadCachedContacts } from '@/store/playerFinderSlice';
+import { loadContacts } from '@/store/playerFinderSlice';
 import {
   Button,
   Card,
@@ -27,7 +27,7 @@ import SearchPlacesModal from './search-places-modal/SearchPlacesModal';
 const FindPlayerLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
-    dispatch(loadCachedContacts());
+    dispatch(loadContacts());
   }, [dispatch]);
   const [selectedInvite, setSelectedInvite] = useState<any>(null);
   const [openInviteSummaryModel, setOpenInviteSummaryModel] = useState(false);

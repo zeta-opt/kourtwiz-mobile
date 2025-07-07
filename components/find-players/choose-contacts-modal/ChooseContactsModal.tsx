@@ -1,5 +1,5 @@
 import { RootState, AppDispatch } from '@/store';
-import { setPreferredContacts, loadCachedContacts } from '@/store/playerFinderSlice';
+import { setPreferredContacts, loadContacts } from '@/store/playerFinderSlice';
 import {
   closeSelectContactsModal,
   openPlayerFinderModal,
@@ -43,6 +43,12 @@ const ChooseContactsModal = () => {
     });
     setSelected(selectedTemp);
   }, [preferredContacts]);
+
+  useEffect(() => {
+    if (visible) {
+      dispatch(loadContacts());
+    }
+  }, [dispatch, visible]);
 
   const handleClose = () => {
     dispatch(closeSelectContactsModal());
@@ -110,7 +116,7 @@ const ChooseContactsModal = () => {
               <Text>No matching contacts.</Text>
             ) : (
               filteredContacts.map((contact: Contact, index: number) => {
-                const key = `${contact.contactName}_${contact.contactPhoneNumber}_${index}`;
+                const key = `${contact.contactName}_${contact.contactPhoneNumber}`;
                 const isChecked = !!selected[key];
                 const isDisabled = !isChecked && Object.keys(selected).length >= (playersNeeded || 0);
 
@@ -160,7 +166,7 @@ const ChooseContactsModal = () => {
         </Button>
         <Button
           mode="outlined"
-          onPress={() => dispatch(loadCachedContacts())}
+          onPress={() => dispatch(loadContacts(true))}
           style={styles.refreshButton}
         >
           Refresh Contacts
