@@ -1,7 +1,6 @@
 import { useRequestPlayerFinder } from '@/hooks/apis/player-finder/useRequestPlayerFinder';
 import { RootState } from '@/store';
 import {
-  loadContacts,
   removePreferredContact,
   resetPlayerFinderData,
   setPlayersNeeded,
@@ -216,10 +215,11 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
               style={{ marginVertical: 8 }}
               onPress={() => {
                 dispatch(setPlayersNeeded(playerCount));
-                dispatch(openSelectContactsModal());     // 1. Open modal
-                dispatch(loadContacts(true));            // 2. Start loading (spinner will show in modal)
-                dispatch(closePlayerFinderModal());      // 3. Close this modal
-              }}
+                dispatch(closePlayerFinderModal());
+                setTimeout(() => {
+                  dispatch(openSelectContactsModal()); // This triggers loadContacts from inside modal
+                }, 300);
+              }}              
             >
               Invite From Contacts
             </Button>
