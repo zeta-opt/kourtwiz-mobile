@@ -46,7 +46,7 @@ const ChooseContactsModal = () => {
 
   useEffect(() => {
     if (visible) {
-      dispatch(loadContacts());
+      dispatch(loadContacts(true));
     }
   }, [dispatch, visible]);
 
