@@ -1,13 +1,11 @@
-import { simplifyContacts } from '@/helpers/find-players/phoneContactsToList';
 import { useRequestPlayerFinder } from '@/hooks/apis/player-finder/useRequestPlayerFinder';
 import { RootState } from '@/store';
 import {
+  loadContacts,
   removePreferredContact,
   resetPlayerFinderData,
-  setContactList,
   setPlayersNeeded,
 } from '@/store/playerFinderSlice';
-import * as Contacts from 'expo-contacts';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -23,6 +21,7 @@ import {
   Portal as PaperPortal,
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch } from '@/store';
 import {
   closePlayerFinderModal,
   openSelectContactsModal,
@@ -38,7 +37,7 @@ type Props = {
 };
 
 const MultiStepInviteModal = ({ visible, refetch }: Props) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { preferredContacts } = useSelector(
     (state: RootState) => state.playerFinder
@@ -215,22 +214,11 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
             <Button
               mode='contained'
               style={{ marginVertical: 8 }}
-              onPress={async () => {
-                const { status } = await Contacts.requestPermissionsAsync();
-                if (status === 'granted') {
-                  const { data: contactsList } =
-                    await Contacts.getContactsAsync({
-                      fields: [Contacts.Fields.PhoneNumbers],
-                    });
-                  console.log(
-                    'contact list data : ',
-                    JSON.stringify(simplifyContacts(contactsList))
-                  );
-                  dispatch(setContactList(simplifyContacts(contactsList)));
-                  dispatch(setPlayersNeeded(playerCount));
-                  dispatch(openSelectContactsModal());
-                  dispatch(closePlayerFinderModal());
-                }
+              onPress={() => {
+                dispatch(setPlayersNeeded(playerCount));
+                dispatch(openSelectContactsModal());     // 1. Open modal
+                dispatch(loadContacts(true));            // 2. Start loading (spinner will show in modal)
+                dispatch(closePlayerFinderModal());      // 3. Close this modal
               }}
             >
               Invite From Contacts
