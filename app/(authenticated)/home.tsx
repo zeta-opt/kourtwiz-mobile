@@ -3,8 +3,9 @@ import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
 import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +14,16 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector } from 'react-redux';
+import InvitationCard from '@/components/home-page/myInvitationsCard';
+
+interface Invite {
+  id: number;
+  inviteeName: string;
+  playTime: [number, number, number, number, number];
+  acceptUrl: string;
+  declineUrl: string;
+  status: string;
+}
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -26,15 +37,47 @@ const Dashboard = () => {
   const greeting = getGreeting();
   const { fetchUser } = useFetchUser();
   const router = useRouter();
-  const { data: invites } = useGetInvitations({ userId: user?.userId });
+  const { data: invites, refetch } = useGetInvitations({ userId: user?.userId });
 
-  const pendingCount =
-    invites?.reduce((count, invite) => {
-      if (invite.status === 'PENDING') {
-        return count + 1;
+  const [loadingId, setLoadingId] = useState<number | null>(null);
+
+  const handleAccept = async (invite: Invite) => {
+    try {
+      setLoadingId(invite.id);
+      const response = await fetch(invite.acceptUrl);
+      if (response.status === 200) {
+        Alert.alert('Success', 'Invitation accepted');
+        refetch();
+      } else {
+        Alert.alert('Error', 'Failed to accept invitation');
       }
-      return count;
-    }, 0) ?? '--';
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong while accepting');
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const handleReject = async (invite: Invite) => {
+    try {
+      setLoadingId(invite.id);
+      const response = await fetch(invite.declineUrl);
+      if (response.status === 200) {
+        Alert.alert('Success', 'Invitation rejected');
+        refetch();
+      } else {
+        Alert.alert('Error', 'Failed to reject invitation');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong while rejecting');
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const pendingInvites = invites?.filter((inv) => inv.status === 'PENDING') ?? [];
+  const pendingCount = pendingInvites.length;
+
   useEffect(() => {
     const loadUser = async () => {
       const token = await getToken();
@@ -52,22 +95,41 @@ const Dashboard = () => {
         {user?.username ? `, ${user.username.split(' ')[0]}` : ''} 👋
       </Text>
 
+      {/* Incoming Requests */}
+      <View style={styles.inviteWrapper}>
+        <Text style={styles.incomingLabel}>Incoming Requests</Text>
+        <View style={styles.inviteScrollContainer}>
+          <ScrollView
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={styles.inviteListContent}
+          >
+            {pendingInvites.map((invite) => (
+              <InvitationCard
+                key={invite.id}
+                invite={invite}
+                onAccept={handleAccept}
+                onReject={handleReject}
+                loading={loadingId === invite.id}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+
+      {/* Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
-          <TouchableOpacity
-            onPress={() => console.log('DUPR Rating icon pressed')}
-          >
-            <Icon name='star-outline' size={24} color='#3F7CFF' />
+          <TouchableOpacity onPress={() => console.log('DUPR Rating icon pressed')}>
+            <Icon name="star-outline" size={24} color="#3F7CFF" />
           </TouchableOpacity>
           <Text style={styles.statValue}>--</Text>
           <Text style={styles.statLabel}>DUPR Rating</Text>
         </View>
 
         <View style={styles.statItem}>
-          <TouchableOpacity
-            onPress={() => console.log('Skill Level icon pressed')}
-          >
-            <Icon name='run-fast' size={24} color='#3F7CFF' />
+          <TouchableOpacity onPress={() => console.log('Skill Level icon pressed')}>
+            <Icon name="run-fast" size={24} color="#3F7CFF" />
           </TouchableOpacity>
           <Text style={styles.statValue}>
             {user?.playerDetails?.personalRating ?? '-'}
@@ -76,20 +138,16 @@ const Dashboard = () => {
         </View>
 
         <View style={styles.statItem}>
-          <TouchableOpacity
-            onPress={() =>
-              router.replace('/(authenticated)/player-invitations')
-            }
-          >
-            <Icon name='email-outline' size={24} color='#3F7CFF' />
+          <TouchableOpacity onPress={() => router.replace('/(authenticated)/player-invitations')}>
+            <Icon name="email-outline" size={24} color="#3F7CFF" />
           </TouchableOpacity>
           <Text style={styles.statValue}>{pendingCount}</Text>
           <Text style={styles.statLabel}>Invites</Text>
         </View>
       </View>
 
+      {/* Quick Actions */}
       <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-
       <View style={styles.actionsGrid}>
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#E6F0FF' }]}
@@ -103,21 +161,16 @@ const Dashboard = () => {
         >
           <Text style={styles.actionText}>Find Players</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionCard, { backgroundColor: '#FFF2DB' }]}
-        >
+        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FFF2DB' }]}>
           <Text style={styles.actionText}>Find Game</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#F3E9FF' }]}
           onPress={() => router.replace('/(authenticated)/calendar')}
         >
           <Text style={styles.actionText}>My Videos</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionCard, { backgroundColor: '#F9F4EC' }]}
-        >
+        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#F9F4EC' }]}>
           <Text style={styles.actionText}>History</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -147,10 +200,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  greeting: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  inviteWrapper: {
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  incomingLabel: {
+    backgroundColor: '#FFEBEB',
+    color: '#D8000C',
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  inviteScrollContainer: {
+    backgroundColor: '#FFF7E6',
+    borderRadius: 16,
+    padding: 10,
+    maxHeight: 240,
+    overflow: 'hidden',
+  },
+  inviteListContent: {
+    gap: 10,
+    paddingBottom: 6,
   },
   statsContainer: {
     flexDirection: 'row',
