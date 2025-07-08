@@ -7,12 +7,13 @@ import {
 } from 'react-native-safe-area-context';
 import BottomTabs from '../../components/layout/BottomTabs';
 import SideDrawer from '../../components/layout/SideDrawer';
-
+import { useTheme } from 'react-native-paper';
 export default function AuthenticatedLayout() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={[styles.container, { paddingBottom: insets.bottom }]}>
         <Header />
         <Stack screenOptions={{ headerShown: false }} />
@@ -26,7 +27,7 @@ export default function AuthenticatedLayout() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff', // Match your background color
+    // backgroundColor: '#fff', // Match your background color
   },
   container: {
     flex: 1,

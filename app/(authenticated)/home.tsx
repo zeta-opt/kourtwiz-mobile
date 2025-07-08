@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector } from 'react-redux';
+import { useTheme } from 'react-native-paper';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -22,6 +23,7 @@ const getGreeting = () => {
 };
 
 const Dashboard = () => {
+  const { colors } = useTheme();
   const user = useSelector((state: RootState) => state.auth.user);
   const greeting = getGreeting();
   const { fetchUser } = useFetchUser();
@@ -35,6 +37,7 @@ const Dashboard = () => {
       }
       return count;
     }, 0) ?? '--';
+
   useEffect(() => {
     const loadUser = async () => {
       const token = await getToken();
@@ -46,8 +49,13 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.text}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <Text style={[styles.text, { color: colors.onBackground }]}>
         {greeting}
         {user?.username ? `, ${user.username.split(' ')[0]}` : ''} 👋
       </Text>
@@ -57,22 +65,28 @@ const Dashboard = () => {
           <TouchableOpacity
             onPress={() => console.log('DUPR Rating icon pressed')}
           >
-            <Icon name='star-outline' size={24} color='#3F7CFF' />
+            <Icon name="star-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.statValue}>--</Text>
-          <Text style={styles.statLabel}>DUPR Rating</Text>
+          <Text style={[styles.statValue, { color: colors.onBackground }]}>
+            --
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.outline }]}>
+            DUPR Rating
+          </Text>
         </View>
 
         <View style={styles.statItem}>
           <TouchableOpacity
             onPress={() => console.log('Skill Level icon pressed')}
           >
-            <Icon name='run-fast' size={24} color='#3F7CFF' />
+            <Icon name="run-fast" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.statValue}>
+          <Text style={[styles.statValue, { color: colors.onBackground }]}>
             {user?.playerDetails?.personalRating ?? '-'}
           </Text>
-          <Text style={styles.statLabel}>Skill Level</Text>
+          <Text style={[styles.statLabel, { color: colors.outline }]}>
+            Skill Level
+          </Text>
         </View>
 
         <View style={styles.statItem}>
@@ -81,55 +95,73 @@ const Dashboard = () => {
               router.replace('/(authenticated)/player-invitations')
             }
           >
-            <Icon name='email-outline' size={24} color='#3F7CFF' />
+            <Icon name="email-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.statValue}>{pendingCount}</Text>
-          <Text style={styles.statLabel}>Invites</Text>
+          <Text style={[styles.statValue, { color: colors.onBackground }]}>
+            {pendingCount}
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.outline }]}>
+            Invites
+          </Text>
         </View>
       </View>
 
-      <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+      <Text
+        style={[styles.quickActionsTitle, { color: colors.onBackground }]}
+      >
+        Quick Actions
+      </Text>
 
       <View style={styles.actionsGrid}>
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#E6F0FF' }]}
           onPress={() => router.replace('/(authenticated)/court-booking')}
         >
-          <Text style={styles.actionText}>Reserve</Text>
+          <Text style={[styles.actionText, { color: '#000' }]}>Reserve</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#E0FAEC' }]}
           onPress={() => router.replace('/(authenticated)/find-players')}
         >
-          <Text style={styles.actionText}>Find Players</Text>
+          <Text style={[styles.actionText, { color: '#000' }]}>
+            Find Players
+          </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#FFF2DB' }]}
         >
-          <Text style={styles.actionText}>Find Game</Text>
+          <Text style={[styles.actionText, { color: '#000' }]}>Find Game</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#F3E9FF' }]}
           onPress={() => router.replace('/(authenticated)/calendar')}
         >
-          <Text style={styles.actionText}>My Videos</Text>
+          <Text style={[styles.actionText, { color: '#000' }]}>My Videos</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#F9F4EC' }]}
         >
-          <Text style={styles.actionText}>History</Text>
+          <Text style={[styles.actionText, { color: '#000' }]}>History</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: '#FFE8EC' }]}
           onPress={() => router.replace('/(authenticated)/player-invitations')}
         >
-          <Text style={styles.actionText}>Invites</Text>
+          <Text style={[styles.actionText, { color: '#000' }]}>Invites</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.upcomingGames}>Upcoming Games</Text>
-      <Text style={styles.noGames}>No upcoming games</Text>
+      <Text style={[styles.upcomingGames, { color: colors.onBackground }]}>
+        Upcoming Games
+      </Text>
+      <Text style={[styles.noGames, { color: colors.outline }]}>
+        No upcoming games
+      </Text>
     </ScrollView>
   );
 };
@@ -139,18 +171,11 @@ export default Dashboard;
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    backgroundColor: '#fff',
     flexGrow: 1,
   },
   text: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
-  },
-  greeting: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -167,7 +192,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#777',
     marginTop: 4,
   },
   quickActionsTitle: {
@@ -197,7 +221,6 @@ const styles = StyleSheet.create({
   },
   noGames: {
     fontSize: 14,
-    color: '#999',
     marginTop: 6,
   },
 });

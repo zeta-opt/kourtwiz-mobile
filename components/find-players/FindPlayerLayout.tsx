@@ -11,6 +11,7 @@ import {
   IconButton,
   Text,
   ToggleButton,
+  useTheme,
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -26,13 +27,15 @@ import SearchPlacesModal from './search-places-modal/SearchPlacesModal';
 
 const FindPlayerLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const { colors } = useTheme();
+
   useEffect(() => {
     dispatch(loadContacts());
   }, [dispatch]);
+
   const [selectedInvite, setSelectedInvite] = useState<any>(null);
   const [openInviteSummaryModel, setOpenInviteSummaryModel] = useState(false);
   const [filterStatus, setFilterStatus] = useState('ALL');
-  // State to manage sorting visual (for UI only, no sorting logic yet)
   const [isAscendingSort, setIsAscendingSort] = useState(true);
 
   const { playerFinderModal, preferredPlaceModal, searchPlaceModal } = useSelector(
@@ -44,26 +47,23 @@ const FindPlayerLayout = () => {
   });
 
   const groupedInvites = groupInviteeByRequestId(data);
-
   const filteredGroupedInvites = useFilteredAndSortedInvites(
     filterStatus,
     groupedInvites,
     isAscendingSort
   );
+
   const handleCloseInviteSummaryModel = () => {
     setOpenInviteSummaryModel(false);
   };
 
-  // Function to toggle the sort icon and placeholder for actual sorting logic
   const handleSortIconPress = () => {
     setIsAscendingSort((prev) => !prev);
-    // In a real scenario, you would trigger your data sorting logic here
     console.log(
       `Sorting toggled. Now ${!isAscendingSort ? 'ascending' : 'descending'}.`
     );
   };
 
-  // Helper function to capitalize the first letter of a string
   const capitalizeFirstLetter = (str: string) => {
     if (typeof str !== 'string' || str.length === 0) {
       return '';
@@ -71,57 +71,40 @@ const FindPlayerLayout = () => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // Function to format time from an array of numbers
   const formatTimeArray = (timeArr: number[]) => {
     if (!Array.isArray(timeArr) || timeArr.length < 5) return 'Invalid Time';
     const [year, month, day, hour, minute] = timeArr;
     const date = new Date(year, month - 1, day, hour, minute);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-  
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.headerContainer}>
-        <Text variant='headlineMedium'>
+        <Text variant="headlineMedium" style={{ color: colors.onBackground }}>
           {capitalizeFirstLetter(filterStatus)} Invitations
         </Text>
-        {/* Clickable sorting icon */}
         <IconButton
-          icon={isAscendingSort ? 'arrow-up' : 'arrow-down'} // Changes icon based on sorting state
+          icon={isAscendingSort ? 'arrow-up' : 'arrow-down'}
           size={24}
-          onPress={handleSortIconPress} // Toggles the icon state
+          onPress={handleSortIconPress}
           accessibilityLabel={
             isAscendingSort
               ? 'Sort ascending by date'
               : 'Sort descending by date'
           }
-          iconColor='#000' // Set the color of the icon
+          iconColor={colors.primary}
         />
       </View>
 
-      <View style={styles.filterContainer}>
+      <View style={[styles.filterContainer, { backgroundColor: colors.surface }]}>
         <ToggleButton.Group
           onValueChange={(value) => setFilterStatus(value)}
           value={filterStatus}
         >
-          <ToggleButton
-            icon='format-list-bulleted'
-            value='ALL'
-            style={styles.toggleButton}
-            accessibilityLabel='Show all invites'
-          />
-          <ToggleButton
-            icon='check-circle-outline'
-            value='FULFILLED'
-            style={styles.toggleButton}
-            accessibilityLabel='Show fulfilled invites'
-          />
-          <ToggleButton
-            icon='clock-outline'
-            value='UNFULFILLED'
-            style={styles.toggleButton}
-            accessibilityLabel='Show unfulfilled invites'
-          />
+          <ToggleButton icon="format-list-bulleted" value="ALL" style={styles.toggleButton} />
+          <ToggleButton icon="check-circle-outline" value="FULFILLED" style={styles.toggleButton} />
+          <ToggleButton icon="clock-outline" value="UNFULFILLED" style={styles.toggleButton} />
         </ToggleButton.Group>
       </View>
 
@@ -146,22 +129,21 @@ const FindPlayerLayout = () => {
               >
                 <Card.Content style={styles.cardContent}>
                   <View style={styles.cardLeft}>
-                    <Text variant="titleMedium">{gameInvite.placeToPlay}</Text>
+                    <Text variant="titleMedium" style={{ color: colors.onSurface }}>
+                      {gameInvite.placeToPlay}
+                    </Text>
 
-                    {/* Date-Time Display */}
                     {request?.playEndTime?.length ? (
-                      <Text style={styles.blackText}>
+                      <Text style={{ color: colors.onSurface }}>
                         {gameInvite.date} - {formatTimeArray(request.playEndTime)}
                       </Text>
                     ) : null}
 
-                    {/* Players invited */}
-                    <Text style={styles.greyText}>
+                    <Text style={{ color: colors.outline }}>
                       {request.playersNeeded} players invited
                     </Text>
 
-                    {/* Accepted count */}
-                    <Text style={styles.greenText}>
+                    <Text style={{ color: 'green' }}>
                       Accepted: {gameInvite.accepted} / {request.playersNeeded}
                     </Text>
                   </View>
@@ -182,6 +164,7 @@ const FindPlayerLayout = () => {
           })
         )}
       </ScrollView>
+
       <ChooseContactsModal />
       <MultiStepInviteModal visible={playerFinderModal} refetch={refetch} />
       <PreferredPlacesModal
@@ -203,10 +186,11 @@ const FindPlayerLayout = () => {
         visible={openInviteSummaryModel}
         handleClose={handleCloseInviteSummaryModel}
       />
+
       <View style={styles.footer}>
         <Button
-          mode='contained'
-          icon='plus'
+          mode="contained"
+          icon="plus"
           onPress={() => {
             dispatch(openPlayerFinderModal());
           }}
@@ -224,26 +208,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
   },
   headerContainer: {
     marginBottom: 12,
-    display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  description: {
-    fontSize: 14,
-    color: '#777',
-    marginTop: 4,
   },
   filterContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 16,
     padding: 2,
-    backgroundColor: 'white',
     borderRadius: 8,
     elevation: 2,
     shadowColor: '#000',
@@ -280,15 +256,6 @@ const styles = StyleSheet.create({
   cardRight: {
     justifyContent: 'center',
     alignItems: 'flex-end',
-  },
-  blackText: {
-    color: '#000',
-  },
-  greyText: {
-    color: 'grey',
-  },
-  greenText: {
-    color: 'green',
   },
   footer: {
     paddingTop: 8,
