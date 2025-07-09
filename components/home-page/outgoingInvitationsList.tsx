@@ -1,20 +1,24 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import {StyleSheet, View } from 'react-native';
 import { IconButton, Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 
-export const OutgoingInvitationList = ({
-  invites,
-}: {
-  invites: any[];
-}) => {
+type OutgoingInvitationListProps = {
+    invites: any[];
+    onPressCard: (invite: any) => void;
+  };
+  
+  export const OutgoingInvitationList: React.FC<OutgoingInvitationListProps> = ({
+    invites,
+    onPressCard,
+  }) => {
     const router = useRouter();
     if (!invites || invites.length === 0) {
         return <Text style={styles.noInvitesText}>No outgoing invites</Text>;
     }
 
   return (
-    <ScrollView style={styles.scrollArea}>
+    <View>
       {invites.map((gameInvite) => {
         const request = gameInvite.Requests?.[0];
         return (
@@ -46,13 +50,10 @@ export const OutgoingInvitationList = ({
           </View>          
         );
       })}
-    </ScrollView>
+    </View>
   );
 };
 const styles = StyleSheet.create({
-    scrollArea: {
-      maxHeight: 250,
-    },
     row: {
       flexDirection: 'row',
       alignItems: 'flex-start',

@@ -1,7 +1,6 @@
 import FindplayerCard from '@/components/home-page/FindplayerCard';
 import InvitationCard from '@/components/home-page/myInvitationsCard';
 import { OutgoingInvitationList } from '@/components/home-page/outgoingInvitationsList';
-import InviteSummaryModal from '@/components/find-players/invite-summary modal/InviteSummaryModal';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
@@ -59,10 +58,6 @@ const Dashboard = () => {
   const handleOpenInviteSummary = (invite: any) => {
     setSelectedInvite(invite);
     setOpenInviteSummaryModal(true);
-  };
-
-  const handleCloseInviteSummary = () => {
-    setOpenInviteSummaryModal(false);
   };
 
   const groupedOutgoing = groupInviteeByRequestId(outgoingInvitesRaw);
@@ -158,11 +153,9 @@ const Dashboard = () => {
                 )
               ) : (
                 <>
-                  <OutgoingInvitationList invites={outgoingInvites} onPressCard={handleOpenInviteSummary} />
-                  <InviteSummaryModal
-                    data={selectedInvite}
-                    visible={openInviteSummaryModal}
-                    handleClose={handleCloseInviteSummary}
+                  <OutgoingInvitationList 
+                  invites={outgoingInvites}
+                  onPressCard={handleOpenInviteSummary} 
                   />
                 </>
               )}

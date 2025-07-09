@@ -1,8 +1,10 @@
 import ShowInvitations from '@/components/player-invitations/ShowInvitations';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useLocalSearchParams } from 'expo-router';
 
 const PlayerInvitations = () => {
+  const { highlight } = useLocalSearchParams();
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>

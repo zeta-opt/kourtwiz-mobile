@@ -5,8 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 
 interface Invite {
@@ -24,41 +26,45 @@ interface InvitationCardProps {
   onAccept: (invite: Invite) => void;
   onReject: (invite: Invite) => void;
   loading: boolean;
+  highlight?: boolean;
 }
 
 const InvitationCard: React.FC<InvitationCardProps> = ({ invite, onAccept, onReject, loading }) => {
+  const router = useRouter();
   const date = new Date(...invite.playTime);
   const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <View style={styles.row}>
-      <View style={styles.textBlock}>
-        <View style={styles.nameAndTime}>
-          <Text style={styles.name}>
-            <Text style={{ fontWeight: 'bold' }}>{invite.inviteeName}</Text> has requested
-          </Text>
-          <View style={styles.timeRow}>
-            <MaterialCommunityIcons
-              name="clock-time-four-outline"
-              size={14}
-              color="#555"
-            />
-            <Text style={styles.time}>{timeString}</Text>
+    <Pressable onPress={() => router.push('/(authenticated)/player-invitations?highlight=${invite.id}')}>
+      <View style={[styles.row]}>
+        <View style={styles.textBlock}>
+          <View style={styles.nameAndTime}>
+            <Text style={styles.name}>
+              <Text style={{ fontWeight: 'bold' }}>{invite.inviteeName}</Text> has requested
+            </Text>
+            <View style={styles.timeRow}>
+              <MaterialCommunityIcons
+                name="clock-time-four-outline"
+                size={14}
+                color="#555"
+              />
+              <Text style={styles.time}>{timeString}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={() => onAccept(invite)} disabled={loading}>
-          <MaterialCommunityIcons name="check-circle" size={26} color="green" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onReject(invite)} disabled={loading}>
-          <MaterialCommunityIcons name="close-circle" size={26} color="red" />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.actions}>
+          <TouchableOpacity onPress={() => onAccept(invite)} disabled={loading}>
+            <MaterialCommunityIcons name="check-circle" size={26} color="green" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onReject(invite)} disabled={loading}>
+            <MaterialCommunityIcons name="close-circle" size={26} color="red" />
+          </TouchableOpacity>
+        </View>
 
-      {loading && <ActivityIndicator style={styles.loading} size="small" />}
-    </View>
+        {loading && <ActivityIndicator style={styles.loading} size="small" />}
+      </View>
+    </Pressable>
   );
 };
 
@@ -72,6 +78,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
     borderBottomWidth: 1,
   },
+  highlightedRow: {
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+  },  
   textBlock: {
     flex: 1,
   },
