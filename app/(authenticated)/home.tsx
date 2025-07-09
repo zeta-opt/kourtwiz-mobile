@@ -1,5 +1,9 @@
 import FindplayerCard from '@/components/home-page/FindplayerCard';
 import InvitationCard from '@/components/home-page/myInvitationsCard';
+import { OutgoingInvitationList } from '@/components/home-page/outgoingInvitationsList';
+import InviteSummaryModal from '@/components/find-players/invite-summary modal/InviteSummaryModal';
+import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
+import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { getToken } from '@/shared/helpers/storeToken';
@@ -43,6 +47,7 @@ const Dashboard = () => {
   });
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING'>('INCOMING');
 
   const handleAccept = async (invite: Invite) => {
     try {
@@ -52,7 +57,7 @@ const Dashboard = () => {
         Alert.alert('Success', 'Invitation accepted');
         refetch();
       } else {
-        Alert.alert('Error', 'Failed to accept invitation');
+        Alert.alert('Error', 'Failed to accept invitation or you may have some other event at the same time');
       }
     } catch (e) {
       Alert.alert('Error', 'Something went wrong while accepting');
@@ -82,6 +87,25 @@ const Dashboard = () => {
     invites?.filter((inv) => inv.status === 'PENDING') ?? [];
   const pendingCount = pendingInvites.length;
 
+const [selectedInvite, setSelectedInvite] = useState<any>(null);
+const [openInviteSummaryModal, setOpenInviteSummaryModal] = useState(false);
+
+const handleOpenInviteSummary = (invite: any) => {
+  setSelectedInvite(invite);
+  setOpenInviteSummaryModal(true);
+};
+
+const handleCloseInviteSummary = () => {
+  setOpenInviteSummaryModal(false);
+};
+
+  const { data: outgoingInvitesRaw, refetch: refetchOutgoing } = useGetPlayerInvitationSent({
+    inviteeEmail: user?.email,
+  });
+  
+  const groupedOutgoing = groupInviteeByRequestId(outgoingInvitesRaw);
+  const outgoingInvites = Object.values(groupedOutgoing); // Array of invites  
+
   useEffect(() => {
     const loadUser = async () => {
       const token = await getToken();
@@ -101,15 +125,35 @@ const Dashboard = () => {
 
       {/* Incoming Requests */}
       <View style={styles.inviteWrapper}>
-        <Text style={styles.incomingLabel}>Incoming Requests</Text>
-        <View style={styles.inviteScrollContainer}>
-          <ScrollView
-            nestedScrollEnabled
-            showsVerticalScrollIndicator={true}
-            contentContainerStyle={styles.inviteListContent}
-          >
-            {pendingInvites.length === 0 ? (
-              <Text style={styles.noInvitesText}>No invitations</Text>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Text
+          style={[
+            styles.labelChip,
+            activeTab === 'INCOMING' && styles.activeChip,
+          ]}
+          onPress={() => setActiveTab('INCOMING')}
+        >
+          Incoming Requests
+        </Text>
+        <Text
+          style={[
+            styles.labelChip,
+            activeTab === 'OUTGOING' && styles.activeChip,
+          ]}
+          onPress={() => setActiveTab('OUTGOING')}
+        >
+          Outgoing Requests
+        </Text>
+      </View>
+      <View style={styles.inviteScrollContainer}>
+        <ScrollView
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={true}
+          contentContainerStyle={styles.inviteListContent}
+        >
+          {activeTab === 'INCOMING' ? (
+            pendingInvites.length === 0 ? (
+              <Text style={styles.noInvitesText}>No incoming invitations</Text>
             ) : (
               pendingInvites.map((invite) => (
                 <InvitationCard
@@ -120,9 +164,22 @@ const Dashboard = () => {
                   loading={loadingId === invite.id}
                 />
               ))
-            )}
-          </ScrollView>
-        </View>
+            )
+          ) : (
+            <>
+              <OutgoingInvitationList
+                invites={outgoingInvites}
+                onPressCard={handleOpenInviteSummary}
+              />
+              <InviteSummaryModal
+                data={selectedInvite}
+                visible={openInviteSummaryModal}
+                handleClose={handleCloseInviteSummary}
+              />
+            </>
+          )}
+        </ScrollView>
+      </View>
       </View>
 
       {/* Stats */}
@@ -226,7 +283,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 24,
   },
-  incomingLabel: {
+  labelChip: {
     backgroundColor: '#FFEBEB',
     color: '#D8000C',
     fontSize: 12,
@@ -236,6 +293,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderRadius: 8,
     marginBottom: 8,
+  },
+  activeChip: {
+    borderWidth: 1,
+    borderColor: '#D8000C',
   },
   inviteScrollContainer: {
     backgroundColor: '#FFF7E6',
