@@ -1,9 +1,10 @@
 import { RootState } from '@/store';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleDrawer } from '../../store/uiSlice';
+
 export default function BottomTabs() {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -13,7 +14,7 @@ export default function BottomTabs() {
 
   return (
     <View style={styles.container}>
-      {hasRoles && (
+      {/* {hasRoles && (
         <TouchableOpacity
           onPress={async () => {
             dispatch(toggleDrawer());
@@ -21,13 +22,49 @@ export default function BottomTabs() {
         >
           <MaterialIcons name="menu" size={28} />
         </TouchableOpacity>
-      )}
+      )} */}
 
-      <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
-        <MaterialIcons name='home' size={28} />
+      <TouchableOpacity
+        onPress={() => router.replace('/(authenticated)/home')}
+        style={styles.tabItem}
+      >
+        <MaterialIcons name="home" size={24} color="#3F7CFF" />
+        <Text style={styles.activeLabel}>Home</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
+        onPress={() => console.log('message icon pressed')}
+        style={styles.tabItem}
+      >
+        <MaterialIcons name="chat-bubble-outline" size={24} color="#000" />
+        <Text style={styles.label}>Message</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => console.log('videos icon pressed')}
+        style={styles.tabItem}
+      >
+        <MaterialIcons name="ondemand-video" size={24} color="#000" />
+        <Text style={styles.label}>Videos</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => console.log('payment icon pressed')}
+        style={styles.tabItem}
+      >
+        <MaterialIcons name="payment" size={24} color="#000" />
+        <Text style={styles.label}>Payment</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => console.log('history icon pressed')}
+        style={styles.tabItem}
+      >
+        <MaterialIcons name="calendar-today" size={24} color="#000" />
+        <Text style={styles.label}>History</Text>
+      </TouchableOpacity>
+
+      {/* <TouchableOpacity
         onPress={() => router.replace('/(authenticated)/profile')}
       >
         <MaterialIcons name='person' size={28} />
@@ -39,7 +76,7 @@ export default function BottomTabs() {
         >
           <MaterialIcons name='group' size={28} />
         </TouchableOpacity>
-      )}
+      )} */}
     </View>
   );
 }
@@ -47,11 +84,28 @@ export default function BottomTabs() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: 60,
+    height: 70,
     justifyContent: 'space-around',
     alignItems: 'center',
     borderTopWidth: 1,
     borderColor: '#ccc',
     backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  tabItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    fontSize: 12,
+    color: '#333',
+    marginTop: 4,
+  },
+  activeLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#3F7CFF',
+    marginTop: 4,
   },
 });

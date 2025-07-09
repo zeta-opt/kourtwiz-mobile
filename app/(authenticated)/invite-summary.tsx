@@ -89,12 +89,12 @@ export default function InviteSummaryPage() {
 
       <Divider style={{ marginVertical: 10 }} />
       <Text style={styles.subHeading}>Comments</Text>
-      <View style={styles.commentsContainer}>
+      <ScrollView style={styles.commentsContainer} nestedScrollEnabled>
         <GetCommentPlayerFinder
           requestId={requestId}
           onRefetchAvailable={(ref) => setRefetchComments(() => ref)}
         />
-      </View>
+      </ScrollView>
 
       {userId && requestId && (
         <>
