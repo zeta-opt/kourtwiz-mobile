@@ -23,20 +23,22 @@ type OutgoingInvitationListProps = {
         const request = gameInvite.Requests?.[0];
         return (
             <View
-            key={gameInvite.requestId}
-            style={styles.row}
-            onTouchEnd={() => {
-                const encoded = encodeURIComponent(JSON.stringify(gameInvite));
-                router.push(`/invite-summary?data=${encoded}`);
-              }}              
-          >
+                key={gameInvite.requestId}
+                style={styles.row}
+                onTouchEnd={() => {
+                    const encoded = encodeURIComponent(JSON.stringify(gameInvite));
+                    router.push(`/invite-summary?data=${encoded}`);
+                }}              
+            >
             <View style={styles.fullLine}>
               <Text style={styles.lineText}>
                 <Text style={{ fontWeight: 'bold' }}>{gameInvite.placeToPlay}</Text>
                 {` - ${gameInvite.date} `}
-                <Text style={styles.greenText}>
-                  Accepted: {gameInvite.accepted} / {request?.playersNeeded}
-                </Text>
+                <View>
+                    <Text style={styles.greenText}>
+                    Accepted: {gameInvite.accepted} / {request?.playersNeeded}
+                    </Text>
+                </View>
               </Text>
           
               <IconButton
