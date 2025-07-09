@@ -1,20 +1,25 @@
 import { RootState } from '@/store';
+import { logout } from '@/store/authSlice';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Alert,
   SafeAreaView,
   StyleSheet,
   TouchableOpacity,
-  View,
-  Pressable,
   TouchableWithoutFeedback,
-  Alert,
+  View,
 } from 'react-native';
 import { Avatar, Text, useTheme } from 'react-native-paper';
-import { useSelector, useDispatch } from 'react-redux';
-import { MaterialIcons } from '@expo/vector-icons';
-import { logout } from '@/store/authSlice';
-import SwitchClub from './SwitchClub';
+import { useDispatch, useSelector } from 'react-redux';
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};
 
 const Header = () => {
   const theme = useTheme();
@@ -23,6 +28,10 @@ const Header = () => {
   const [showMenu, setShowMenu] = useState(false);
 
   const { user } = useSelector((state: RootState) => state.auth);
+  const profileImage = useSelector(
+    (state: RootState) => state.auth.profileImage
+  );
+  // console.log(profileImage, 'helllo');
   const selectedClubname =
     user?.userClubRole?.find(
       (club: any) => club.clubId === user?.currentActiveClubId
@@ -52,35 +61,68 @@ const Header = () => {
     );
   };
 
+  const greeting = getGreeting();
+
   return (
     <SafeAreaView>
-      {/* If menu is visible, wrap whole screen in overlay */}
       {showMenu && (
         <TouchableWithoutFeedback onPress={() => setShowMenu(false)}>
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
       )}
 
-      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
-        <Text style={styles.title}>{selectedClubname}</Text>
+      {/* ✅ Removed backgroundColor: theme.colors.primary */}
+      <View style={styles.header}>
+        <Text style={styles.text}>
+          {greeting}
+          {user?.username ? ` ${user.username.split(' ')[0]}` : ''}
+        </Text>
 
         <View style={styles.profileWrapper}>
-          <TouchableOpacity
-            style={styles.profileButton}
-            onPress={() => setShowMenu((prev) => !prev)}
-          >
-            <Avatar.Icon size={26} icon="account" style={styles.avatar} />
-            <MaterialIcons name="expand-more" size={24} color="white" />
-          </TouchableOpacity>
+          <View style={styles.iconRow}>
+            {/* Bell Icon */}
+            <TouchableOpacity onPress={() => Alert.alert('Notifications')}>
+              <Ionicons
+                name='notifications-outline'
+                size={24}
+                color='black'
+                style={{ marginRight: 12 }}
+              />
+            </TouchableOpacity>
 
-          {showMenu && (
+            {/* Profile Picture / Avatar */}
+            <TouchableOpacity
+              style={styles.profileButton}
+              // onPress={() => setShowMenu(true)}
+              onPress={() => router.push('/(authenticated)/profile')}
+            >
+              {profileImage ? (
+                <Avatar.Image size={42} source={{ uri: profileImage }} />
+              ) : (
+                <Avatar.Text
+                  size={42}
+                  label={
+                    user?.username
+                      ?.split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .toUpperCase() || 'U'
+                  }
+                  style={styles.avatar}
+                  labelStyle={{ fontSize: 12 }}
+                />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* {showMenu && (
             <View style={styles.menuContainer}>
               <SwitchClub onCloseMenu={() => setShowMenu(false)} />
               <Pressable onPress={handleLogout} style={styles.menuItem}>
                 <Text style={styles.menuText}>Logout</Text>
               </Pressable>
             </View>
-          )}
+          )} */}
         </View>
       </View>
     </SafeAreaView>
@@ -98,13 +140,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     zIndex: 1,
   },
+  text: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: '#333',
+  },
   title: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
   },
   avatar: {
-    backgroundColor: 'white',
+    backgroundColor: 'black',
   },
   profileButton: {
     flexDirection: 'row',
@@ -113,6 +160,10 @@ const styles = StyleSheet.create({
   profileWrapper: {
     position: 'relative',
     zIndex: 1000,
+  },
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   menuContainer: {
     position: 'absolute',

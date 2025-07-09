@@ -1,3 +1,5 @@
+import FindplayerCard from '@/components/home-page/FindplayerCard';
+import InvitationCard from '@/components/home-page/myInvitationsCard';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { getToken } from '@/shared/helpers/storeToken';
@@ -14,7 +16,6 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector } from 'react-redux';
-import InvitationCard from '@/components/home-page/myInvitationsCard';
 
 interface Invite {
   id: number;
@@ -37,7 +38,9 @@ const Dashboard = () => {
   const greeting = getGreeting();
   const { fetchUser } = useFetchUser();
   const router = useRouter();
-  const { data: invites, refetch } = useGetInvitations({ userId: user?.userId });
+  const { data: invites, refetch } = useGetInvitations({
+    userId: user?.userId,
+  });
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
 
@@ -75,7 +78,8 @@ const Dashboard = () => {
     }
   };
 
-  const pendingInvites = invites?.filter((inv) => inv.status === 'PENDING') ?? [];
+  const pendingInvites =
+    invites?.filter((inv) => inv.status === 'PENDING') ?? [];
   const pendingCount = pendingInvites.length;
 
   useEffect(() => {
@@ -90,10 +94,10 @@ const Dashboard = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.text}>
+      {/* <Text style={styles.text}>
         {greeting}
         {user?.username ? `, ${user.username.split(' ')[0]}` : ''} 👋
-      </Text>
+      </Text> */}
 
       {/* Incoming Requests */}
       <View style={styles.inviteWrapper}>
@@ -104,15 +108,19 @@ const Dashboard = () => {
             showsVerticalScrollIndicator={true}
             contentContainerStyle={styles.inviteListContent}
           >
-            {pendingInvites.map((invite) => (
-              <InvitationCard
-                key={invite.id}
-                invite={invite}
-                onAccept={handleAccept}
-                onReject={handleReject}
-                loading={loadingId === invite.id}
-              />
-            ))}
+            {pendingInvites.length === 0 ? (
+              <Text style={styles.noInvitesText}>No invitations</Text>
+            ) : (
+              pendingInvites.map((invite) => (
+                <InvitationCard
+                  key={invite.id}
+                  invite={invite}
+                  onAccept={handleAccept}
+                  onReject={handleReject}
+                  loading={loadingId === invite.id}
+                />
+              ))
+            )}
           </ScrollView>
         </View>
       </View>
@@ -120,16 +128,20 @@ const Dashboard = () => {
       {/* Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
-          <TouchableOpacity onPress={() => console.log('DUPR Rating icon pressed')}>
-            <Icon name="star-outline" size={24} color="#3F7CFF" />
+          <TouchableOpacity
+            onPress={() => console.log('DUPR Rating icon pressed')}
+          >
+            <Icon name='star-outline' size={24} color='#3F7CFF' />
           </TouchableOpacity>
           <Text style={styles.statValue}>--</Text>
           <Text style={styles.statLabel}>DUPR Rating</Text>
         </View>
 
         <View style={styles.statItem}>
-          <TouchableOpacity onPress={() => console.log('Skill Level icon pressed')}>
-            <Icon name="run-fast" size={24} color="#3F7CFF" />
+          <TouchableOpacity
+            onPress={() => console.log('Skill Level icon pressed')}
+          >
+            <Icon name='run-fast' size={24} color='#3F7CFF' />
           </TouchableOpacity>
           <Text style={styles.statValue}>
             {user?.playerDetails?.personalRating ?? '-'}
@@ -138,8 +150,12 @@ const Dashboard = () => {
         </View>
 
         <View style={styles.statItem}>
-          <TouchableOpacity onPress={() => router.replace('/(authenticated)/player-invitations')}>
-            <Icon name="email-outline" size={24} color="#3F7CFF" />
+          <TouchableOpacity
+            onPress={() =>
+              router.replace('/(authenticated)/player-invitations')
+            }
+          >
+            <Icon name='email-outline' size={24} color='#3F7CFF' />
           </TouchableOpacity>
           <Text style={styles.statValue}>{pendingCount}</Text>
           <Text style={styles.statLabel}>Invites</Text>
@@ -161,7 +177,9 @@ const Dashboard = () => {
         >
           <Text style={styles.actionText}>Find Players</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FFF2DB' }]}>
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#FFF2DB' }]}
+        >
           <Text style={styles.actionText}>Find Game</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -170,7 +188,9 @@ const Dashboard = () => {
         >
           <Text style={styles.actionText}>My Videos</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#F9F4EC' }]}>
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: '#F9F4EC' }]}
+        >
           <Text style={styles.actionText}>History</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -180,6 +200,8 @@ const Dashboard = () => {
           <Text style={styles.actionText}>Invites</Text>
         </TouchableOpacity>
       </View>
+
+      <FindplayerCard />
 
       <Text style={styles.upcomingGames}>Upcoming Games</Text>
       <Text style={styles.noGames}>No upcoming games</Text>
@@ -273,5 +295,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     marginTop: 6,
+  },
+  noInvitesText: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 14,
+    paddingVertical: 20,
   },
 });

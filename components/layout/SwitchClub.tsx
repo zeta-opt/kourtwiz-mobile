@@ -1,16 +1,16 @@
-import { RootState } from "@/store";
+import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
+import useUpdateActiveClub from '@/hooks/apis/switchClubs/useUpdateActiveClub';
+import { RootState } from '@/store';
+import { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  Pressable,
   ActivityIndicator,
-  StyleSheet,
   Alert,
-} from "react-native";
-import { useSelector } from "react-redux";
-import useUpdateActiveClub from "@/hooks/apis/switchClubs/useUpdateActiveClub";
-import { useFetchUser } from "@/hooks/apis/authentication/useFetchUser";
-import { useState, useEffect, useRef } from "react";
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useSelector } from 'react-redux';
 
 type Props = {
   onCloseMenu?: () => void;
@@ -30,7 +30,7 @@ const SwitchClub = ({ onCloseMenu }: Props) => {
       user?.currentActiveClubId === selectedClub &&
       prevClubIdRef.current !== selectedClub
     ) {
-      Alert.alert("Success", "Switched club successfully");
+      Alert.alert('Success', 'Switched club successfully');
       onCloseMenu?.(); // ✅ close menu on success
     }
 
@@ -45,7 +45,7 @@ const SwitchClub = ({ onCloseMenu }: Props) => {
       await updateClub(clubId);
       await fetchUser();
     } catch (error) {
-      Alert.alert("Error", "Failed to switch club");
+      Alert.alert('Error', 'Failed to switch club');
     } finally {
       setSelectedClub(null);
     }
@@ -72,7 +72,7 @@ const SwitchClub = ({ onCloseMenu }: Props) => {
             </View>
 
             {selectedClub === role.clubId && loading && (
-              <ActivityIndicator size="small" color="#000" />
+              <ActivityIndicator size='small' color='#000' />
             )}
           </Pressable>
         );
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    alignItems: "center",
+    alignItems: 'center',
   },
   clubItem: {
     width: 220,
@@ -95,34 +95,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
     borderRadius: 12,
-    backgroundColor: "#ffffff",
-    shadowColor: "#000",
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   activeClubItem: {
-    backgroundColor: "#e0ecff",
-    borderColor: "#3b82f6",
+    backgroundColor: '#e0ecff',
+    borderColor: '#3b82f6',
     borderWidth: 1,
   },
   textRow: {
-    flexDirection: "column",
+    flexDirection: 'column',
   },
   clubText: {
     fontSize: 16,
-    color: "#111827",
+    color: '#111827',
   },
   roleText: {
     fontSize: 14,
-    color: "#6b7280",
+    color: '#6b7280',
   },
   activeText: {
-    color: "#1d4ed8",
-    fontWeight: "bold",
+    color: '#1d4ed8',
+    fontWeight: 'bold',
   },
 });

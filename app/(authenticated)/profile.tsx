@@ -1,6 +1,13 @@
-import { getToken, storeToken } from "@/shared/helpers/storeToken";
-import  Constants  from "expo-constants";
-import React, { useEffect, useState } from "react";
+import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
+import { getToken, storeToken } from '@/shared/helpers/storeToken';
+import { logout } from '@/store/authSlice';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
+import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -11,28 +18,26 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
-import { useUpdateUserById } from "@/hooks/apis/user/useUpdateUserById";
-import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { Picker } from "@react-native-picker/picker";
+} from 'react-native';
+import { useDispatch } from 'react-redux';
 
 const UserProfile = () => {
   type Place = { id: string; name: string };
   const [preferredPlaces, setPreferredPlaces] = useState<Place[]>([]);
   const [selectedPlaces, setSelectedPlaces] = useState<string[]>([]);
   const [userData, setUserData] = useState({
-    name: "",
-    email: "",
-    phoneNumber: "",
-    dateOfBirth: "",
-    gender: "",
-    address: "",
-    city: "",
-    state: "",
-    country: "",
-    zipCode: "",
-    preferredTime: "",
-    userId: "",
+    name: '',
+    email: '',
+    phoneNumber: '',
+    dateOfBirth: '',
+    gender: '',
+    address: '',
+    city: '',
+    state: '',
+    country: '',
+    zipCode: '',
+    preferredTime: '',
+    userId: '',
   });
 
   const [showPlaceModal, setShowPlaceModal] = useState(false);
@@ -41,37 +46,61 @@ const UserProfile = () => {
   const [suggestedPlaces, setSuggestedPlaces] = useState<Place[]>([]);
   const { updateUserById } = useUpdateUserById();
   const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const handleLogout = () => {
+    Alert.alert(
+      'Confirm Logout',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => {},
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: () => {
+            dispatch(logout());
+            router.replace('/');
+          },
+          style: 'destructive',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   useEffect(() => {
     const loginAndGetToken = async () => {
       try {
         const loginRes = await fetch(`${BASE_URL}/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            username: "bharat.g@zetaopt.com",
-            password: "Test@12345",
+            username: 'bharat.g@zetaopt.com',
+            password: 'Test@12345',
           }),
         });
         const loginJson = await loginRes.json();
         await storeToken(loginJson.token);
         return loginJson.token;
       } catch {
-        throw new Error("Failed to login and get token");
+        throw new Error('Failed to login and get token');
       }
     };
 
     const fetchProfile = async () => {
       try {
         let token = await getToken();
-        console.log("🔐 Token:", token);
+        // console.log('🔐 Token:', token);
 
         let meRes = await fetch(`${BASE_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!meRes.ok) {
-          console.warn("/me failed, trying login...");
+          console.warn('/me failed, trying login...');
           token = await loginAndGetToken();
           meRes = await fetch(`${BASE_URL}/users/me`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -79,20 +108,19 @@ const UserProfile = () => {
         }
 
         const meData = await meRes.json();
-        console.log("✅ /me data:", meData);
+        // console.log('✅ /me data:', meData);
 
         setUserData((prev) => ({
           ...prev,
-          name: meData.username || "",
+          name: meData.username || '',
           userId: meData.userId,
           email: meData.email,
         }));
 
-        const profileRes = await fetch(
-          `${BASE_URL}/users/${meData.userId}`
-        );
-        if (!profileRes.ok) throw new Error("/users/:id failed");
+        const profileRes = await fetch(`${BASE_URL}/users/${meData.userId}`);
+        if (!profileRes.ok) throw new Error('/users/:id failed');
         const profileDetails = await profileRes.json();
+        console.log(profileDetails, 'profile');
         setUserData((prev) => ({ ...prev, ...profileDetails }));
 
         const placesRes = await fetch(
@@ -104,40 +132,40 @@ const UserProfile = () => {
         try {
           places = JSON.parse(raw);
         } catch (e) {
-          console.warn("❌ Failed to parse preferred places JSON:", e);
+          console.warn('❌ Failed to parse preferred places JSON:', e);
         }
 
         if (!places || !places.length) {
           const addressParams = new URLSearchParams({
-            address: profileDetails.address || "6 Parkwood Lane",
-            city: profileDetails.city || "Mendham",
-            state: profileDetails.state || "New Jersey",
-            zipCode: profileDetails.zipCode || "07945",
-            country: profileDetails.country || "United States",
-            maxDistanceInKm: "5",
-            page: "0",
-            limit: "10",
+            address: profileDetails.address || '6 Parkwood Lane',
+            city: profileDetails.city || 'Mendham',
+            state: profileDetails.state || 'New Jersey',
+            zipCode: profileDetails.zipCode || '07945',
+            country: profileDetails.country || 'United States',
+            maxDistanceInKm: '5',
+            page: '0',
+            limit: '10',
           }).toString();
 
           const nearbyRes = await fetch(
             `${BASE_URL}/api/import/nearbyaddress?${addressParams}`
           );
-          if (!nearbyRes.ok) throw new Error("Nearby places fetch failed");
+          if (!nearbyRes.ok) throw new Error('Nearby places fetch failed');
           const nearby = await nearbyRes.json();
           setSuggestedPlaces(nearby);
         } else {
           setPreferredPlaces(places);
         }
       } catch (err) {
-        console.error("❌ Error fetching profile:", err);
-        Alert.alert("Error", "Failed to load profile. Please try again.");
+        console.error('❌ Error fetching profile:', err);
+        Alert.alert('Error', 'Failed to load profile. Please try again.');
       }
     };
 
     fetchProfile();
   }, [BASE_URL]);
 
-  const handleSelectPlace = (placeId:string) => {
+  const handleSelectPlace = (placeId: string) => {
     setSelectedPlaces((prev) =>
       prev.includes(placeId)
         ? prev.filter((id) => id !== placeId)
@@ -159,25 +187,22 @@ const UserProfile = () => {
         },
       };
 
-      const response = await fetch(
-        `${BASE_URL}/users/${userData.userId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(`${BASE_URL}/users/${userData.userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-      if (!response.ok) throw new Error("Failed to update preferred place");
+      if (!response.ok) throw new Error('Failed to update preferred place');
 
-      Alert.alert("Success", "Preferred places saved");
+      Alert.alert('Success', 'Preferred places saved');
       setShowPlaceModal(false);
     } catch (err) {
-      console.error("❌ Failed to update preferred place:", err);
-      Alert.alert("Error", "Could not save preferred place");
+      console.error('❌ Failed to update preferred place:', err);
+      Alert.alert('Error', 'Could not save preferred place');
     }
   };
   const handleUpdateUser = async () => {
@@ -206,21 +231,20 @@ const UserProfile = () => {
         preferredTime,
       });
 
-      Alert.alert("Success", "Profile updated successfully");
+      Alert.alert('Success', 'Profile updated successfully');
       setShowUpdateModal(false);
     } catch {
-      Alert.alert("Error", "Failed to update profile");
+      Alert.alert('Error', 'Failed to update profile');
     }
   };
-
 
   const handleDateChange = (
     event: DateTimePickerEvent,
     selectedDate?: Date | undefined
   ): void => {
     setShowDatePicker(false);
-    if (event.type === "set" && selectedDate) {
-      const iso = selectedDate.toISOString().split("T")[0];
+    if (event.type === 'set' && selectedDate) {
+      const iso = selectedDate.toISOString().split('T')[0];
       setUserData((prev) => ({ ...prev, dateOfBirth: iso }));
     }
     // Optionally handle "neutralButtonPressed" or "dismissed" if needed
@@ -232,13 +256,13 @@ const UserProfile = () => {
 
   const formatDateOfBirth: FormatDateOfBirth = (dob) => {
     try {
-      if (!dob) return "N/A";
+      if (!dob) return 'N/A';
       const date = new Date(dob);
       if (isNaN(date.getTime())) return dob;
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
       });
     } catch {
       return dob as string;
@@ -259,8 +283,12 @@ const UserProfile = () => {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Address</Text>
         <Text>{userData.address}</Text>
-        <Text>{userData.city}, {userData.state}</Text>
-        <Text>{userData.country} - {userData.zipCode}</Text>
+        <Text>
+          {userData.city}, {userData.state}
+        </Text>
+        <Text>
+          {userData.country} - {userData.zipCode}
+        </Text>
       </View>
 
       <View style={styles.card}>
@@ -271,8 +299,12 @@ const UserProfile = () => {
       </View>
 
       <View style={styles.card}>
-        <Button title="Update Profile Details" onPress={() => setShowUpdateModal(true)} />
+        <Button
+          title='Update Profile Details'
+          onPress={() => setShowUpdateModal(true)}
+        />
       </View>
+
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Preferred Places</Text>
         {preferredPlaces.length > 0 ? (
@@ -284,22 +316,31 @@ const UserProfile = () => {
             <Text>No preferred places found.</Text>
             {suggestedPlaces.length > 0 && (
               <Button
-                title="Add Preferred Places"
+                title='Add Preferred Places'
                 onPress={() => setShowPlaceModal(true)}
               />
             )}
             {/* Place Selection Modal */}
-            <Modal visible={showPlaceModal} transparent onRequestClose={() => setShowPlaceModal(false)}>
+            <Modal
+              visible={showPlaceModal}
+              transparent
+              onRequestClose={() => setShowPlaceModal(false)}
+            >
               <View style={styles.modalContainer}>
                 <View style={styles.modalWrapper}>
-                  <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
-                    <Text style={styles.modalTitle}>Select Preferred Places</Text>
+                  <ScrollView
+                    contentContainerStyle={styles.modalContent}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <Text style={styles.modalTitle}>
+                      Select Preferred Places
+                    </Text>
                     {suggestedPlaces.map((place) => (
                       <TouchableOpacity
                         key={place.id}
                         style={{
-                          flexDirection: "row",
-                          alignItems: "center",
+                          flexDirection: 'row',
+                          alignItems: 'center',
                           marginBottom: 8,
                         }}
                         onPress={() => handleSelectPlace(place.id)}
@@ -310,18 +351,26 @@ const UserProfile = () => {
                             height: 20,
                             borderRadius: 10,
                             borderWidth: 1,
-                            borderColor: "#007BFF",
+                            borderColor: '#007BFF',
                             marginRight: 10,
-                            backgroundColor: selectedPlaces.includes(place.id) ? "#007BFF" : "#fff",
+                            backgroundColor: selectedPlaces.includes(place.id)
+                              ? '#007BFF'
+                              : '#fff',
                           }}
                         />
                         <Text>{place.name}</Text>
                       </TouchableOpacity>
                     ))}
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSavePlaces}>
+                    <TouchableOpacity
+                      style={styles.saveButton}
+                      onPress={handleSavePlaces}
+                    >
                       <Text style={styles.saveButtonText}>SAVE PLACES</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.cancelButton} onPress={() => setShowPlaceModal(false)}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => setShowPlaceModal(false)}
+                    >
                       <Text style={styles.cancelButtonText}>CANCEL</Text>
                     </TouchableOpacity>
                   </ScrollView>
@@ -331,69 +380,123 @@ const UserProfile = () => {
           </View>
         )}
       </View>
+      <View>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>LOGOUT</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Update Modal */}
-      <Modal visible={showUpdateModal} transparent onRequestClose={() => setShowUpdateModal(false)}>
-         <View style={styles.modalContainer}>
-           <View style={styles.modalWrapper}>
-             <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
-               <Text style={styles.modalTitle}>Update Profile</Text>
- 
-               <Text style={styles.label}>Email</Text>
-               <TextInput style={[styles.input, styles.readOnlyInput]} value={userData.email} editable={false} />
- 
-               <Text style={styles.label}>Phone Number</Text>
-               <TextInput style={[styles.input, styles.readOnlyInput]} value={userData.phoneNumber} editable={false} />
- 
-               <Text style={styles.label}>Name</Text>
-               <TextInput style={styles.input} value={userData.name} onChangeText={(text) => setUserData({ ...userData, name: text })} />
- 
-               <Text style={styles.label}>Date of Birth</Text>
-               <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.input}>
-                 <Text>{userData.dateOfBirth || "Select Date"}</Text>
-               </TouchableOpacity>
-               {showDatePicker && (
-                 <DateTimePicker
-                   value={userData.dateOfBirth ? new Date(userData.dateOfBirth) : new Date()}
-                   mode="date"
-                   display="spinner"
-                   onChange={handleDateChange}
-                   maximumDate={new Date()}
-                 />
-               )}
- 
-               <Text style={styles.label}>Gender</Text>
-               <View style={styles.pickerWrapper}>
-                 <Picker
-                   selectedValue={userData.gender}
-                   onValueChange={(value) => setUserData({ ...userData, gender: value })}
-                   mode="dropdown"
-                 >
-                   <Picker.Item label="Select Gender" value="" />
-                   <Picker.Item label="Male" value="Male" />
-                   <Picker.Item label="Female" value="Female" />
-                   <Picker.Item label="Other" value="Other" />
-                 </Picker>
-               </View>
- 
-               {(["address", "city", "state", "country", "zipCode", "preferredTime"] as (keyof typeof userData)[]).map((field) => (
-                 <React.Fragment key={field}>
-                   <Text style={styles.label}>{field.charAt(0).toUpperCase() + field.slice(1)}</Text>
-                   <TextInput
-                     style={styles.input}
-                     value={userData[field]}
-                     onChangeText={(text) => setUserData({ ...userData, [field]: text })}
-                   />
-                 </React.Fragment>
-               ))}
- 
-               <TouchableOpacity style={styles.saveButton} onPress={handleUpdateUser}>
-                 <Text style={styles.saveButtonText}>SAVE CHANGES</Text>
-               </TouchableOpacity>
-               <TouchableOpacity style={styles.cancelButton} onPress={() => setShowUpdateModal(false)}>
-                 <Text style={styles.cancelButtonText}>CANCEL</Text>
+      <Modal
+        visible={showUpdateModal}
+        transparent
+        onRequestClose={() => setShowUpdateModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalWrapper}>
+            <ScrollView
+              contentContainerStyle={styles.modalContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.modalTitle}>Update Profile</Text>
+
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={[styles.input, styles.readOnlyInput]}
+                value={userData.email}
+                editable={false}
+              />
+
+              <Text style={styles.label}>Phone Number</Text>
+              <TextInput
+                style={[styles.input, styles.readOnlyInput]}
+                value={userData.phoneNumber}
+                editable={false}
+              />
+
+              <Text style={styles.label}>Name</Text>
+              <TextInput
+                style={styles.input}
+                value={userData.name}
+                onChangeText={(text) =>
+                  setUserData({ ...userData, name: text })
+                }
+              />
+
+              <Text style={styles.label}>Date of Birth</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                style={styles.input}
+              >
+                <Text>{userData.dateOfBirth || 'Select Date'}</Text>
               </TouchableOpacity>
-              </ScrollView>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={
+                    userData.dateOfBirth
+                      ? new Date(userData.dateOfBirth)
+                      : new Date()
+                  }
+                  mode='date'
+                  display='spinner'
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                />
+              )}
+
+              <Text style={styles.label}>Gender</Text>
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={userData.gender}
+                  onValueChange={(value) =>
+                    setUserData({ ...userData, gender: value })
+                  }
+                  mode='dropdown'
+                >
+                  <Picker.Item label='Select Gender' value='' />
+                  <Picker.Item label='Male' value='Male' />
+                  <Picker.Item label='Female' value='Female' />
+                  <Picker.Item label='Other' value='Other' />
+                </Picker>
+              </View>
+
+              {(
+                [
+                  'address',
+                  'city',
+                  'state',
+                  'country',
+                  'zipCode',
+                  'preferredTime',
+                ] as (keyof typeof userData)[]
+              ).map((field) => (
+                <React.Fragment key={field}>
+                  <Text style={styles.label}>
+                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    value={userData[field]}
+                    onChangeText={(text) =>
+                      setUserData({ ...userData, [field]: text })
+                    }
+                  />
+                </React.Fragment>
+              ))}
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleUpdateUser}
+              >
+                <Text style={styles.saveButtonText}>SAVE CHANGES</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowUpdateModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>CANCEL</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -406,16 +509,16 @@ export default UserProfile;
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    backgroundColor: "#F9F9F9",
+    backgroundColor: '#F9F9F9',
   },
   title: {
     fontSize: 28,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 16,
-    textAlign: "center",
+    textAlign: 'center',
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 20,
@@ -423,75 +526,87 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: '600',
     marginBottom: 4,
-   },
-   modalContainer: {
-     flex: 1,
-     justifyContent: "center",
-     alignItems: "center",
-     backgroundColor: "rgba(0,0,0,0.5)",
-   },
-   modalWrapper: {
-     width: "90%",
-     maxHeight: "90%",
-     backgroundColor: "#fff",
-     borderRadius: 12,
-     overflow: "hidden",
-   },
-   modalContent: {
-     padding: 20,
-   },
-   modalTitle: {
-     fontSize: 18,
-     fontWeight: "bold",
-     marginBottom: 4,
-     textAlign: "center",
-   },
-   label: {
-     fontWeight: "600",
-     marginBottom: 1,
-     marginTop: 6,
-   },
-   input: {
-     borderBottomWidth: 1,
-     borderColor: "#ccc",
-     paddingVertical: 6,
-     paddingHorizontal: 10,
-     borderRadius: 6,
-     backgroundColor: "#fff",
-     marginBottom: 3,
-   },
-   readOnlyInput: {
-     backgroundColor: "#eee",
-     color: "#666",
-   },
-   pickerWrapper: {
-     borderBottomWidth: 1,
-     borderColor: "#ccc",
-     borderRadius: 6,
-     marginBottom: 4,
-   },
-   saveButton: {
-     backgroundColor: "#007BFF",
-     padding: 12,
-     borderRadius: 6,
-     marginTop: 20,
-   },
-   saveButtonText: {
-     color: "#fff",
-     fontWeight: "bold",
-     textAlign: "center",
-   },
-   cancelButton: {
-     backgroundColor: "#FF3B30",
-     padding: 12,
-     borderRadius: 6,
-     marginTop: 10,
-   },
-   cancelButtonText: {
-     color: "#fff",
-     fontWeight: "bold",
-     textAlign: "center",
-    },
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalWrapper: {
+    width: '90%',
+    maxHeight: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  label: {
+    fontWeight: '600',
+    marginBottom: 1,
+    marginTop: 6,
+  },
+  input: {
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+    marginBottom: 3,
+  },
+  readOnlyInput: {
+    backgroundColor: '#eee',
+    color: '#666',
+  },
+  pickerWrapper: {
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  saveButton: {
+    backgroundColor: '#007BFF',
+    padding: 12,
+    borderRadius: 6,
+    marginTop: 20,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#FF3B30',
+    padding: 12,
+    borderRadius: 6,
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  logoutButton: {
+    marginTop: 6,
+    paddingVertical: 12,
+    backgroundColor: '#007BFF',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
