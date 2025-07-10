@@ -1,22 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Divider, IconButton, Text } from 'react-native-paper';
+import { Button, Divider, IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { GetCommentPlayerFinder } from '@/components/find-players/comment-layout/GetCommentPlayerFinder';
 import { PostCommentPlayerFinder } from '@/components/find-players/comment-layout/PostCommentPlayerFinder';
+import { useWithdrawRequest } from '@/hooks/apis/player-finder/useWithdrawRequest';
+import Toast from 'react-native-toast-message';
 
 const statusColorMap: Record<string, string> = {
   ACCEPTED: 'green',
   PENDING: 'orange',
   DECLINED: 'red',
+  WITHDRAWN: 'gray',
 };
 
 const statusIconMap: Record<string, string> = {
   ACCEPTED: 'check-circle',
   PENDING: 'clock',
   DECLINED: 'close-circle',
+  WITHDRAWN: 'minus-circle',
 };
 
 export default function InviteSummaryPage() {
@@ -25,13 +36,19 @@ export default function InviteSummaryPage() {
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
 
+  const { withdrawRequest, status } = useWithdrawRequest();
   const [invite, setInvite] = useState<any | null>(null);
   const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
+
+  // Comment Modal State
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [withdrawComment, setWithdrawComment] = useState('');
 
   useEffect(() => {
     if (data) {
       try {
         const decoded = JSON.parse(decodeURIComponent(data));
+        console.log('Decoded invite object:', decoded);
         setInvite(decoded);
       } catch (err) {
         console.error('Failed to decode invite data:', err);
@@ -50,72 +67,144 @@ export default function InviteSummaryPage() {
 
   const requestId = invite?.requestId || invite?.Requests?.[0]?.requestId;
   const organizerName = invite?.Requests?.[0]?.inviteeName ?? 'Unknown';
+  const requestorId = invite?.Requests?.[0]?.userId;
+  const isOrganizer = userId === requestorId;
+
+
+  const handleWithdraw = async () => {
+    try {
+      await withdrawRequest(requestId, userId, withdrawComment);
+      Toast.show({ type: 'success', text1: 'Game Invite Withdrawn' });
+      setCommentModalVisible(false);
+      router.replace('/(authenticated)/find-players');
+    } catch (err) {
+      Toast.show({ type: 'error', text1: 'Failed to Withdraw Game Invite' });
+      console.error(err);
+    }
+  };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.heading}>{invite.placeToPlay}</Text>
-      <Text>{invite.date} - {formatTimeArray(invite.Requests?.[0]?.playEndTime)}</Text>
-      <Text>Skill Rating: {invite.skillRating}</Text>
+    <>
+      <ScrollView style={styles.container}>
+        <Text style={styles.heading}>{invite.placeToPlay}</Text>
+        <Text>{invite.date} - {formatTimeArray(invite.Requests?.[0]?.playEndTime)}</Text>
+        <Text>Skill Rating: {invite.skillRating}</Text>
 
-      <Divider style={{ marginVertical: 10 }} />
+        <Divider style={{ marginVertical: 10 }} />
 
-      <Text style={styles.sectionLabel}>Players</Text>
-      <View style={styles.playersContainer}>
-        {invite.Requests?.map((player: any) => {
-          const status = player.status?.toUpperCase() || 'PENDING';
-          return (
-            <View key={player.id} style={styles.row}>
-              <Text style={[styles.nameText, { color: statusColorMap[status] || 'gray' }]}>
-                {player.name}
-              </Text>
-              <View style={styles.roleInfo}>
-                <IconButton
-                  icon={statusIconMap[status] || 'help-circle'}
-                  iconColor={statusColorMap[status] || 'gray'}
-                  size={18}
-                />
-                <Text style={{ color: statusColorMap[status] || 'gray' }}>{status}</Text>
+        <Text style={styles.sectionLabel}>Players</Text>
+        <View style={styles.playersContainer}>
+          {invite.Requests?.map((player: any) => {
+            const status = player.status?.toUpperCase() || 'PENDING';
+            return (
+              <View key={player.id} style={styles.row}>
+                <Text style={[styles.nameText, { color: statusColorMap[status] || 'gray' }]}>
+                  {player.name}
+                </Text>
+                <View style={styles.roleInfo}>
+                  <IconButton
+                    icon={statusIconMap[status] || 'help-circle'}
+                    iconColor={statusColorMap[status] || 'gray'}
+                    size={18}
+                  />
+                  <Text style={{ color: statusColorMap[status] || 'gray' }}>{status}</Text>
+                </View>
               </View>
-            </View>
-          );
-        })}
-      </View>
+            );
+          })}
+        </View>
 
-      <Text style={styles.sectionLabel}>Organizer</Text>
-      <View style={[styles.row, { marginTop: 4 }]}>
-        <Text style={[styles.nameText, styles.organizerName]}>{organizerName}</Text>
-        <Text style={styles.organizerName}>Organizer</Text>
-      </View>
+        <Text style={styles.sectionLabel}>Organizer</Text>
+        <View style={[styles.row, { marginTop: 4 }]}>
+          <Text style={[styles.nameText, styles.organizerName]}>{organizerName}</Text>
+          <Text style={styles.organizerName}>Organizer</Text>
+        </View>
 
-      <Divider style={{ marginVertical: 10 }} />
-      <Text style={styles.subHeading}>Comments</Text>
-      <ScrollView style={styles.commentsContainer} nestedScrollEnabled>
-        <GetCommentPlayerFinder
-          requestId={requestId}
-          onRefetchAvailable={(ref) => setRefetchComments(() => ref)}
-        />
+        <Divider style={{ marginVertical: 10 }} />
+        <Text style={styles.subHeading}>Comments</Text>
+        <ScrollView style={styles.commentsContainer} nestedScrollEnabled>
+          <GetCommentPlayerFinder
+            requestId={requestId}
+            onRefetchAvailable={(ref) => setRefetchComments(() => ref)}
+          />
+        </ScrollView>
+
+        {userId && requestId && (
+          <>
+            <Divider style={{ marginVertical: 10 }} />
+            <PostCommentPlayerFinder
+              requestId={requestId}
+              userId={userId}
+              onSuccess={() => {
+                refetchComments();
+              }}
+            />
+          </>
+        )}
+
+        {userId && requestId && (
+          <Button
+            mode="contained"
+            buttonColor="gray"
+            textColor="white"
+            style={{ borderRadius: 20 }}
+            onPress={() => setCommentModalVisible(true)}
+            loading={status === 'loading'}
+            disabled={status === 'loading'}
+          >
+            Withdraw Game Invite
+          </Button>
+        )}
+
+        <Button mode="contained" onPress={() => router.back()} style={styles.backButton}>
+          Go Back
+        </Button>
       </ScrollView>
 
-      {userId && requestId && (
-        <>
-          <Divider style={{ marginVertical: 10 }} />
-          <PostCommentPlayerFinder
-            requestId={requestId}
-            userId={userId}
-            onSuccess={() => {
-              refetchComments();
-            }}
-          />
-        </>
-      )}
+      {/* Comment Modal */}
+      <Portal>
+        <Modal
+          visible={commentModalVisible}
+          onDismiss={() => setCommentModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <View>
+            <Text style={styles.modalTitle}>Withdraw Game Invite</Text>
+            <TextInput
+              placeholder="Optional comment"
+              multiline
+              numberOfLines={4}
+              value={withdrawComment}
+              onChangeText={setWithdrawComment}
+              style={styles.input}
+            />
 
-      <Button mode="contained" onPress={() => router.back()} style={styles.backButton}>
-        Go Back
-      </Button>
-    </ScrollView>
+            <View style={styles.buttonRow}>
+              <Button
+                mode="outlined"
+                onPress={() => setCommentModalVisible(false)}
+                style={[styles.actionButton, { borderColor: '#ccc' }]}
+                textColor="#333"
+              >
+                Cancel
+              </Button>
+
+              <Button
+                mode="contained"
+                onPress={handleWithdraw}
+                loading={status === 'loading'}
+                disabled={status === 'loading'}
+                style={[styles.actionButton, { marginLeft: 10 }]}
+              >
+                Confirm Withdraw
+              </Button>
+            </View>
+          </View>
+        </Modal>
+      </Portal>
+    </>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
@@ -174,7 +263,8 @@ const styles = StyleSheet.create({
     maxHeight: 200,
   },
   backButton: {
-    marginTop: 20,
+    marginTop: 12,
+    marginBottom: 120,
     borderRadius: 20,
   },
   emptyText: {
@@ -183,4 +273,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#888',
   },
+  modalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 20,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  input: {
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+    textAlignVertical: 'top',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 8,
+  },  
 });

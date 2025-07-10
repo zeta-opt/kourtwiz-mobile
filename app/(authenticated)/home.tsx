@@ -54,8 +54,14 @@ const Dashboard = () => {
   const [comment, setComment] = useState('');
   const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(null);
 
-  const groupedOutgoing = groupInviteeByRequestId(outgoingInvitesRaw);
+  const groupedOutgoing = groupInviteeByRequestId(
+    outgoingInvitesRaw?.filter((invite) => invite.status !== 'WITHDRAWN') || []
+  );
   const outgoingInvites = Object.values(groupedOutgoing);
+  const pendingOutgoingInvites = outgoingInvites.filter((inviteGroup: any) =>
+    inviteGroup.Requests?.some((r: any) => r.status === 'PENDING')
+  );
+  const pendingOutCount = pendingOutgoingInvites.length
   const pendingInvites = invites?.filter((inv) => inv.status === 'PENDING') ?? [];
   const pendingCount = pendingInvites.length;
 
@@ -109,25 +115,33 @@ const Dashboard = () => {
               style={[styles.labelChip, activeTab === 'INCOMING' && styles.activeChip]}
               onPress={() => setActiveTab('INCOMING')}
             >
-              Incoming Requests
+              Incoming Requests ({pendingCount})
             </Text>
             <Text
               style={[styles.labelChip, activeTab === 'OUTGOING' && styles.activeChip]}
               onPress={() => setActiveTab('OUTGOING')}
             >
-              Outgoing Requests
+              Sent Requests ({pendingOutCount})
             </Text>
           </View>
 
           <View style={styles.inviteScrollContainer}>
-            {activeTab === 'INCOMING' && pendingInvites.length > 0 && (
+            {(activeTab === 'INCOMING' && pendingInvites.length > 0) ||
+            (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ? (
               <View style={styles.cardHeaderRight}>
-                {/* <Text style={styles.cardHeaderText}>Invitations</Text> */}
-                <TouchableOpacity onPress={() => router.push('/(authenticated)/player-invitations')}>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push(
+                      activeTab === 'INCOMING'
+                        ? '/(authenticated)/player-invitations'
+                        : '/(authenticated)/find-players'
+                    )
+                  }
+                >
                   <Text style={styles.viewAllText}>View All</Text>
                 </TouchableOpacity>
               </View>
-            )}
+            ) : null}
 
             <ScrollView nestedScrollEnabled contentContainerStyle={styles.inviteListContent}>
               {activeTab === 'INCOMING' ? (
@@ -145,7 +159,11 @@ const Dashboard = () => {
                   ))
                 )
               ) : (
-                <OutgoingInvitationList invites={outgoingInvites} onPressCard={() => {}} />
+                outgoingInvites.length === 0 ? (
+                  <Text style={styles.noInvitesText}>No sent invitations</Text>
+                ) : (
+                  <OutgoingInvitationList invites={outgoingInvites} onPressCard={() => {}} />
+                )
               )}
             </ScrollView>
           </View>

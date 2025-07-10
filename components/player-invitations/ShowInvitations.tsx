@@ -1,9 +1,10 @@
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
+import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
 import { RootState } from '@/store';
 import { MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, StyleSheet, View } from 'react-native';
-import { Card, Text } from 'react-native-paper';
+import { Card, Text, Modal, TextInput, Portal } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
@@ -41,13 +42,47 @@ const ShowInvitations = () => {
   const router = useRouter();
 
   const {
-    data: invites,
+    data: 
+    invites,
     status,
     refetch,
   } = useGetInvitations({ userId: user?.userId });
 
-  const [loadingId, setLoadingId] = React.useState<null | number>(null);
-  const [loadingAction, setLoadingAction] = React.useState<'accept' | 'reject' | null>(null);
+  const { cancelInvitation } = useCancelInvitation();
+
+  const [loadingId, setLoadingId] = useState<null | string>(null);
+  const [loadingAction, setLoadingAction] = useState<'accept' | 'reject' | 'cancel' | null>(null);
+
+  const [visibleModal, setVisibleModal] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [currentInviteId, setCurrentInviteId] = useState<string | null>(null);
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+
+  const openCommentModal = (inviteId: string, requestId: string) => {
+    setCurrentInviteId(inviteId);
+    setCurrentRequestId(requestId);
+    setCommentText('');
+    setVisibleModal(true);
+  };
+
+  const handleCancelWithComment = async () => {
+    if (!currentRequestId || !user?.userId) return;
+    try {
+      setLoadingId(currentInviteId);
+      setLoadingAction('cancel');
+      setVisibleModal(false);
+
+      await cancelInvitation(currentRequestId, user.userId, commentText);
+
+      Toast.show({ type: 'success', text1: 'Invitation Withdrawn' });
+      refetch();
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to Withdraw' });
+    } finally {
+      setLoadingId(null);
+      setLoadingAction(null);
+    }
+  };
 
   if (status === 'loading') return <Text>Loading...</Text>;
   if (!invites || invites.length === 0) {
@@ -58,6 +93,7 @@ const ShowInvitations = () => {
     <View style={styles.container}>
       {invites.map((invite) => {
         const {
+          id,
           placeToPlay,
           playTime,
           inviteeName,
@@ -67,11 +103,12 @@ const ShowInvitations = () => {
           requestId,
         } = invite;
 
+
         const icon = getStatusIcon(status);
 
         return (
           <Card
-            key={invite.id}
+            key={id}
             style={styles.card}
             onPress={() =>
               router.push({
@@ -86,103 +123,75 @@ const ShowInvitations = () => {
               <Text>Invitee: {inviteeName}</Text>
               <View style={styles.statusRow}>
                 <MaterialIcons name={icon.name} size={20} color={icon.color} />
-                <Text style={[styles.statusText, { color: icon.color }]}>
-                  {' '}
-                  {status}
-                </Text>
-              </View>
-
-              {status === 'PENDING' && (
-                <View style={styles.buttonRow}>
-                  <Button
-                    color='green'
-                    title={
-                      loadingId === invite.id && loadingAction === 'accept'
-                        ? 'Accepting...'
-                        : 'Accept'
-                    }
-                    disabled={loadingId === invite.id}
-                    onPress={async () => {
-                      try {
-                        setLoadingId(invite.id);
-                        setLoadingAction('accept');
-                        console.log('accepting: ', acceptUrl);
-                        const response = await fetch(acceptUrl);
-                        const statusCode = response.status;
-                        const text = await response.text();
-                        console.log(
-                          `Accepted! Status: ${statusCode}, Response: ${text}`
-                        );
-                        if (statusCode === 200) {
-                          Toast.show({
-                            type: 'success',
-                            text1: 'Invitation Accepted',
-                          });
-                          refetch();
-                        } else {
-                          Toast.show({
-                            type: 'error',
-                            text1: 'Unable to Accept!',
-                          });
+                <Text style={[styles.statusText, { color: icon.color }]}> {status}</Text>
+                  {status === 'ACCEPTED' && (
+                    <View style={styles.withdrawButtonWrapper}>
+                      <Button
+                        color="gray"
+                        title={
+                          loadingId === id && loadingAction === 'cancel'
+                            ? 'Cancelling...'
+                            : 'Withdraw'
                         }
-                      } catch (error) {
-                        Toast.show({
-                          type: 'error',
-                          text1: 'Unable to Accept!',
-                        });
-                        console.error('Error accepting invitation:', error);
-                      } finally {
-                        setLoadingId(null);
-                        setLoadingAction(null);
-                      }
-                    }}
-                  />
-
-                  <Button
-                    color='red'
-                    title={
-                      loadingId === invite.id && loadingAction === 'reject'
-                        ? 'Declining...'
-                        : 'Decline'
-                    }
-                    disabled={loadingId === invite.id}
-                    onPress={async () => {
-                      try {
-                        setLoadingId(invite.id);
-                        setLoadingAction('reject');
-                        console.log('rejecting: ', declineUrl);
-                        const response = await fetch(declineUrl);
-                        const statusCode = response.status;
-                        const text = await response.text();
-                        console.log(
-                          `Rejected! Status: ${statusCode}, Response: ${text}`
-                        );
-                        if (statusCode === 200) {
-                          Toast.show({
-                            type: 'success',
-                            text1: 'Invitation Rejected',
-                          });
-                          refetch();
-                        } else {
-                          Toast.show({
-                            type: 'error',
-                            text1: 'Unable to Reject!',
-                          });
-                        }
-                      } catch (error) {
-                        Toast.show({
-                          type: 'error',
-                          text1: 'Unable to Reject!',
-                        });
-                        console.error('Error rejecting invitation:', error);
-                      } finally {
-                        setLoadingId(null);
-                        setLoadingAction(null);
-                      }
-                    }}
-                  />
+                        disabled={loadingId === id}
+                        onPress={() => openCommentModal(id, requestId)}
+                      />
+                    </View>
+                  )}
                 </View>
-              )}
+
+              <View style={styles.buttonRow}>
+                {status === 'PENDING' && (
+                  <>
+                    <Button
+                      color='green'
+                      title={loadingId === id && loadingAction === 'accept' ? 'Accepting...' : 'Accept'}
+                      disabled={loadingId === id}
+                      onPress={async () => {
+                        try {
+                          setLoadingId(id);
+                          setLoadingAction('accept');
+                          const response = await fetch(acceptUrl);
+                          if (response.status === 200) {
+                            Toast.show({ type: 'success', text1: 'Invitation Accepted' });
+                            refetch();
+                          } else {
+                            Toast.show({ type: 'error', text1: 'Unable to Accept!' });
+                          }
+                        } catch {
+                          Toast.show({ type: 'error', text1: 'Unable to Accept!' });
+                        } finally {
+                          setLoadingId(null);
+                          setLoadingAction(null);
+                        }
+                      }}
+                    />
+                    <Button
+                      color='red'
+                      title={loadingId === id && loadingAction === 'reject' ? 'Declining...' : 'Decline'}
+                      disabled={loadingId === id}
+                      onPress={async () => {
+                        try {
+                          setLoadingId(id);
+                          setLoadingAction('reject');
+                          const response = await fetch(declineUrl);
+                          if (response.status === 200) {
+                            Toast.show({ type: 'success', text1: 'Invitation Rejected' });
+                            refetch();
+                          } else {
+                            Toast.show({ type: 'error', text1: 'Unable to Reject!' });
+                          }
+                        } catch {
+                          Toast.show({ type: 'error', text1: 'Unable to Reject!' });
+                        } finally {
+                          setLoadingId(null);
+                          setLoadingAction(null);
+                        }
+                      }}
+                    />
+                  </>
+                )}
+              </View>
 
               {/* Tap to view summary message */}
               <Text style={styles.tapHint}>Tap to view full summary</Text>
@@ -190,6 +199,25 @@ const ShowInvitations = () => {
           </Card>
         );
       })}
+
+      {/* Modal for comment input */}
+      <Portal>
+        <Modal
+          visible={visibleModal}
+          onDismiss={() => setVisibleModal(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Text>Optional Comment:</Text>
+          <TextInput
+            label="Comment"
+            value={commentText}
+            onChangeText={setCommentText}
+            multiline
+            style={styles.commentInput}
+          />
+          <Button title="Submit" onPress={handleCancelWithComment} />
+        </Modal>
+      </Portal>
     </View>
   );
 };
@@ -217,6 +245,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
     gap: 10,
   },
+  withdrawButtonWrapper: {
+    marginLeft: 'auto',
+  },  
   tapHint: {
     fontSize: 12,
     color: '#666',
@@ -225,6 +256,16 @@ const styles = StyleSheet.create({
   noData: {
     marginTop: 20,
     textAlign: 'center',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 20,
+    borderRadius: 10,
+  },
+  commentInput: {
+    marginTop: 10,
+    marginBottom: 20,
   },
 });
 

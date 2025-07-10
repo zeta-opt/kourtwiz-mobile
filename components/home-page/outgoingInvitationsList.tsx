@@ -13,9 +13,6 @@ type OutgoingInvitationListProps = {
     onPressCard,
   }) => {
     const router = useRouter();
-    if (!invites || invites.length === 0) {
-        return <Text style={styles.noInvitesText}>No outgoing invites</Text>;
-    }
 
   return (
     <View>
@@ -31,15 +28,13 @@ type OutgoingInvitationListProps = {
                 }}              
             >
             <View style={styles.fullLine}>
-              <Text style={styles.lineText}>
-                <Text style={{ fontWeight: 'bold' }}>{gameInvite.placeToPlay}</Text>
-                {` - ${gameInvite.date} `}
-                <View>
-                    <Text style={styles.greenText}>
-                    Accepted: {gameInvite.accepted} / {request?.playersNeeded}
-                    </Text>
-                </View>
-              </Text>
+              <View style={styles.leftTextBlock}>
+                <Text style={styles.placeText}>{gameInvite.placeToPlay}</Text>
+                <Text style={styles.dateText}>{gameInvite.date}</Text>
+                <Text style={styles.greenText}>
+                  Accepted: {gameInvite.accepted} / {request?.playersNeeded}
+                </Text>
+              </View>
           
               <IconButton
                 icon={
@@ -56,62 +51,42 @@ type OutgoingInvitationListProps = {
   );
 };
 const styles = StyleSheet.create({
-    row: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-      borderBottomColor: '#eee',
-      borderBottomWidth: 1,
-    },
-    fullLine: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8,
-      },
-      lineText: {
-        fontSize: 14,
-        color: '#333',
-        flexShrink: 1,
-        flexWrap: 'wrap',
-      },
-    textBlock: {
-      flex: 1,
-    },
-    nameAndTime: {
-      flexDirection: 'column',
-      gap: 4,
-    },
-    name: {
-      fontSize: 14,
-      color: '#333',
-      flexShrink: 1,
-    },
-    timeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    time: {
-      fontSize: 12,
-      color: '#666',
-    },
-    inviteStatusRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    greenText: {
-      color: 'green',
-      fontSize: 13,
-    },
-    noInvitesText: {
-      textAlign: 'center',
-      marginTop: 20,
-      fontSize: 16,
-      color: '#888',
-    },
-  });
-  
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
+  },
+  fullLine: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  leftTextBlock: {
+    flexShrink: 1,
+    flex: 1,
+  },
+  placeText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    flexWrap: 'wrap',
+  },
+  dateText: {
+    fontSize: 13,
+    color: '#555',
+    marginVertical: 2,
+  },
+  greenText: {
+    color: 'green',
+    fontSize: 13,
+  },
+  noInvitesText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: '#888',
+  },
+});

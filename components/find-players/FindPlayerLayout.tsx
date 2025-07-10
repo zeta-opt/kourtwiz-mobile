@@ -137,9 +137,11 @@ const FindPlayerLayout = () => {
             return (
               <Card
                 key={gameInvite.requestId}
-                style={styles.card}
+                style={[
+                  styles.card,
+                  (request.status === 'WITHDRAWN' || request.status === 'CANCELLED') && styles.disabledCard,
+                ]}
                 onPress={() => {
-                  console.log('game invite : ', gameInvite);
                   setSelectedInvite(gameInvite);
                   setOpenInviteSummaryModel(true);
                 }}
@@ -150,7 +152,7 @@ const FindPlayerLayout = () => {
 
                     {/* Date-Time Display */}
                     {request?.playEndTime?.length ? (
-                      <Text style={styles.blackText}>
+                      <Text style={[styles.blackText, styles.disabledText]}>
                         {gameInvite.date} - {formatTimeArray(request.playEndTime)}
                       </Text>
                     ) : null}
@@ -262,6 +264,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#888',
   },
+  disabledCard: {
+    backgroundColor: '#f2f2f2',
+    opacity: 0.6,
+  },
+  disabledText: {
+    color: '#999',
+  },  
   scrollArea: {
     flex: 1,
     marginBottom: 16,
