@@ -43,26 +43,19 @@ const Dashboard = () => {
   const router = useRouter();
 
   const { data: invites, refetch } = useGetInvitations({ userId: user?.userId });
-  const { data: outgoingInvitesRaw, refetch: refetchOutgoing } = useGetPlayerInvitationSent({
+  const { data: outgoingInvitesRaw } = useGetPlayerInvitationSent({
     inviteeEmail: user?.email,
   });
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING'>('INCOMING');
   const [selectedInvite, setSelectedInvite] = useState<any>(null);
-  const [openInviteSummaryModal, setOpenInviteSummaryModal] = useState(false);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
   const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(null);
 
-  const handleOpenInviteSummary = (invite: any) => {
-    setSelectedInvite(invite);
-    setOpenInviteSummaryModal(true);
-  };
-
   const groupedOutgoing = groupInviteeByRequestId(outgoingInvitesRaw);
   const outgoingInvites = Object.values(groupedOutgoing);
-
   const pendingInvites = invites?.filter((inv) => inv.status === 'PENDING') ?? [];
   const pendingCount = pendingInvites.length;
 
@@ -91,16 +84,13 @@ const Dashboard = () => {
       const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
 
       const response = await fetch(url);
-      
-
       if (response.status === 200) {
         Alert.alert('Success', `Invitation ${selectedAction}ed`);
         refetch();
       } else {
-        const errorText = await response.text(); // <-- Add this
+        const errorText = await response.text();
         console.log('Error response:', errorText);
-        // console.log('Error response:', response);
-        Alert.alert('Error', `Failed to ${selectedAction} invitation or you have some event at the same time`);
+        Alert.alert('Error', `Failed to ${selectedAction} invitation or conflict exists`);
       }
     } catch (e) {
       Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
@@ -113,14 +103,8 @@ const Dashboard = () => {
   return (
     <PaperProvider>
       <ScrollView contentContainerStyle={styles.container}>
-      {/* <Text style={styles.text}>
-        {greeting}
-        {user?.username ? `, ${user.username.split(' ')[0]}` : ''} 👋
-      </Text> */}
-
-      {/* Incoming Requests */}
         <View style={styles.inviteWrapper}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
             <Text
               style={[styles.labelChip, activeTab === 'INCOMING' && styles.activeChip]}
               onPress={() => setActiveTab('INCOMING')}
@@ -136,6 +120,15 @@ const Dashboard = () => {
           </View>
 
           <View style={styles.inviteScrollContainer}>
+            {activeTab === 'INCOMING' && pendingInvites.length > 0 && (
+              <View style={styles.cardHeaderRight}>
+                {/* <Text style={styles.cardHeaderText}>Invitations</Text> */}
+                <TouchableOpacity onPress={() => router.push('/(authenticated)/player-invitations')}>
+                  <Text style={styles.viewAllText}>View All</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             <ScrollView nestedScrollEnabled contentContainerStyle={styles.inviteListContent}>
               {activeTab === 'INCOMING' ? (
                 pendingInvites.length === 0 ? (
@@ -152,18 +145,13 @@ const Dashboard = () => {
                   ))
                 )
               ) : (
-                <>
-                  <OutgoingInvitationList 
-                  invites={outgoingInvites}
-                  onPressCard={handleOpenInviteSummary} 
-                  />
-                </>
+                <OutgoingInvitationList invites={outgoingInvites} onPressCard={() => {}} />
               )}
             </ScrollView>
           </View>
         </View>
 
-        {/* Stats and Quick Actions */}
+        {/* Stats Section */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <TouchableOpacity><Icon name='star-outline' size={24} color='#3F7CFF' /></TouchableOpacity>
@@ -184,6 +172,7 @@ const Dashboard = () => {
           </View>
         </View>
 
+        {/* Quick Actions */}
         <Text style={styles.quickActionsTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#E6F0FF' }]} onPress={() => router.replace('/(authenticated)/court-booking')}>
@@ -246,10 +235,36 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     alignSelf: 'flex-start',
     borderRadius: 8,
-    marginBottom: 8,
   },
   activeChip: { borderWidth: 1, borderColor: '#D8000C' },
   inviteWrapper: { marginTop: 16, marginBottom: 24 },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 8,
+    paddingHorizontal: 2,
+  },
+  cardHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#444',
+  },
+  cardHeaderRight: {
+  flexDirection: 'row',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+  paddingBottom: 8,
+  paddingHorizontal: 2,
+},
+
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#3F7CFF',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
   inviteScrollContainer: {
     backgroundColor: '#FFF7E6',
     borderRadius: 16,

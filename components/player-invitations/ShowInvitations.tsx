@@ -6,6 +6,7 @@ import { Button, StyleSheet, View } from 'react-native';
 import { Card, Text } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
+import { useRouter } from 'expo-router';
 
 const formatDateTime = (dateArray: number[]) => {
   const date = new Date(
@@ -34,24 +35,25 @@ const getStatusIcon = (
       return { name: 'help', color: 'gray' };
   }
 };
+
 const ShowInvitations = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const router = useRouter();
 
   const {
     data: invites,
     status,
     refetch,
   } = useGetInvitations({ userId: user?.userId });
-  const [loadingId, setLoadingId] = React.useState<null | number>(null);
-  const [loadingAction, setLoadingAction] = React.useState<
-    'accept' | 'reject' | null
-  >(null);
 
+  const [loadingId, setLoadingId] = React.useState<null | number>(null);
+  const [loadingAction, setLoadingAction] = React.useState<'accept' | 'reject' | null>(null);
+
+  if (status === 'loading') return <Text>Loading...</Text>;
   if (!invites || invites.length === 0) {
     return <Text style={styles.noData}>No invitations to show.</Text>;
   }
-  if (status === 'loading') return <Text>Loading...</Text>;
-  console.log('invitees : ', invites);
+
   return (
     <View style={styles.container}>
       {invites.map((invite) => {
@@ -62,11 +64,22 @@ const ShowInvitations = () => {
           status,
           acceptUrl,
           declineUrl,
+          requestId,
         } = invite;
+
         const icon = getStatusIcon(status);
 
         return (
-          <Card key={invite.id} style={styles.card}>
+          <Card
+            key={invite.id}
+            style={styles.card}
+            onPress={() =>
+              router.push({
+                pathname: '/incoming-summarty',
+                params: { requestId },
+              })
+            }
+          >
             <Card.Title title={placeToPlay} />
             <Card.Content>
               <Text>Date & Time: {formatDateTime(playTime)}</Text>
@@ -170,6 +183,9 @@ const ShowInvitations = () => {
                   />
                 </View>
               )}
+
+              {/* Tap to view summary message */}
+              <Text style={styles.tapHint}>Tap to view full summary</Text>
             </Card.Content>
           </Card>
         );
@@ -200,6 +216,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 12,
     gap: 10,
+  },
+  tapHint: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 10,
   },
   noData: {
     marginTop: 20,

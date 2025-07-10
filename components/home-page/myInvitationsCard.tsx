@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 
 interface Invite {
   id: number;
+  requestId: string;
   inviteeName: string;
   playTime: [number, number, number, number, number]; 
   acceptUrl: string;
@@ -35,7 +36,9 @@ const InvitationCard: React.FC<InvitationCardProps> = ({ invite, onAccept, onRej
   const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <Pressable onPress={() => router.push('/(authenticated)/player-invitations?highlight=${invite.id}')}>
+    <Pressable onPress={() => router.push({ pathname: '/(authenticated)/incoming-summarty', params: { requestId: invite.requestId } })}>
+
+
       <View style={[styles.row]}>
         <View style={styles.textBlock}>
           <View style={styles.nameAndTime}>
