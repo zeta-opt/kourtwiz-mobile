@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Text, Divider, IconButton, Button } from 'react-native-paper';
@@ -28,13 +28,22 @@ export default function InviteSummaryPage() {
   const { data, loading, error } = useGetPlayerFinderRequest(requestId, userId);
   const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
 
-  const formatTimeArray = (arr: number[]) => {
-    if (!arr || arr.length < 5) return 'Invalid Time';
-    const [year, month, day, hour, minute] = arr;
-    return `${day}/${month}/${year} ${hour.toString().padStart(2, '0')}:${minute
-      .toString()
-      .padStart(2, '0')}`;
+  const formatTimeArray = (timeArr: number[]) => {
+    if (!Array.isArray(timeArr) || timeArr.length < 5) return 'Invalid Time';
+    const [year, month, day, hour, minute] = timeArr;
+    const date = new Date(year, month - 1, day, hour, minute);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+  const formatDateArray = (timeArr: number[]) => {
+    if (!Array.isArray(timeArr) || timeArr.length < 5) return 'Invalid Date';
+    const [year, month, day] = timeArr;
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'long',
+      day: 'numeric',
+    });
+  };   
 
   if (loading) {
     return (
@@ -57,9 +66,7 @@ export default function InviteSummaryPage() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.heading}>{data.placeToPlay}</Text>
-      <Text>
-        {formatTimeArray(data.playTime)} - {formatTimeArray(data.playEndTime)}
-      </Text>
+      <Text>{formatDateArray(data.playTime)}, {formatTimeArray(data.playTime)} - {formatTimeArray(data.playEndTime)}</Text>
       <Text>Skill Rating: {data.skillRating}</Text>
 
       <Divider style={{ marginVertical: 10 }} />

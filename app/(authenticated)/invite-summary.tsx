@@ -4,8 +4,6 @@ import {
   StyleSheet,
   View,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Divider, IconButton, Modal, Portal, Text } from 'react-native-paper';
@@ -67,8 +65,6 @@ export default function InviteSummaryPage() {
 
   const requestId = invite?.requestId || invite?.Requests?.[0]?.requestId;
   const organizerName = invite?.Requests?.[0]?.inviteeName ?? 'Unknown';
-  const requestorId = invite?.Requests?.[0]?.userId;
-  const isOrganizer = userId === requestorId;
 
 
   const handleWithdraw = async () => {

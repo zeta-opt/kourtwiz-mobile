@@ -9,10 +9,15 @@ import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 
-const formatDateTime = (dateArray: number[]) => {
-  const date = new Date(
-    ...(dateArray as [number, number, number, number, number])
-  );
+const parsePlayTime = (dateArray: number[]) => {
+  const adjusted = [...dateArray];
+  adjusted[1] -= 1;
+  const date = new Date(...(adjusted as [number, number, number, number, number]));
+  const isExpired = date.getTime() < Date.now();
+  return { date, isExpired };
+};
+
+const formatDateTime = (date: Date) => {
   return `${date.toDateString()} at ${date.toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -105,6 +110,7 @@ const ShowInvitations = () => {
 
 
         const icon = getStatusIcon(status);
+        const { date: gameDate, isExpired } = parsePlayTime(playTime);       
 
         return (
           <Card
@@ -119,12 +125,12 @@ const ShowInvitations = () => {
           >
             <Card.Title title={placeToPlay} />
             <Card.Content>
-              <Text>Date & Time: {formatDateTime(playTime)}</Text>
+              <Text>Date & Time: {formatDateTime(gameDate)}</Text>
               <Text>Invitee: {inviteeName}</Text>
               <View style={styles.statusRow}>
                 <MaterialIcons name={icon.name} size={20} color={icon.color} />
                 <Text style={[styles.statusText, { color: icon.color }]}> {status}</Text>
-                  {status === 'ACCEPTED' && (
+                  {status === 'ACCEPTED' && !isExpired && (
                     <View style={styles.withdrawButtonWrapper}>
                       <Button
                         color="gray"
@@ -141,56 +147,60 @@ const ShowInvitations = () => {
                 </View>
 
               <View style={styles.buttonRow}>
-                {status === 'PENDING' && (
-                  <>
-                    <Button
-                      color='green'
-                      title={loadingId === id && loadingAction === 'accept' ? 'Accepting...' : 'Accept'}
-                      disabled={loadingId === id}
-                      onPress={async () => {
-                        try {
-                          setLoadingId(id);
-                          setLoadingAction('accept');
-                          const response = await fetch(acceptUrl);
-                          if (response.status === 200) {
-                            Toast.show({ type: 'success', text1: 'Invitation Accepted' });
-                            refetch();
-                          } else {
+                {status === 'PENDING' ? (
+                  isExpired ? (
+                    <Text style={styles.expiredText}>EXPIRED!</Text>
+                  ) : (
+                    <>
+                      <Button
+                        color='green'
+                        title={loadingId === id && loadingAction === 'accept' ? 'Accepting...' : 'Accept'}
+                        disabled={loadingId === id}
+                        onPress={async () => {
+                          try {
+                            setLoadingId(id);
+                            setLoadingAction('accept');
+                            const response = await fetch(acceptUrl);
+                            if (response.status === 200) {
+                              Toast.show({ type: 'success', text1: 'Invitation Accepted' });
+                              refetch();
+                            } else {
+                              Toast.show({ type: 'error', text1: 'Unable to Accept!' });
+                            }
+                          } catch {
                             Toast.show({ type: 'error', text1: 'Unable to Accept!' });
+                          } finally {
+                            setLoadingId(null);
+                            setLoadingAction(null);
                           }
-                        } catch {
-                          Toast.show({ type: 'error', text1: 'Unable to Accept!' });
-                        } finally {
-                          setLoadingId(null);
-                          setLoadingAction(null);
-                        }
-                      }}
-                    />
-                    <Button
-                      color='red'
-                      title={loadingId === id && loadingAction === 'reject' ? 'Declining...' : 'Decline'}
-                      disabled={loadingId === id}
-                      onPress={async () => {
-                        try {
-                          setLoadingId(id);
-                          setLoadingAction('reject');
-                          const response = await fetch(declineUrl);
-                          if (response.status === 200) {
-                            Toast.show({ type: 'success', text1: 'Invitation Rejected' });
-                            refetch();
-                          } else {
+                        }}
+                      />
+                      <Button
+                        color='red'
+                        title={loadingId === id && loadingAction === 'reject' ? 'Declining...' : 'Decline'}
+                        disabled={loadingId === id}
+                        onPress={async () => {
+                          try {
+                            setLoadingId(id);
+                            setLoadingAction('reject');
+                            const response = await fetch(declineUrl);
+                            if (response.status === 200) {
+                              Toast.show({ type: 'success', text1: 'Invitation Rejected' });
+                              refetch();
+                            } else {
+                              Toast.show({ type: 'error', text1: 'Unable to Reject!' });
+                            }
+                          } catch {
                             Toast.show({ type: 'error', text1: 'Unable to Reject!' });
+                          } finally {
+                            setLoadingId(null);
+                            setLoadingAction(null);
                           }
-                        } catch {
-                          Toast.show({ type: 'error', text1: 'Unable to Reject!' });
-                        } finally {
-                          setLoadingId(null);
-                          setLoadingAction(null);
-                        }
-                      }}
-                    />
-                  </>
-                )}
+                        }}
+                      />
+                    </>
+                  )
+                ) : null}
               </View>
 
               {/* Tap to view summary message */}
@@ -257,6 +267,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: 'center',
   },
+  expiredText: {
+    color: 'gray',
+    fontWeight: 'bold',
+    marginTop: 10,
+  },  
   modalContainer: {
     backgroundColor: 'white',
     padding: 20,

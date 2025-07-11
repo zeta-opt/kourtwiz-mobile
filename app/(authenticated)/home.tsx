@@ -94,7 +94,7 @@ const Dashboard = () => {
       } else {
         const errorText = await response.text();
         console.log('Error response:', errorText);
-        Alert.alert('Error', `Failed to ${selectedAction} invitation or conflict exists`);
+        Alert.alert('Error', `Failed to ${selectedAction} invitation, You have already have another event in the same time`);
       }
     } catch (e) {
       Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
@@ -103,6 +103,10 @@ const Dashboard = () => {
       setDialogVisible(false);
     }
   };
+  const validPendingInvites = pendingInvites.filter((invite) => {
+    const [y, m, d, h, min] = invite.playTime;
+    return new Date(y, m - 1, d, h, min).getTime() > Date.now();
+  });  
 
   return (
     <PaperProvider>
@@ -149,20 +153,20 @@ const Dashboard = () => {
               ) : null}
 
               <ScrollView nestedScrollEnabled contentContainerStyle={styles.inviteListContent}>
-                {activeTab === 'INCOMING' ? (
-                  pendingInvites.length === 0 ? (
-                    <Text style={styles.noInvitesText}>No incoming invitations</Text>
-                  ) : (
-                    pendingInvites.map((invite) => (
-                      <InvitationCard
-                        key={invite.id}
-                        invite={invite}
-                        onAccept={() => showCommentDialog(invite, 'accept')}
-                        onReject={() => showCommentDialog(invite, 'reject')}
-                        loading={loadingId === invite.id}
-                      />
-                    ))
-                  )
+              {activeTab === 'INCOMING' ? (
+                validPendingInvites.length === 0 ? (
+                  <Text style={styles.noInvitesText}>No incoming invitations</Text>
+                ) : (
+                  validPendingInvites.map((invite) => (
+                    <InvitationCard
+                      key={invite.id}
+                      invite={invite}
+                      onAccept={() => showCommentDialog(invite, 'accept')}
+                      onReject={() => showCommentDialog(invite, 'reject')}
+                      loading={loadingId === invite.id}
+                    />
+                  ))
+                )
                 ) : outgoingInvites.length === 0 ? (
                   <Text style={styles.noInvitesText}>No sent invitations</Text>
                 ) : (

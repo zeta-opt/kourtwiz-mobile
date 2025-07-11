@@ -60,7 +60,7 @@ const MultiStepInviteModal = ({ visible, refetch }: Props) => {
     useRequestPlayerFinder();
   console.log('Component mounted');
   const handleSubmit = async () => {
-    const finalEndTime = playEndTime || new Date(date.getTime() + 60 * 60 * 1000);
+    const finalEndTime = playEndTime || new Date(date.getTime() + 2 * 60 * 60 * 1000);
     requestPlayerFinder({
       finderData: {
         requestorId: userId,
