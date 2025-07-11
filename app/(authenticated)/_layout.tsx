@@ -7,26 +7,35 @@ import {
 } from 'react-native-safe-area-context';
 import BottomTabs from '../../components/layout/BottomTabs';
 import SideDrawer from '../../components/layout/SideDrawer';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AuthenticatedLayout() {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
-      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-        <Header />
-        <Stack screenOptions={{ headerShown: false }} />
-        <SideDrawer />
-        <BottomTabs />
-      </View>
-    </SafeAreaView>
+    <LinearGradient
+      colors={['#E0F7FA', '#FFFFFF']} 
+      style={styles.gradientBackground}
+    >
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
+        <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+          <Header />
+          <Stack screenOptions={{ headerShown: false }} />
+          <SideDrawer />
+          <BottomTabs />
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradientBackground: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff', // Match your background color
+    backgroundColor: 'transparent', // Let gradient show through
   },
   container: {
     flex: 1,

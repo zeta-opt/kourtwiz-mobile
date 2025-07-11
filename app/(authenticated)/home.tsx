@@ -17,9 +17,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector } from 'react-redux';
-import { Dialog, Portal, TextInput, Button, Provider as PaperProvider } from 'react-native-paper';
+import {
+  Dialog,
+  Portal,
+  TextInput,
+  Button,
+  Provider as PaperProvider,
+} from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface Invite {
   id: number;
@@ -29,13 +35,6 @@ interface Invite {
   declineUrl: string;
   status: string;
 }
-
-// const getGreeting = () => {
-//   const hour = new Date().getHours();
-//   if (hour < 12) return 'Good morning';
-//   if (hour < 17) return 'Good afternoon';
-//   return 'Good evening';
-// };
 
 const Dashboard = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -61,7 +60,7 @@ const Dashboard = () => {
   const pendingOutgoingInvites = outgoingInvites.filter((inviteGroup: any) =>
     inviteGroup.Requests?.some((r: any) => r.status === 'PENDING')
   );
-  const pendingOutCount = pendingOutgoingInvites.length
+  const pendingOutCount = pendingOutgoingInvites.length;
   const pendingInvites = invites?.filter((inv) => inv.status === 'PENDING') ?? [];
   const pendingCount = pendingInvites.length;
 
@@ -85,10 +84,9 @@ const Dashboard = () => {
 
     try {
       setLoadingId(selectedInvite.id);
-
-      const baseUrl = selectedAction === 'accept' ? selectedInvite.acceptUrl : selectedInvite.declineUrl;
+      const baseUrl =
+        selectedAction === 'accept' ? selectedInvite.acceptUrl : selectedInvite.declineUrl;
       const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
-
       const response = await fetch(url);
       if (response.status === 200) {
         Alert.alert('Success', `Invitation ${selectedAction}ed`);
@@ -108,134 +106,95 @@ const Dashboard = () => {
 
   return (
     <PaperProvider>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.inviteWrapper}>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-            <Text
-              style={[styles.labelChip, activeTab === 'INCOMING' && styles.activeChip]}
-              onPress={() => setActiveTab('INCOMING')}
-            >
-              Incoming Requests ({pendingCount})
-            </Text>
-            <Text
-              style={[styles.labelChip, activeTab === 'OUTGOING' && styles.activeChip]}
-              onPress={() => setActiveTab('OUTGOING')}
-            >
-              Sent Requests ({pendingOutCount})
-            </Text>
-          </View>
+      <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.inviteWrapper}>
+            <View style={styles.tabRow}>
+              <Text
+                style={[
+                  styles.chip,
+                  activeTab === 'INCOMING' ? styles.chipActive : styles.chipInactive,
+                ]}
+                onPress={() => setActiveTab('INCOMING')}
+              >
+                Incoming Request ({pendingCount})
+              </Text>
+              <Text
+                style={[
+                  styles.chip,
+                  activeTab === 'OUTGOING' ? styles.chipActive : styles.chipInactive,
+                ]}
+                onPress={() => setActiveTab('OUTGOING')}
+              >
+                Sent Request ({pendingOutCount})
+              </Text>
+            </View>
 
-          <View style={styles.inviteScrollContainer}>
-            {(activeTab === 'INCOMING' && pendingInvites.length > 0) ||
-            (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ? (
-              <View style={styles.cardHeaderRight}>
-                <TouchableOpacity
-                  onPress={() =>
-                    router.push(
-                      activeTab === 'INCOMING'
-                        ? '/(authenticated)/player-invitations'
-                        : '/(authenticated)/find-players'
-                    )
-                  }
-                >
-                  <Text style={styles.viewAllText}>View All</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+            <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={styles.inviteScrollContainer}>
+              {(activeTab === 'INCOMING' && pendingInvites.length > 0) ||
+              (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ? (
+                <View style={styles.cardHeaderRight}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push(
+                        activeTab === 'INCOMING'
+                          ? '/(authenticated)/player-invitations'
+                          : '/(authenticated)/find-players'
+                      )
+                    }
+                  >
+                    <Text style={styles.viewAllText}>View All</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
 
-            <ScrollView nestedScrollEnabled contentContainerStyle={styles.inviteListContent}>
-              {activeTab === 'INCOMING' ? (
-                pendingInvites.length === 0 ? (
-                  <Text style={styles.noInvitesText}>No incoming invitations</Text>
-                ) : (
-                  pendingInvites.map((invite) => (
-                    <InvitationCard
-                      key={invite.id}
-                      invite={invite}
-                      onAccept={() => showCommentDialog(invite, 'accept')}
-                      onReject={() => showCommentDialog(invite, 'reject')}
-                      loading={loadingId === invite.id}
-                    />
-                  ))
-                )
-              ) : (
-                outgoingInvites.length === 0 ? (
+              <ScrollView nestedScrollEnabled contentContainerStyle={styles.inviteListContent}>
+                {activeTab === 'INCOMING' ? (
+                  pendingInvites.length === 0 ? (
+                    <Text style={styles.noInvitesText}>No incoming invitations</Text>
+                  ) : (
+                    pendingInvites.map((invite) => (
+                      <InvitationCard
+                        key={invite.id}
+                        invite={invite}
+                        onAccept={() => showCommentDialog(invite, 'accept')}
+                        onReject={() => showCommentDialog(invite, 'reject')}
+                        loading={loadingId === invite.id}
+                      />
+                    ))
+                  )
+                ) : outgoingInvites.length === 0 ? (
                   <Text style={styles.noInvitesText}>No sent invitations</Text>
                 ) : (
                   <OutgoingInvitationList invites={outgoingInvites} onPressCard={() => {}} />
-                )
-              )}
-            </ScrollView>
+                )}
+              </ScrollView>
+            </LinearGradient>
           </View>
-        </View>
 
-        {/* Stats Section */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <TouchableOpacity><Icon name='star-outline' size={24} color='#3F7CFF' /></TouchableOpacity>
-            <Text style={styles.statValue}>--</Text>
-            <Text style={styles.statLabel}>DUPR Rating</Text>
-          </View>
-          <View style={styles.statItem}>
-            <TouchableOpacity><Icon name='run-fast' size={24} color='#3F7CFF' /></TouchableOpacity>
-            <Text style={styles.statValue}>{user?.playerDetails?.personalRating ?? '-'}</Text>
-            <Text style={styles.statLabel}>Skill Level</Text>
-          </View>
-          <View style={styles.statItem}>
-            <TouchableOpacity onPress={() => router.replace('/(authenticated)/player-invitations')}>
-              <Icon name='email-outline' size={24} color='#3F7CFF' />
-            </TouchableOpacity>
-            <Text style={styles.statValue}>{pendingCount}</Text>
-            <Text style={styles.statLabel}>Invites</Text>
-          </View>
-        </View>
+          <FindplayerCard />
+          <Text style={styles.upcomingGames}>Upcoming Games</Text>
+          <Text style={styles.noGames}>No upcoming games</Text>
 
-        {/* Quick Actions */}
-        <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#E6F0FF' }]} onPress={() => router.replace('/(authenticated)/court-booking')}>
-            <Text style={styles.actionText}>Reserve</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#E0FAEC' }]} onPress={() => router.replace('/(authenticated)/find-players')}>
-            <Text style={styles.actionText}>Find Players</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FFF2DB' }]}>
-            <Text style={styles.actionText}>Find Game</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#F3E9FF' }]} onPress={() => router.replace('/(authenticated)/calendar')}>
-            <Text style={styles.actionText}>My Videos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#F9F4EC' }]}>
-            <Text style={styles.actionText}>History</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FFE8EC' }]} onPress={() => router.replace('/(authenticated)/player-invitations')}>
-            <Text style={styles.actionText}>Invites</Text>
-          </TouchableOpacity>
-        </View>
-
-        <FindplayerCard />
-        <Text style={styles.upcomingGames}>Upcoming Games</Text>
-        <Text style={styles.noGames}>No upcoming games</Text>
-
-        {/* Comment Dialog */}
-        <Portal>
-          <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-            <Dialog.Title>Add a message</Dialog.Title>
-            <Dialog.Content>
-              <TextInput
-                label="Comment (optional)"
-                value={comment}
-                onChangeText={setComment}
-                mode="outlined"
-              />
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
-              <Button onPress={handleDialogSubmit}>Submit</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
-      </ScrollView>
+          <Portal>
+            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+              <Dialog.Title>Add a message</Dialog.Title>
+              <Dialog.Content>
+                <TextInput
+                  label="Comment (optional)"
+                  value={comment}
+                  onChangeText={setComment}
+                  mode="outlined"
+                />
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
+                <Button onPress={handleDialogSubmit}>Submit</Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
+        </ScrollView>
+      </LinearGradient>
     </PaperProvider>
   );
 };
@@ -243,39 +202,42 @@ const Dashboard = () => {
 export default Dashboard;
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#fff', flexGrow: 1 },
-  labelChip: {
-    backgroundColor: '#FFEBEB',
-    color: '#D8000C',
+  container: { padding: 20, flexGrow: 1 },
+  tabRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
     fontSize: 12,
     fontWeight: '600',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
   },
-  activeChip: { borderWidth: 1, borderColor: '#D8000C' },
-  inviteWrapper: { marginTop: 16, marginBottom: 24 },
-  cardHeader: {
+  chipActive: {
+    backgroundColor: '#E6F9FF',
+    borderColor: '#0099B8',
+    color: '#0099B8',
+  },
+  chipInactive: {
+    backgroundColor: '#F0F0F0',
+    borderColor: '#F0F0F0',
+    color: '#888888',
+  },
+  inviteWrapper: {
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  cardHeaderRight: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingBottom: 8,
     paddingHorizontal: 2,
   },
-  cardHeaderText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#444',
-  },
-  cardHeaderRight: {
-  flexDirection: 'row',
-  justifyContent: 'flex-end',
-  alignItems: 'center',
-  paddingBottom: 8,
-  paddingHorizontal: 2,
-},
-
   viewAllText: {
     fontSize: 12,
     fontWeight: '600',
@@ -284,33 +246,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   inviteScrollContainer: {
-    backgroundColor: '#FFF7E6',
     borderRadius: 16,
     padding: 10,
     maxHeight: 240,
     overflow: 'hidden',
   },
-  inviteListContent: { gap: 10, paddingBottom: 6 },
+  inviteListContent: {
+    gap: 10,
+    paddingBottom: 6,
+  },
   noInvitesText: {
     textAlign: 'center',
-    color: '#999',
+    color: '#000000',
     fontSize: 14,
     paddingVertical: 20,
   },
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
-  statItem: { alignItems: 'center', flex: 1 },
-  statValue: { fontSize: 20, fontWeight: '600' },
-  statLabel: { fontSize: 12, color: '#777', marginTop: 4 },
-  quickActionsTitle: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
-  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  actionCard: {
-    width: '48%',
-    paddingVertical: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 12,
+  upcomingGames: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 24,
   },
-  actionText: { fontWeight: '600' },
-  upcomingGames: { fontSize: 18, fontWeight: '600', marginTop: 24 },
-  noGames: { fontSize: 14, color: '#999', marginTop: 6 },
+  noGames: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 6,
+  },
 });
