@@ -4,7 +4,7 @@ import { getToken } from '@/shared/helpers/storeToken';
 
 const API_URL = 'http://44.216.113.234:8080'; 
 
-interface PlayerFinderRequest {
+export interface PlayerFinderRequest {
   id: string;
   requestId: string;
   userId: string;
@@ -35,16 +35,13 @@ interface PlayerFinderRequest {
   };
 }
 
-export const useGetPlayerFinderRequest = (
-  requestId: string | undefined,
-  currentUserId: string | undefined
-) => {
-  const [data, setData] = useState<PlayerFinderRequest | null>(null);
+export const useGetPlayerFinderRequest = (requestId: string | undefined) => {
+  const [data, setData] = useState<PlayerFinderRequest[] | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!requestId || !currentUserId) return;
+    if (!requestId) return;
 
     const fetchRequest = async () => {
       setLoading(true);
@@ -53,7 +50,6 @@ export const useGetPlayerFinderRequest = (
       try {
         const token = await getToken();
         console.log('Fetching player finder request with ID:', requestId);
-        console.log('Using userId:', currentUserId);
         console.log('Using token:', token);
 
         const response = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
@@ -64,17 +60,7 @@ export const useGetPlayerFinderRequest = (
         });
 
         console.log('Full API response:', response.data);
-
-        const playerData = response.data.find(
-          (entry: PlayerFinderRequest) => entry.userId === currentUserId
-        );
-
-        if (!playerData) {
-          throw new Error('You are not invited in this request.');
-        }
-
-        setData(playerData);
-        console.log('Fetched player finder request:', playerData);
+        setData(response.data);
       } catch (err: any) {
         console.error('Failed to fetch player finder request:', err);
         setError(err?.response?.data?.message || err.message || 'Failed to fetch request details');
@@ -84,7 +70,7 @@ export const useGetPlayerFinderRequest = (
     };
 
     fetchRequest();
-  }, [requestId, currentUserId]);
+  }, [requestId]);
 
   return { data, loading, error };
 };

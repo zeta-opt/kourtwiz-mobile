@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Text, Divider, IconButton, Button } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useGetPlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
+import { useGetPlayerFinderRequest, PlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
 import { GetCommentPlayerFinder } from '@/components/find-players/comment-layout/GetCommentPlayerFinder';
 import { PostCommentPlayerFinder } from '@/components/find-players/comment-layout/PostCommentPlayerFinder';
 
@@ -25,25 +25,9 @@ export default function InviteSummaryPage() {
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId ?? '';
-  const { data, loading, error } = useGetPlayerFinderRequest(requestId, userId);
+  const { data, loading, error } = useGetPlayerFinderRequest(requestId);
   const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
-
-  const formatTimeArray = (timeArr: number[]) => {
-    if (!Array.isArray(timeArr) || timeArr.length < 5) return 'Invalid Time';
-    const [year, month, day, hour, minute] = timeArr;
-    const date = new Date(year, month - 1, day, hour, minute);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-  const formatDateArray = (timeArr: number[]) => {
-    if (!Array.isArray(timeArr) || timeArr.length < 5) return 'Invalid Date';
-    const [year, month, day] = timeArr;
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'long',
-      day: 'numeric',
-    });
-  };   
+  console.log('Invite Summary Data:', data);
 
   if (loading) {
     return (
@@ -53,7 +37,7 @@ export default function InviteSummaryPage() {
     );
   }
 
-  if (error || !data) {
+  if (error || !data || data.length === 0) {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>Failed to load invite details</Text>
@@ -61,51 +45,73 @@ export default function InviteSummaryPage() {
     );
   }
 
-  const status = data.status?.toUpperCase() || 'PENDING';
+  const mainRequest = data[0];
+  const acceptedCount = data.filter((d) => d.status === 'ACCEPTED').length;
+  const totalNeeded = mainRequest.playersNeeded || 0;
+
+  const formatTimeArray = (timeArr: number[]) => {
+    if (!Array.isArray(timeArr) || timeArr.length < 5) return 'Invalid Time';
+    const [year, month, day, hour, minute] = timeArr;
+    const date = new Date(year, month - 1, day, hour, minute);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDateArray = (timeArr: number[]) => {
+    if (!Array.isArray(timeArr) || timeArr.length < 5) return 'Invalid Date';
+    const [year, month, day] = timeArr;
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.heading}>{data.placeToPlay}</Text>
-      <Text>{formatDateArray(data.playTime)}, {formatTimeArray(data.playTime)} - {formatTimeArray(data.playEndTime)}</Text>
-      <Text>Skill Rating: {data.skillRating}</Text>
+      <Text style={styles.heading}>{mainRequest.placeToPlay}</Text>
+      <Text>
+        {formatDateArray(mainRequest.playTime)}, {formatTimeArray(mainRequest.playTime)} - {formatTimeArray(mainRequest.playEndTime)}
+      </Text>
+      <Text>Skill Rating: {mainRequest.skillRating}</Text>
+      <Text style={{ marginTop: 4 }}>Accepted: {acceptedCount}/{totalNeeded}</Text>
 
       <Divider style={{ marginVertical: 10 }} />
 
-      <Text style={styles.sectionLabel}>Player</Text>
+      <Text style={styles.sectionLabel}>Players</Text>
       <View style={styles.playersContainer}>
-        <View style={styles.row}>
-          <Text style={[styles.nameText, { color: statusColorMap[status] }]}>{data.name}</Text>
-          <View style={styles.roleInfo}>
-            <IconButton
-              icon={statusIconMap[status] || 'help-circle'}
-              iconColor={statusColorMap[status] || 'gray'}
-              size={18}
-            />
-            <Text style={{ color: statusColorMap[status] || 'gray' }}>{status}</Text>
-          </View>
-        </View>
-      </View>
-
-      <Text style={styles.sectionLabel}>Organizer</Text>
-      <View style={[styles.row, { marginTop: 4 }]}>
-        <Text style={[styles.nameText, styles.organizerName]}>{data.inviteeName}</Text>
-        <Text style={styles.organizerName}>Organizer</Text>
+        {data.map((player: PlayerFinderRequest) => {
+          const status = player.status?.toUpperCase() || 'PENDING';
+          return (
+            <View key={player.userId} style={styles.row}>
+              <Text style={[styles.nameText, { color: statusColorMap[status] || 'gray' }]}>{player.name}</Text>
+              <View style={styles.roleInfo}>
+                <IconButton
+                  icon={statusIconMap[status] || 'help-circle'}
+                  iconColor={statusColorMap[status] || 'gray'}
+                  size={18}
+                />
+                <Text style={{ color: statusColorMap[status] || 'gray' }}>{status}</Text>
+              </View>
+            </View>
+          );
+        })}
       </View>
 
       <Divider style={{ marginVertical: 10 }} />
       <Text style={styles.subHeading}>Comments</Text>
       <ScrollView style={styles.commentsContainer} nestedScrollEnabled>
         <GetCommentPlayerFinder
-          requestId={data.requestId}
+          requestId={mainRequest.requestId}
           onRefetchAvailable={(ref) => setRefetchComments(() => ref)}
         />
       </ScrollView>
 
-      {userId && data.requestId && (
+      {userId && mainRequest.requestId && (
         <>
           <Divider style={{ marginVertical: 10 }} />
           <PostCommentPlayerFinder
-            requestId={data.requestId}
+            requestId={mainRequest.requestId}
             userId={userId}
             onSuccess={() => refetchComments()}
           />
@@ -167,11 +173,6 @@ const styles = StyleSheet.create({
   roleInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  organizerName: {
-    color: '#6a1b9a',
-    fontWeight: '600',
-    fontSize: 14,
   },
   commentsContainer: {
     borderWidth: 1,

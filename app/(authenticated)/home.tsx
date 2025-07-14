@@ -26,11 +26,16 @@ import {
   Provider as PaperProvider,
 } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
+import axios from 'axios';
+
+const API_URL = 'http://44.216.113.234:8080';
 
 interface Invite {
   id: number;
+  requestId: string;
   inviteeName: string;
   playTime: [number, number, number, number, number];
+  placeToPlay: string;
   acceptUrl: string;
   declineUrl: string;
   status: string;
@@ -53,6 +58,8 @@ const Dashboard = () => {
   const [comment, setComment] = useState('');
   const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(null);
 
+  const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
+
   const groupedOutgoing = groupInviteeByRequestId(
     outgoingInvitesRaw?.filter((invite) => invite.status !== 'WITHDRAWN') || []
   );
@@ -60,9 +67,9 @@ const Dashboard = () => {
   const pendingOutgoingInvites = outgoingInvites.filter((inviteGroup: any) =>
     inviteGroup.Requests?.some((r: any) => r.status === 'PENDING')
   );
-  const pendingOutCount = pendingOutgoingInvites.length;
-  const pendingInvites = invites?.filter((inv) => inv.status === 'PENDING') ?? [];
-  const pendingCount = pendingInvites.length;
+  const pendingOutCount = outgoingInvites.length;
+
+  const allInvites = invites ?? [];
 
   useEffect(() => {
     const loadUser = async () => {
@@ -71,6 +78,33 @@ const Dashboard = () => {
     };
     loadUser();
   }, []);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const newCounts: { [key: string]: { accepted: number; total: number } } = {};
+      for (const invite of allInvites) {
+        try {
+          const token = await getToken();
+          const res = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
+            params: { requestId: invite.requestId },
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const total = res.data.length;
+          const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length;
+
+          newCounts[invite.requestId] = { accepted, total };
+        } catch (error) {
+          newCounts[invite.requestId] = { accepted: 0, total: 1 };
+        }
+      }
+      setPlayerCounts(newCounts);
+    };
+
+    if (allInvites.length > 0) {
+      fetchCounts();
+    }
+  }, [allInvites]);
 
   const showCommentDialog = (invite: Invite, action: 'accept' | 'reject') => {
     setSelectedInvite(invite);
@@ -94,7 +128,7 @@ const Dashboard = () => {
       } else {
         const errorText = await response.text();
         console.log('Error response:', errorText);
-        Alert.alert('Error', `Failed to ${selectedAction} invitation, You have already have another event in the same time`);
+        Alert.alert('Error', `Failed to ${selectedAction} invitation. You may have another event at the same time.`);
       }
     } catch (e) {
       Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
@@ -103,10 +137,6 @@ const Dashboard = () => {
       setDialogVisible(false);
     }
   };
-  const validPendingInvites = pendingInvites.filter((invite) => {
-    const [y, m, d, h, min] = invite.playTime;
-    return new Date(y, m - 1, d, h, min).getTime() > Date.now();
-  });  
 
   return (
     <PaperProvider>
@@ -114,59 +144,61 @@ const Dashboard = () => {
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.inviteWrapper}>
             <View style={styles.tabRow}>
-              <Text
-                style={[
-                  styles.chip,
-                  activeTab === 'INCOMING' ? styles.chipActive : styles.chipInactive,
-                ]}
-                onPress={() => setActiveTab('INCOMING')}
-              >
-                Incoming Request ({pendingCount})
-              </Text>
-              <Text
-                style={[
-                  styles.chip,
-                  activeTab === 'OUTGOING' ? styles.chipActive : styles.chipInactive,
-                ]}
-                onPress={() => setActiveTab('OUTGOING')}
-              >
-                Sent Request ({pendingOutCount})
-              </Text>
+              <View style={styles.chipGroup}>
+                <Text
+                  style={[
+                    styles.chip,
+                    activeTab === 'INCOMING' ? styles.chipActive : styles.chipInactive,
+                  ]}
+                  onPress={() => setActiveTab('INCOMING')}
+                >
+                  Incoming Request ({allInvites.length})
+                </Text>
+                <Text
+                  style={[
+                    styles.chip,
+                    activeTab === 'OUTGOING' ? styles.chipActive : styles.chipInactive,
+                  ]}
+                  onPress={() => setActiveTab('OUTGOING')}
+                >
+                  Sent Request ({pendingOutCount})
+                </Text>
+              </View>
+
+              {(activeTab === 'INCOMING' && allInvites.length > 0) ||
+              (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ? (
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push(
+                      activeTab === 'INCOMING'
+                        ? '/(authenticated)/player-invitations'
+                        : '/(authenticated)/find-players'
+                    )
+                  }
+                >
+                  <Text style={styles.viewAllText}>View All</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={styles.inviteScrollContainer}>
-              {(activeTab === 'INCOMING' && pendingInvites.length > 0) ||
-              (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ? (
-                <View style={styles.cardHeaderRight}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push(
-                        activeTab === 'INCOMING'
-                          ? '/(authenticated)/player-invitations'
-                          : '/(authenticated)/find-players'
-                      )
-                    }
-                  >
-                    <Text style={styles.viewAllText}>View All</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-
               <ScrollView nestedScrollEnabled contentContainerStyle={styles.inviteListContent}>
-              {activeTab === 'INCOMING' ? (
-                validPendingInvites.length === 0 ? (
-                  <Text style={styles.noInvitesText}>No incoming invitations</Text>
-                ) : (
-                  validPendingInvites.map((invite) => (
-                    <InvitationCard
-                      key={invite.id}
-                      invite={invite}
-                      onAccept={() => showCommentDialog(invite, 'accept')}
-                      onReject={() => showCommentDialog(invite, 'reject')}
-                      loading={loadingId === invite.id}
-                    />
-                  ))
-                )
+                {activeTab === 'INCOMING' ? (
+                  allInvites.length === 0 ? (
+                    <Text style={styles.noInvitesText}>No incoming invitations</Text>
+                  ) : (
+                    allInvites.map((invite) => (
+                      <InvitationCard
+                        key={invite.id}
+                        invite={invite}
+                        onAccept={() => showCommentDialog(invite, 'accept')}
+                        onReject={() => showCommentDialog(invite, 'reject')}
+                        loading={loadingId === invite.id}
+                        totalPlayers={playerCounts[invite.requestId]?.total ?? 1}
+                        acceptedPlayers={playerCounts[invite.requestId]?.accepted ?? 0}
+                      />
+                    ))
+                  )
                 ) : outgoingInvites.length === 0 ? (
                   <Text style={styles.noInvitesText}>No sent invitations</Text>
                 ) : (
@@ -209,8 +241,13 @@ const styles = StyleSheet.create({
   container: { padding: 20, flexGrow: 1 },
   tabRow: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
+  },
+  chipGroup: {
+    flexDirection: 'row',
+    gap: 8,
   },
   chip: {
     paddingHorizontal: 12,
@@ -234,13 +271,6 @@ const styles = StyleSheet.create({
   inviteWrapper: {
     marginTop: 16,
     marginBottom: 24,
-  },
-  cardHeaderRight: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 8,
-    paddingHorizontal: 2,
   },
   viewAllText: {
     fontSize: 12,
