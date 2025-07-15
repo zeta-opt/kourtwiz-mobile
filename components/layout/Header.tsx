@@ -1,3 +1,4 @@
+import UserAvatar from '@/assets/UserAvatar';
 import { RootState } from '@/store';
 import { logout } from '@/store/authSlice';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +12,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { Avatar, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 
 const getGreeting = () => {
@@ -28,9 +29,6 @@ const Header = () => {
   const [showMenu, setShowMenu] = useState(false);
 
   const { user } = useSelector((state: RootState) => state.auth);
-  const profileImage = useSelector(
-    (state: RootState) => state.auth.profileImage
-  );
   // console.log(profileImage, 'helllo');
   const selectedClubname =
     user?.userClubRole?.find(
@@ -71,7 +69,7 @@ const Header = () => {
         </TouchableWithoutFeedback>
       )}
 
-      {/* ✅ Removed backgroundColor: theme.colors.primary */}
+      {/* Removed backgroundColor: theme.colors.primary */}
       <View style={styles.header}>
         <Text style={styles.text}>
           {greeting}
@@ -96,7 +94,7 @@ const Header = () => {
               // onPress={() => setShowMenu(true)}
               onPress={() => router.push('/(authenticated)/profile')}
             >
-              {profileImage ? (
+              {/* {profileImage ? (
                 <Avatar.Image size={42} source={{ uri: profileImage }} />
               ) : (
                 <Avatar.Text
@@ -111,7 +109,8 @@ const Header = () => {
                   style={styles.avatar}
                   labelStyle={{ fontSize: 12 }}
                 />
-              )}
+              )} */}
+              <UserAvatar size={42} />
             </TouchableOpacity>
           </View>
 

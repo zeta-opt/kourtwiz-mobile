@@ -41,10 +41,10 @@ const FindplayerCard = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.featuredButton, styles.disabledButton]}
-              disabled
+              style={[styles.featuredButton, styles.outlinedButton]}
+              onPress={() => router.replace('/(authenticated)/want-to-play')}
             >
-              <Text style={styles.disabledButtonText}>I want to Play</Text>
+              <Text style={styles.outlinedButtonText}>I want to Play</Text>
             </TouchableOpacity>
           </View>
         </View>

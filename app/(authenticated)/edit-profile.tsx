@@ -16,7 +16,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import Constants from 'expo-constants';
 import { getToken } from '@/shared/helpers/storeToken';
 import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
-import { Avatar } from 'react-native-paper';
+import UserAvatar from '@/assets/UserAvatar';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'NIL'];
 
@@ -167,18 +167,7 @@ const EditProfile = () => {
       {/* Avatar */}
       <View style={styles.avatarContainer}>
         <View style={styles.avatarCircle}>
-          <Avatar.Text
-            size={70}
-            label={
-              userData?.name
-                ?.split(' ')
-                .map((n) => n[0])
-                .join('')
-                .toUpperCase() || 'U'
-            }
-            style={{ backgroundColor: 'black' }}
-            labelStyle={{ fontSize: 24 }}
-          />
+          <UserAvatar size={70} onPress={() => console.log('Clicked Avatar')} />
           <TouchableOpacity style={styles.editAvatarIcon}>
             <Ionicons name="pencil" size={18} color="#2F7C83" />
           </TouchableOpacity>

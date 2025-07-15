@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
-import { Avatar } from 'react-native-paper';
+import UserAvatar from '@/assets/UserAvatar';
 
 type Place = {
   id: string;
@@ -294,18 +294,7 @@ const UserProfile = () => {
 
       <View style={styles.header}>
         <View style={styles.profilePicContainer}>
-          <Avatar.Text
-          size={70}
-          label={
-            userData?.name
-              ?.split(' ')
-              .map((n) => n[0])
-              .join('')
-              .toUpperCase() || 'U'
-            }
-            style={{ backgroundColor: 'black' }}
-            labelStyle={{ fontSize: 24 }}
-          />
+          <UserAvatar size={70} onPress={() => console.log('Clicked Avatar')} />
         </View>
         <View style={styles.profileInfo}>
           <Text style={styles.nameText}>{userData.name || 'User Name'}</Text>
