@@ -7,9 +7,7 @@ const PlayerInvitations = () => {
   const { highlight } = useLocalSearchParams();
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text variant='headlineMedium'>Invitations</Text>
-      </View>
+      
       <ScrollView style={styles.scrollArea}>
         <ShowInvitations />
       </ScrollView>
@@ -22,8 +20,9 @@ export default PlayerInvitations;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+    
+    // padding: 16,
+    // backgroundColor: '#fff',
   },
   headerContainer: {
     marginBottom: 12,

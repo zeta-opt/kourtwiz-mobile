@@ -79,9 +79,9 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
   return (
     <View style={styles.row}>
       <View style={styles.textBlock}>
-        <View style={[styles.badge, { backgroundColor: badgeColor }]}>
+        {/* <View style={[styles.badge, { backgroundColor: badgeColor }]}>
           <Text style={styles.badgeText}>{timeLeftText}</Text>
-        </View>
+        </View> */}
         <Text style={styles.nameText}>{invite.inviteeName}</Text>
         <Text style={styles.detailsText}>
           {dateString}  |  {timeString}  |  {invite.placeToPlay}
@@ -188,8 +188,9 @@ const styles = StyleSheet.create({
   },
   acceptedTextSmall: {
     marginLeft: 4,
-    fontSize: 12,
+    fontSize: 14,
     color: '#333',
+    fontWeight: '700',
   },
   chatButton: {
     flexDirection: 'row',
@@ -201,8 +202,9 @@ const styles = StyleSheet.create({
   },
   chatText: {
     marginLeft: 4,
-    fontSize: 12,
+    fontSize: 14,
     color: '#333',
+    fontWeight: '700',
   },
   acceptedText: {
     color: 'green',

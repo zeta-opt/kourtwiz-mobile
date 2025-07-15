@@ -1,287 +1,340 @@
+import InvitationCard from '@/components/home-page/myInvitationsCard';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
-import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
+import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import { Button, StyleSheet, View } from 'react-native';
-import { Card, Text, Modal, TextInput, Portal } from 'react-native-paper';
-import Toast from 'react-native-toast-message';
-import { useSelector } from 'react-redux';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import {
+  Button,
+  Dialog,
+  Menu,
+  Portal,
+  Text,
+  TextInput,
+} from 'react-native-paper';
+import { useSelector } from 'react-redux';
 
-const parsePlayTime = (dateArray: number[]) => {
-  const adjusted = [...dateArray];
-  adjusted[1] -= 1;
-  const date = new Date(...(adjusted as [number, number, number, number, number]));
-  const isExpired = date.getTime() < Date.now();
-  return { date, isExpired };
-};
-
-const formatDateTime = (date: Date) => {
-  return `${date.toDateString()} at ${date.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  })}`;
-};
-
-const getStatusIcon = (
-  status: string
-): {
-  name: React.ComponentProps<typeof MaterialIcons>['name'];
-  color: string;
-} => {
-  switch (status) {
-    case 'ACCEPTED':
-      return { name: 'check-circle', color: 'green' };
-    case 'DECLINED':
-      return { name: 'cancel', color: 'red' };
-    case 'PENDING':
-      return { name: 'hourglass-empty', color: 'orange' };
-    default:
-      return { name: 'help', color: 'gray' };
-  }
-};
+const API_URL = 'http://44.216.113.234:8080';
 
 const ShowInvitations = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
 
-  const {
-    data: 
-    invites,
-    status,
-    refetch,
-  } = useGetInvitations({ userId: user?.userId });
+  const { data: invites, refetch } = useGetInvitations({ userId: user?.userId });
 
-  const { cancelInvitation } = useCancelInvitation();
+  const [loadingId, setLoadingId] = useState<number | null>(null);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [selectedInvite, setSelectedInvite] = useState<any>(null);
+  const [comment, setComment] = useState('');
+  const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(null);
 
-  const [loadingId, setLoadingId] = useState<null | string>(null);
-  const [loadingAction, setLoadingAction] = useState<'accept' | 'reject' | 'cancel' | null>(null);
+  const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
 
-  const [visibleModal, setVisibleModal] = useState(false);
-  const [commentText, setCommentText] = useState('');
-  const [currentInviteId, setCurrentInviteId] = useState<string | null>(null);
-  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  // Filter states
+  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [locationMenuVisible, setLocationMenuVisible] = useState(false);
 
-  const openCommentModal = (inviteId: string, requestId: string) => {
-    setCurrentInviteId(inviteId);
-    setCurrentRequestId(requestId);
-    setCommentText('');
-    setVisibleModal(true);
+  const showCommentDialog = (invite: any, action: 'accept' | 'reject') => {
+    setSelectedInvite(invite);
+    setSelectedAction(action);
+    setDialogVisible(true);
+    setComment('');
   };
 
-  const handleCancelWithComment = async () => {
-    if (!currentRequestId || !user?.userId) return;
+  const handleDialogSubmit = async () => {
+    if (!selectedInvite || !selectedAction) return;
     try {
-      setLoadingId(currentInviteId);
-      setLoadingAction('cancel');
-      setVisibleModal(false);
+      setLoadingId(selectedInvite.id);
+      const baseUrl = selectedAction === 'accept' ? selectedInvite.acceptUrl : selectedInvite.declineUrl;
+      const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
 
-      await cancelInvitation(currentRequestId, user.userId, commentText);
-
-      Toast.show({ type: 'success', text1: 'Invitation Withdrawn' });
-      refetch();
-    } catch {
-      Toast.show({ type: 'error', text1: 'Failed to Withdraw' });
+      const response = await fetch(url);
+      if (response.status === 200) {
+        Alert.alert('Success', `Invitation ${selectedAction}ed`);
+        refetch();
+      } else {
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
+        Alert.alert('Error', `Failed to ${selectedAction} invitation. You may have another event at the same time.`);
+      }
+    } catch (e) {
+      Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
     } finally {
       setLoadingId(null);
-      setLoadingAction(null);
+      setDialogVisible(false);
     }
   };
 
-  if (status === 'loading') return <Text>Loading...</Text>;
-  if (!invites || invites.length === 0) {
-    return <Text style={styles.noData}>No invitations to show.</Text>;
-  }
+  // Fetch accepted/total player counts
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const newCounts: { [key: string]: { accepted: number; total: number } } = {};
+      for (const invite of invites ?? []) {
+        try {
+          const token = await getToken();
+          const res = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
+            params: { requestId: invite.requestId },
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const total = res.data.length;
+          const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length;
+
+          newCounts[invite.requestId] = { accepted, total };
+        } catch (error) {
+          newCounts[invite.requestId] = { accepted: 0, total: 1 };
+        }
+      }
+      setPlayerCounts(newCounts);
+    };
+
+    if (invites && invites.length > 0) {
+      fetchCounts();
+    }
+  }, [invites]);
+
+  // Unique locations for dropdown
+  const uniqueLocations = Array.from(new Set((invites ?? []).map((inv) => inv.placeToPlay).filter(Boolean)));
+
+  // Correct filtering
+  const filteredInvites = (invites ?? []).filter((invite) => {
+    let matches = true;
+
+    if (selectedDate) {
+      const inviteDate = new Date(invite.playTime[0], invite.playTime[1] - 1, invite.playTime[2]);
+      const selectedDateStr = selectedDate.toDateString();
+      const inviteDateStr = inviteDate.toDateString();
+      matches &&= selectedDateStr === inviteDateStr;
+    }
+
+    if (selectedTime) {
+      const inviteTime = new Date(invite.playTime[0], invite.playTime[1] - 1, invite.playTime[2], invite.playTime[3], invite.playTime[4]);
+      matches &&=
+        inviteTime.getHours() === selectedTime.getHours() &&
+        inviteTime.getMinutes() === selectedTime.getMinutes();
+    }
+
+    if (selectedLocation) {
+      matches &&= invite.placeToPlay === selectedLocation;
+    }
+
+    return matches;
+  });
+
+  // Reset filters
+  const clearFilters = () => {
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setSelectedLocation(null);
+  };
 
   return (
-    <View style={styles.container}>
-      {invites.map((invite) => {
-        const {
-          id,
-          placeToPlay,
-          playTime,
-          inviteeName,
-          status,
-          acceptUrl,
-          declineUrl,
-          requestId,
-        } = invite;
-
-
-        const icon = getStatusIcon(status);
-        const { date: gameDate, isExpired } = parsePlayTime(playTime);       
-
-        return (
-          <Card
-            key={id}
-            style={styles.card}
-            onPress={() =>
-              router.push({
-                pathname: '/incoming-summarty',
-                params: { requestId },
-              })
-            }
-          >
-            <Card.Title title={placeToPlay} />
-            <Card.Content>
-              <Text>Date & Time: {formatDateTime(gameDate)}</Text>
-              <Text>Invitee: {inviteeName}</Text>
-              <View style={styles.statusRow}>
-                <MaterialIcons name={icon.name} size={20} color={icon.color} />
-                <Text style={[styles.statusText, { color: icon.color }]}> {status}</Text>
-                  {status === 'ACCEPTED' && !isExpired && (
-                    <View style={styles.withdrawButtonWrapper}>
-                      <Button
-                        color="gray"
-                        title={
-                          loadingId === id && loadingAction === 'cancel'
-                            ? 'Cancelling...'
-                            : 'Withdraw'
-                        }
-                        disabled={loadingId === id}
-                        onPress={() => openCommentModal(id, requestId)}
-                      />
-                    </View>
-                  )}
-                </View>
-
-              <View style={styles.buttonRow}>
-                {status === 'PENDING' ? (
-                  isExpired ? (
-                    <Text style={styles.expiredText}>EXPIRED!</Text>
-                  ) : (
-                    <>
-                      <Button
-                        color='green'
-                        title={loadingId === id && loadingAction === 'accept' ? 'Accepting...' : 'Accept'}
-                        disabled={loadingId === id}
-                        onPress={async () => {
-                          try {
-                            setLoadingId(id);
-                            setLoadingAction('accept');
-                            const response = await fetch(acceptUrl);
-                            if (response.status === 200) {
-                              Toast.show({ type: 'success', text1: 'Invitation Accepted' });
-                              refetch();
-                            } else {
-                              Toast.show({ type: 'error', text1: 'Unable to Accept!' });
-                            }
-                          } catch {
-                            Toast.show({ type: 'error', text1: 'Unable to Accept!' });
-                          } finally {
-                            setLoadingId(null);
-                            setLoadingAction(null);
-                          }
-                        }}
-                      />
-                      <Button
-                        color='red'
-                        title={loadingId === id && loadingAction === 'reject' ? 'Declining...' : 'Decline'}
-                        disabled={loadingId === id}
-                        onPress={async () => {
-                          try {
-                            setLoadingId(id);
-                            setLoadingAction('reject');
-                            const response = await fetch(declineUrl);
-                            if (response.status === 200) {
-                              Toast.show({ type: 'success', text1: 'Invitation Rejected' });
-                              refetch();
-                            } else {
-                              Toast.show({ type: 'error', text1: 'Unable to Reject!' });
-                            }
-                          } catch {
-                            Toast.show({ type: 'error', text1: 'Unable to Reject!' });
-                          } finally {
-                            setLoadingId(null);
-                            setLoadingAction(null);
-                          }
-                        }}
-                      />
-                    </>
-                  )
-                ) : null}
-              </View>
-
-              {/* Tap to view summary message */}
-              <Text style={styles.tapHint}>Tap to view full summary</Text>
-            </Card.Content>
-          </Card>
-        );
-      })}
-
-      {/* Modal for comment input */}
-      <Portal>
-        <Modal
-          visible={visibleModal}
-          onDismiss={() => setVisibleModal(false)}
-          contentContainerStyle={styles.modalContainer}
+    <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
+      <View style={styles.topRow}>
+        <View style={{ flex: 1 }} />
+        <Button
+          mode="outlined"
+          onPress={clearFilters}
+          style={styles.clearButton}
+          labelStyle={styles.clearButtonLabel}
         >
-          <Text>Optional Comment:</Text>
-          <TextInput
-            label="Comment"
-            value={commentText}
-            onChangeText={setCommentText}
-            multiline
-            style={styles.commentInput}
-          />
-          <Button title="Submit" onPress={handleCancelWithComment} />
-        </Modal>
+          Clear
+        </Button>
+      </View>
+
+      <View style={styles.filterRow}>
+        <Button
+          mode="outlined"
+          style={[styles.filterButton, selectedDate && styles.activeFilterButton]}
+          contentStyle={styles.filterButtonContent}
+          labelStyle={styles.filterButtonLabel}
+          onPress={() => setShowDatePicker(true)}
+        >
+          Date <View style={{ marginTop: 7 }}><MaterialIcons name="keyboard-arrow-down" size={18} /></View>
+
+        </Button>
+        <Button
+          mode="outlined"
+          style={[styles.filterButton, selectedTime && styles.activeFilterButton]}
+          contentStyle={styles.filterButtonContent}
+          labelStyle={styles.filterButtonLabel}
+          onPress={() => setShowTimePicker(true)}
+        >
+          Time <View style={{ marginTop: 7 }}><MaterialIcons name="keyboard-arrow-down" size={18} /></View>
+
+        </Button>
+        <Menu
+          visible={locationMenuVisible}
+          onDismiss={() => setLocationMenuVisible(false)}
+          anchor={
+            <Button
+              mode="outlined"
+              style={[styles.filterButton, selectedLocation && styles.activeFilterButton]}
+              contentStyle={styles.filterButtonContent}
+              labelStyle={styles.filterButtonLabel}
+              onPress={() => setLocationMenuVisible(true)}
+            >
+              Location <View style={{ marginTop: 7 }}><MaterialIcons name="keyboard-arrow-down" size={18} /></View>
+
+            </Button>
+          }
+        >
+          {uniqueLocations.map((loc, index) => (
+            <Menu.Item
+              key={`${loc}-${index}`}
+              onPress={() => {
+                setSelectedLocation(loc);
+                setLocationMenuVisible(false);
+              }}
+              title={loc}
+            />
+          ))}
+        </Menu>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {filteredInvites.length === 0 ? (
+          <Text style={styles.noData}>No invitations to show.</Text>
+        ) : (
+          filteredInvites.map((invite) => (
+            <View key={invite.id} style={styles.cardContainer}>
+              <InvitationCard
+                invite={invite}
+                onAccept={() => showCommentDialog(invite, 'accept')}
+                onReject={() => showCommentDialog(invite, 'reject')}
+                loading={loadingId === invite.id}
+                totalPlayers={playerCounts[invite.requestId]?.total ?? 1}
+                acceptedPlayers={playerCounts[invite.requestId]?.accepted ?? 0}
+              />
+            </View>
+          ))
+        )}
+      </ScrollView>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate || new Date()}
+          mode="date"
+          display="calendar"
+          onChange={(event, date) => {
+            setShowDatePicker(false);
+            if (date) {
+              setSelectedDate(date);
+            }
+          }}
+        />
+      )}
+
+      {showTimePicker && (
+        <DateTimePicker
+          value={selectedTime || new Date()}
+          mode="time"
+          display="spinner"
+          onChange={(event, time) => {
+            setShowTimePicker(false);
+            if (time) {
+              setSelectedTime(time);
+            }
+          }}
+        />
+      )}
+
+      <Portal>
+        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+          <Dialog.Title>Add a message</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Comment (optional)"
+              value={comment}
+              onChangeText={setComment}
+              mode="outlined"
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
+            <Button onPress={handleDialogSubmit}>Submit</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
-    </View>
+    </LinearGradient>
   );
 };
 
+export default ShowInvitations;
+
 const styles = StyleSheet.create({
-  container: {
-    gap: 12,
-    paddingBottom: 12,
-  },
-  card: {
-    marginBottom: 10,
-  },
-  statusRow: {
+  topRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 10,
   },
-  statusText: {
-    marginLeft: 4,
-    fontWeight: '600',
+  clearButton: {
+    borderColor: 'red',
+    borderWidth: 1,
+    borderRadius: 8,
   },
-  buttonRow: {
+  clearButtonLabel: {
+    color: 'red',
+  },
+  filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  withdrawButtonWrapper: {
-    marginLeft: 'auto',
-  },  
-  tapHint: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 10,
+  filterButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#008080',
+    backgroundColor: '#FFFFFF',
+  },
+  activeFilterButton: {
+    backgroundColor: '#00808020',
+  },
+  filterButtonContent: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-around',
+    height: 40,
+  },
+  filterButtonLabel: {
+    fontSize: 15,
+    color: '#000000',
+  },
+  scrollContainer: {
+    padding: 16,
+    paddingBottom: 24,
+  },
+  cardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    marginBottom: 16,
   },
   noData: {
     marginTop: 20,
     textAlign: 'center',
-  },
-  expiredText: {
-    color: 'gray',
-    fontWeight: 'bold',
-    marginTop: 10,
-  },  
-  modalContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
-    borderRadius: 10,
-  },
-  commentInput: {
-    marginTop: 10,
-    marginBottom: 20,
+    fontSize: 16,
   },
 });
-
-export default ShowInvitations;
