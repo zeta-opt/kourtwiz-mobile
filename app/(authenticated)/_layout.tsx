@@ -1,5 +1,5 @@
 import Header from '@/components/layout/Header';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
   SafeAreaView,
@@ -11,6 +11,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AuthenticatedLayout() {
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  const showHeader = pathname.includes('/home');
 
   return (
     <LinearGradient
@@ -19,10 +21,10 @@ export default function AuthenticatedLayout() {
     >
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-          <Header />
+          {showHeader  && <Header />}
           <Stack screenOptions={{ headerShown: false }} />
           <SideDrawer />
-          <BottomTabs />
+          {showHeader && <BottomTabs />}
         </View>
       </SafeAreaView>
     </LinearGradient>

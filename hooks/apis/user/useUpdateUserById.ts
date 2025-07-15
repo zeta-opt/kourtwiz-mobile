@@ -7,7 +7,16 @@ export const useUpdateUserById = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  const updateUserById = async (userId: string, userData: any) => {
+  /**
+   * @param userId - string
+   * @param userData - updated user fields
+   * @param refetch - optional function to re-fetch user data after update
+   */
+  const updateUserById = async (
+    userId: string,
+    userData: any,
+    refetch?: () => Promise<void> // <-- refetch callback
+  ) => {
     try {
       setStatus('loading');
       const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
@@ -27,6 +36,10 @@ export const useUpdateUserById = () => {
       );
 
       console.log('✅ User updated:', response.data);
+      if (refetch) {
+        await refetch();
+      }
+
       setStatus('success');
       return response.data;
     } catch (err: any) {
