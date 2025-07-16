@@ -4,6 +4,7 @@ import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import TopBarWithChips from '@/components/home-page/topBarWithChips';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -40,7 +41,6 @@ const ShowInvitations = () => {
 
   const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
 
-  // Filter states
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -79,7 +79,6 @@ const ShowInvitations = () => {
     }
   };
 
-  // Fetch accepted/total player counts
   useEffect(() => {
     const fetchCounts = async () => {
       const newCounts: { [key: string]: { accepted: number; total: number } } = {};
@@ -107,18 +106,14 @@ const ShowInvitations = () => {
     }
   }, [invites]);
 
-  // Unique locations for dropdown
   const uniqueLocations = Array.from(new Set((invites ?? []).map((inv) => inv.placeToPlay).filter(Boolean)));
 
-  // Correct filtering
   const filteredInvites = (invites ?? []).filter((invite) => {
     let matches = true;
 
     if (selectedDate) {
       const inviteDate = new Date(invite.playTime[0], invite.playTime[1] - 1, invite.playTime[2]);
-      const selectedDateStr = selectedDate.toDateString();
-      const inviteDateStr = inviteDate.toDateString();
-      matches &&= selectedDateStr === inviteDateStr;
+      matches &&= inviteDate.toDateString() === selectedDate.toDateString();
     }
 
     if (selectedTime) {
@@ -135,7 +130,6 @@ const ShowInvitations = () => {
     return matches;
   });
 
-  // Reset filters
   const clearFilters = () => {
     setSelectedDate(null);
     setSelectedTime(null);
@@ -144,52 +138,49 @@ const ShowInvitations = () => {
 
   return (
     <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
-      <View style={styles.topRow}>
-        <View style={{ flex: 1 }} />
-        <Button
-          mode="outlined"
-          onPress={clearFilters}
-          style={styles.clearButton}
-          labelStyle={styles.clearButtonLabel}
-        >
-          Clear
-        </Button>
-      </View>
-
+      <TopBarWithChips active="incoming" />
       <View style={styles.filterRow}>
         <Button
           mode="outlined"
-          style={[styles.filterButton, selectedDate && styles.activeFilterButton]}
+          compact
+          style={[styles.filterButtonSmall, selectedDate && styles.activeFilterButton]}
           contentStyle={styles.filterButtonContent}
-          labelStyle={styles.filterButtonLabel}
           onPress={() => setShowDatePicker(true)}
         >
-          Date <View style={{ marginTop: 7 }}><MaterialIcons name="keyboard-arrow-down" size={18} /></View>
-
+          <View style={styles.buttonInner}>
+            <Text style={styles.filterButtonLabel}>Date</Text>
+            <MaterialIcons name="keyboard-arrow-down" size={16} />
+          </View>
         </Button>
+
         <Button
           mode="outlined"
-          style={[styles.filterButton, selectedTime && styles.activeFilterButton]}
+          compact
+          style={[styles.filterButtonSmall, selectedTime && styles.activeFilterButton]}
           contentStyle={styles.filterButtonContent}
-          labelStyle={styles.filterButtonLabel}
           onPress={() => setShowTimePicker(true)}
         >
-          Time <View style={{ marginTop: 7 }}><MaterialIcons name="keyboard-arrow-down" size={18} /></View>
-
+          <View style={styles.buttonInner}>
+            <Text style={styles.filterButtonLabel}>Time</Text>
+            <MaterialIcons name="keyboard-arrow-down" size={16} />
+          </View>
         </Button>
+
         <Menu
           visible={locationMenuVisible}
           onDismiss={() => setLocationMenuVisible(false)}
           anchor={
             <Button
               mode="outlined"
-              style={[styles.filterButton, selectedLocation && styles.activeFilterButton]}
+              compact
+              style={[styles.filterButtonLarge, selectedLocation && styles.activeFilterButton]}
               contentStyle={styles.filterButtonContent}
-              labelStyle={styles.filterButtonLabel}
               onPress={() => setLocationMenuVisible(true)}
             >
-              Location <View style={{ marginTop: 7 }}><MaterialIcons name="keyboard-arrow-down" size={18} /></View>
-
+              <View style={styles.buttonInner}>
+                <Text style={styles.filterButtonLabel}>Location</Text>
+                <MaterialIcons name="keyboard-arrow-down" size={16} />
+              </View>
             </Button>
           }
         >
@@ -204,6 +195,16 @@ const ShowInvitations = () => {
             />
           ))}
         </Menu>
+
+        <Button
+          mode="outlined"
+          compact
+          onPress={clearFilters}
+          style={styles.smallClearButton}
+          contentStyle={styles.filterButtonContent}
+        >
+          <Text style={styles.clearButtonLabel}>Clear Filters</Text>
+        </Button>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -232,9 +233,7 @@ const ShowInvitations = () => {
           display="calendar"
           onChange={(event, date) => {
             setShowDatePicker(false);
-            if (date) {
-              setSelectedDate(date);
-            }
+            if (date) setSelectedDate(date);
           }}
         />
       )}
@@ -246,9 +245,7 @@ const ShowInvitations = () => {
           display="spinner"
           onChange={(event, time) => {
             setShowTimePicker(false);
-            if (time) {
-              setSelectedTime(time);
-            }
+            if (time) setSelectedTime(time);
           }}
         />
       )}
@@ -277,44 +274,62 @@ const ShowInvitations = () => {
 export default ShowInvitations;
 
 const styles = StyleSheet.create({
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-  },
-  clearButton: {
-    borderColor: 'red',
-    borderWidth: 1,
-    borderRadius: 8,
-  },
-  clearButtonLabel: {
-    color: 'red',
-  },
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingTop: 10,
   },
-  filterButton: {
+  filterButtonSmall: {
     flex: 1,
-    marginHorizontal: 4,
+    minWidth: 70,
+    marginHorizontal: 2,
     borderRadius: 8,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#008080',
     backgroundColor: '#FFFFFF',
+    height: 40,
+  },
+  filterButtonLarge: {
+    flex: 1.2,
+    minWidth: 90,
+    marginHorizontal: 2,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#008080',
+    backgroundColor: '#FFFFFF',
+    height: 40,
   },
   activeFilterButton: {
     backgroundColor: '#00808020',
   },
-  filterButtonContent: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-around',
+  smallClearButton: {
+    flex: 1,
+    borderColor: '#008080',
+    borderWidth: 1,
+    borderRadius: 25,
+    marginHorizontal: 2,
+    minWidth: 60,
+    backgroundColor: '#008080',
     height: 40,
   },
+  clearButtonLabel: {
+    color: '#FFFFFF',
+    fontSize: 11,
+  },
+  filterButtonContent: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+  },
+  buttonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   filterButtonLabel: {
-    fontSize: 15,
+    fontSize: 12,
     color: '#000000',
   },
   scrollContainer: {
