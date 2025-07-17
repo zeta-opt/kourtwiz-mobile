@@ -35,7 +35,7 @@ const FindplayerCard = () => {
 
             <TouchableOpacity
               style={[styles.featuredButton, styles.outlinedButton]}
-              onPress={() => router.push('/(authenticated)/find-players')}
+              onPress={() => router.push('/(authenticated)/find-player')}
             >
               <Text style={styles.outlinedButtonText}>Find Player</Text>
             </TouchableOpacity>
