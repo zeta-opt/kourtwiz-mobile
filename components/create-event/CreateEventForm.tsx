@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay';
+import { RootState } from '@/store';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Slider from '@react-native-community/slider';
+import { Picker } from '@react-native-picker/picker';
+import * as Location from 'expo-location';
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
+  Button,
+  Modal,
+  Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
-  Platform,
-  StyleSheet,
-  Modal,
-  Button,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
-import Slider from '@react-native-community/slider';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
-import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay';
-import * as Location from 'expo-location';
 import PreferredPlacesModal from '../find-players/preferred-places-modal/PreferredPlacesModal';
 
 const CreateEventForm = () => {
@@ -42,21 +42,25 @@ const CreateEventForm = () => {
     visible: boolean;
     type: 'start' | 'end';
   }>({ visible: false, type: 'start' });
-    const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
+  const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
 
-  const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean | null>(null);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState<
+    boolean | null
+  >(null);
   const [repeatInterval, setRepeatInterval] = useState('1');
   const [repeatEndDate, setRepeatEndDate] = useState<Date | null>(null);
   const [showRepeatEndDatePicker, setShowRepeatEndDatePicker] = useState(false);
 
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [customRepeat, setCustomRepeat] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
+  const [customRepeat, setCustomRepeat] = useState<
+    'daily' | 'weekly' | 'monthly' | 'yearly'
+  >('daily');
   const [customInterval, setCustomInterval] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
 
-const handleModalClose = () => {
-  setModalVisible(false);
-};
+  const handleModalClose = () => {
+    setModalVisible(false);
+  };
 
   useEffect(() => {
     const requestPermission = async () => {
@@ -108,7 +112,7 @@ const handleModalClose = () => {
           minute: '2-digit',
         })
       : '';
-        console.log(place);
+  console.log(place);
   const handleSubmit = async () => {
     if (!eventName || !place || !date || !startTime || !endTime) {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
@@ -116,7 +120,9 @@ const handleModalClose = () => {
     }
 
     try {
-      const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+      const durationMinutes = Math.floor(
+        (endTime.getTime() - startTime.getTime()) / (1000 * 60)
+      );
       const payload: any = {
         playTypeName: eventName,
         courtId: court || undefined,
@@ -133,13 +139,14 @@ const handleModalClose = () => {
         skillLevel: String(skillLevel),
         maxPlayers: Number(maxPlayers),
         eventRepeatType: repeat.toUpperCase() || 'NONE',
-        ...(repeat && repeat.toUpperCase() !== 'NONE' && {
-          repeatInterval: Number(repeatInterval),
-          repeatEndDate: repeatEndDate?.toISOString(),
-          ...(repeat.toLowerCase() === 'weekly' && {
-            repeatOnDays: [date.getDay().toString()],
+        ...(repeat &&
+          repeat.toUpperCase() !== 'NONE' && {
+            repeatInterval: Number(repeatInterval),
+            repeatEndDate: repeatEndDate?.toISOString(),
+            ...(repeat.toLowerCase() === 'weekly' && {
+              repeatOnDays: [date.getDay().toString()],
+            }),
           }),
-        }),
         description: description || undefined,
         allCourts: {
           Name: place,
@@ -148,7 +155,7 @@ const handleModalClose = () => {
 
       await createSession(payload);
       Alert.alert('Success', 'Session created successfully');
-      console.log(payload)
+      console.log(payload);
     } catch (err: any) {
       console.error('Error creating session:', err);
       Alert.alert('Error', err.message || 'Failed to create session');
@@ -161,53 +168,55 @@ const handleModalClose = () => {
         <Text style={styles.label}>Event Name</Text>
         <View style={styles.pickerWrapper}>
           <Picker selectedValue={eventName} onValueChange={setEventName}>
-            <Picker.Item label="Select Event Type" value="" />
-            <Picker.Item label="Open Play" value="OPEN_PLAY" />
-            <Picker.Item label="Private Lesson" value="PRIVATE_LESSON" />
-            <Picker.Item label="Group Lesson" value="GROUP_LESSON" />
-            <Picker.Item label="Clinic" value="CLINIC" />
-            <Picker.Item label="Tournament" value="TOURNAMENT" />
-            <Picker.Item label="League" value="LEAGUE" />
+            <Picker.Item label='Select Event Type' value='' />
+            <Picker.Item label='Open Play' value='OPEN_PLAY' />
+            <Picker.Item label='Private Lesson' value='PRIVATE_LESSON' />
+            <Picker.Item label='Group Lesson' value='GROUP_LESSON' />
+            <Picker.Item label='Clinic' value='CLINIC' />
+            <Picker.Item label='Tournament' value='TOURNAMENT' />
+            <Picker.Item label='League' value='LEAGUE' />
           </Picker>
         </View>
 
-        <Text style={styles.buttonText}>
-                {placeToPlay || 'Enter Place Name'}
-              </Text>
+        <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
-        <TextInput
+          <TextInput
             style={styles.input}
-            placeholder="Search Place"
-            value={place}
+            placeholder='Enter Place Name'
+            value={placeToPlay} // will show the selected place
             editable={false}
-            pointerEvents="none"
-        />
+            pointerEvents='none'
+          />
         </TouchableOpacity>
 
         <PreferredPlacesModal
-    visible={modalVisible}
-    handleClose={handleModalClose}
-    locationPermissionGranted={locationPermissionGranted}
-    />
+          visible={modalVisible}
+          handleClose={handleModalClose}
+          locationPermissionGranted={locationPermissionGranted}
+        />
 
         <Text style={styles.label}>Court Selection (Optional)</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter Court Name"
+          placeholder='Enter Court Name'
           value={court}
           onChangeText={setCourt}
         />
 
         <Text style={styles.label}>Date</Text>
         <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-          <TextInput style={styles.input} value={date.toLocaleDateString()} editable={false} />
+          <TextInput
+            style={styles.input}
+            value={date.toLocaleDateString()}
+            editable={false}
+          />
         </TouchableOpacity>
 
         {showDatePicker && (
           <DateTimePicker
             value={date}
-            mode="date"
-            display="default"
+            mode='date'
+            display='default'
             onChange={(event, selectedDate) => {
               setShowDatePicker(false);
               if (selectedDate) setDate(selectedDate);
@@ -235,7 +244,7 @@ const handleModalClose = () => {
         {showTimePicker.visible && (
           <DateTimePicker
             value={startTime || new Date()}
-            mode="time"
+            mode='time'
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             is24Hour={false}
             onChange={handleTimeChange}
@@ -244,25 +253,27 @@ const handleModalClose = () => {
 
         <Text style={{ fontWeight: 'bold' }}>Repeat:</Text>
         <Picker selectedValue={repeat} onValueChange={handleRepeatChange}>
-          <Picker.Item label="None" value="none" />
-          <Picker.Item label="Daily" value="daily" />
-          <Picker.Item label="Weekly" value="weekly" />
-          <Picker.Item label="Monthly" value="monthly" />
-          <Picker.Item label="Yearly" value="yearly" />
-          <Picker.Item label="Custom" value="custom" />
+          <Picker.Item label='None' value='none' />
+          <Picker.Item label='Daily' value='daily' />
+          <Picker.Item label='Weekly' value='weekly' />
+          <Picker.Item label='Monthly' value='monthly' />
+          <Picker.Item label='Yearly' value='yearly' />
+          <Picker.Item label='Custom' value='custom' />
         </Picker>
 
         <TouchableOpacity onPress={() => setShowRepeatEndDatePicker(true)}>
           <Text style={{ color: '#007bff' }}>
-            {repeatEndDate ? `Repeat Ends: ${repeatEndDate.toDateString()}` : 'Set Repeat End Date'}
+            {repeatEndDate
+              ? `Repeat Ends: ${repeatEndDate.toDateString()}`
+              : 'Set Repeat End Date'}
           </Text>
         </TouchableOpacity>
 
         {showRepeatEndDatePicker && (
           <DateTimePicker
             value={repeatEndDate || new Date()}
-            mode="date"
-            display="default"
+            mode='date'
+            display='default'
             onChange={(event, selectedDate) => {
               setShowRepeatEndDatePicker(false);
               if (selectedDate) setRepeatEndDate(selectedDate);
@@ -277,8 +288,8 @@ const handleModalClose = () => {
           step={0.1}
           value={skillLevel}
           onValueChange={setSkillLevel}
-          minimumTrackTintColor="#007bff"
-          maximumTrackTintColor="#ccc"
+          minimumTrackTintColor='#007bff'
+          maximumTrackTintColor='#ccc'
           style={{ width: '100%' }}
         />
         <Text style={styles.sliderValue}>{skillLevel.toFixed(1)}</Text>
@@ -288,10 +299,10 @@ const handleModalClose = () => {
             <Text style={styles.label}>Price</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter Price"
+              placeholder='Enter Price'
               value={price}
               onChangeText={setPrice}
-              keyboardType="numeric"
+              keyboardType='numeric'
             />
           </View>
 
@@ -299,10 +310,10 @@ const handleModalClose = () => {
             <Text style={styles.label}>Max Players</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter Max Players"
+              placeholder='Enter Max Players'
               value={maxPlayers}
               onChangeText={setMaxPlayers}
-              keyboardType="numeric"
+              keyboardType='numeric'
             />
           </View>
         </View>
@@ -310,7 +321,7 @@ const handleModalClose = () => {
         <Text style={styles.label}>Description (Optional)</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="Add event details..."
+          placeholder='Add event details...'
           value={description}
           onChangeText={setDescription}
           multiline
@@ -319,7 +330,9 @@ const handleModalClose = () => {
 
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Send to Preferred Player</Text>
+            <Text style={styles.secondaryButtonText}>
+              Send to Preferred Player
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -328,28 +341,36 @@ const handleModalClose = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      <Modal visible={showCustomModal} animationType="slide">
+      <Modal visible={showCustomModal} animationType='slide'>
         <View style={{ padding: 20 }}>
-          <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>Custom Repeat</Text>
+          <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>
+            Custom Repeat
+          </Text>
 
           <Text>Frequency:</Text>
-          <Picker selectedValue={customRepeat} onValueChange={(value) => setCustomRepeat(value)}>
-            <Picker.Item label="Daily" value="daily" />
-            <Picker.Item label="Weekly" value="weekly" />
-            <Picker.Item label="Monthly" value="monthly" />
-            <Picker.Item label="Yearly" value="yearly" />
+          <Picker
+            selectedValue={customRepeat}
+            onValueChange={(value) => setCustomRepeat(value)}
+          >
+            <Picker.Item label='Daily' value='daily' />
+            <Picker.Item label='Weekly' value='weekly' />
+            <Picker.Item label='Monthly' value='monthly' />
+            <Picker.Item label='Yearly' value='yearly' />
           </Picker>
 
           <Text>Repeat Every:</Text>
           <TextInput
-            keyboardType="numeric"
+            keyboardType='numeric'
             value={String(customInterval)}
             onChangeText={(text) => setCustomInterval(Number(text))}
             style={{ borderWidth: 1, padding: 5, marginVertical: 10 }}
           />
 
           <Text>End Date:</Text>
-          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={{ paddingVertical: 10 }}>
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={{ paddingVertical: 10 }}
+          >
             <Text style={{ color: 'blue' }}>
               {repeatEndDate ? repeatEndDate.toDateString() : 'Select End Date'}
             </Text>
@@ -358,22 +379,28 @@ const handleModalClose = () => {
           {showDatePicker && (
             <DateTimePicker
               value={repeatEndDate || new Date()}
-              mode="date"
-              display="default"
+              mode='date'
+              display='default'
               onChange={handleDateChange}
             />
           )}
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
-            <Button title="Cancel" onPress={() => setShowCustomModal(false)} />
-            <Button title="Apply" onPress={handleCustomApply} />
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginTop: 20,
+            }}
+          >
+            <Button title='Cancel' onPress={() => setShowCustomModal(false)} />
+            <Button title='Apply' onPress={handleCustomApply} />
           </View>
         </View>
       </Modal>
     </>
   );
 };
- 
+
 const styles = StyleSheet.create({
   container: {
     padding: 16,
@@ -445,9 +472,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: '#333',
   },
 });
- 
+
 export default CreateEventForm;
