@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
@@ -6,7 +6,7 @@ import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import { RootState } from '@/store';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, Text} from 'react-native-paper';
+import { Button, Text} from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
 
@@ -173,7 +173,7 @@ const OpenPlayCard = () => {
   }, [clubId, playsData, courtsData, userId, status, courtsStatus]);
 
   if (!clubId) {
-    return <Text style={styles.noDataText}>You&apos;re not a member of a club yet.</Text>;
+    return <Text style={styles.noDataText}>No open play sessions available</Text>;
   }
 
   if (status === 'loading' || courtsStatus === 'loading') {
@@ -189,88 +189,155 @@ const OpenPlayCard = () => {
   }
 
   return (
-    <>
-      {rows.map((row, idx) => (
-        <Card key={idx} style={styles.card}>
-          <Card.Content>
-            <View style={styles.row}>
-              <View style={styles.column}>
-                {columns.map((col, i) => (
-                  <View key={i} style={styles.field}>
-                    <Text style={styles.label}>
-                      {columnIcons[col]} {col}: <Text style={styles.value}>{getRowValue(row, col)}</Text>
-                    </Text>
-                  </View>
-                ))}
-              </View>
-              <View style={styles.buttonWrapper}>
-                <Button
-                  mode='contained'
-                  onPress={() => handleJoinPlay(row.id, row.isFull)}
-                  style={styles.button}
-                  disabled={row.isPlayerRegistered}
-                  loading={row.id === loadingId}
-                >
-                  {buttonMessage(row.isPlayerRegistered, row.isFull)}
-                </Button>
-              </View>
+    <View style={styles.container}>
+      {rows.map((row, idx) => {
+        const peopleText = `${row['max slots']} ${row['max slots'] === 1 ? 'Person' : 'People'} Total`;
+        // const statusText = row.isPlayerRegistered
+        //   ? 'Joined'
+        //   : row.isFull
+        //   ? 'Waitlist'
+        //   : 'Open';
+        const statusColor = row.isPlayerRegistered
+          ? '#ecfdff'
+          : row.isFull
+          ? '#ecfdff'
+          : '#ecfdff';
+  
+        return (
+        <View key={row.id} style={styles.card}>
+            <Text style={styles.placeText} numberOfLines={1}>
+            {row.court}
+            </Text>
+        
+            <View style={styles.datePeopleRow}>
+            <Text style={styles.dateText}>{row.date} | {row.time}</Text>
+            <Text style={styles.separator}>|</Text>
+            <Text style={styles.peopleText}>{peopleText}</Text>
             </View>
-          </Card.Content>
-        </Card>
-      ))}
-    </>
-  );
+        
+            <View style={styles.rowBetween}>
+                <View style={[styles.statusBadge, { flexDirection: 'row', alignItems: 'center' }]}>
+                    <MaterialIcons name="person" size={16} color="#2F7C83" style={{ marginRight: 4 }} />
+                    <Text style={styles.statusBadgeText}>
+                    {row['filled slots']}/{row['max slots']} Accepted
+                    </Text>
+                </View>
+
+                <Button
+                    mode="contained"
+                    onPress={() => handleJoinPlay(row.id, row.isFull)}
+                    style={styles.button}
+                    disabled={row.isPlayerRegistered}
+                    loading={row.id === loadingId}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={styles.buttonLabel}
+                >
+                    {buttonMessage(row.isPlayerRegistered, row.isFull)}
+                </Button>
+            </View>
+        </View>
+        );          
+      })}
+    </View>
+  );  
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginBottom: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
+    container: {
+        padding: 10,
+      },
+    card: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        marginBottom: 2,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },      
+    placeText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginTop: 6,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  column: {
-    flex: 1,
-  },
-  field: {
-    marginBottom: 5,
-  },
-  label: {
-    fontWeight: 'bold',
-    fontSize: 14,
-    color: '#374151',
-  },
-  value: {
-    fontWeight: 'normal',
-    color: '#6B7280',
-  },
-  buttonWrapper: {
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    marginLeft: 10,
-  },
-  button: {
-    marginTop: 10,
-  },
-  noDataText: {
-    textAlign: 'center',
-    color: '#000000',
-    fontSize: 14,
-    paddingVertical: 20,
-  },
+    datePeopleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    dateText: {
+        fontSize: 13,
+        color: '#4B5563',
+    },
+    separator: {
+        marginHorizontal: 6,
+        color: '#9CA3AF',
+    },
+    peopleText: {
+        fontSize: 13,
+        color: '#4B5563',
+    },
+    statusBadge: {
+        borderRadius: 6,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        backgroundColor: '#E0F7FA',
+        height: 36,
+        justifyContent: 'center',
+      },
+    statusBadgeText: {
+        color: '#333',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    rowBetween: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    buttonWrapper: {
+        alignItems: 'flex-end',
+    },
+    button: {
+        backgroundColor: '#2F7C83',
+        borderRadius: 6,
+        height: 36,
+        justifyContent: 'center',
+    },
+      
+    buttonContent: {
+        height: 36,
+        paddingHorizontal: 12,
+    },
+    buttonLabel: {
+        fontSize: 12,
+        fontWeight: 'bold',
+    },  
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    column: {
+        flex: 1,
+    },
+    field: {
+        marginBottom: 5,
+    },
+    label: {
+        fontWeight: 'bold',
+        fontSize: 14,
+        color: '#374151',
+    },
+    value: {
+        fontWeight: 'normal',
+        color: '#6B7280',
+    },
+    noDataText: {
+        textAlign: 'center',
+        color: '#000000',
+        fontSize: 14,
+        paddingVertical: 20,
+    },
 });
 
 export default OpenPlayCard;
