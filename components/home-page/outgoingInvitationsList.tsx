@@ -1,92 +1,136 @@
 import React from 'react';
-import {StyleSheet, View } from 'react-native';
-import { IconButton, Text } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 
+export type Invite = {
+  requestId: string;
+  playTime: [number, number, number, number?, number?]; // [YYYY, MM, DD, HH?, MM?]
+  placeToPlay: string;
+  dateTimeMs: number;
+  accepted: number;
+  Requests: {
+    playersNeeded: number;
+  }[];
+};
+
 type OutgoingInvitationListProps = {
-    invites: any[];
-    onPressCard: (invite: any) => void;
+  invites: Invite[];
+};
+
+export const OutgoingInvitationList: React.FC<OutgoingInvitationListProps> = ({ invites }) => {
+  const router = useRouter();
+
+  const formatDateParts = (timestamp: number) => {
+    const dateObj = new Date(timestamp);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+
+    const dateString = `${day}/${month}/${year}`;
+    const timeString = dateObj.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    return { dateString, timeString };
   };
-  
-  export const OutgoingInvitationList: React.FC<OutgoingInvitationListProps> = ({
-    invites,
-    onPressCard,
-  }) => {
-    const router = useRouter();
 
   return (
-    <View>
-      {invites.map((gameInvite) => {
+    <View style={styles.container}>
+      {invites.map((gameInvite, index) => {
         const request = gameInvite.Requests?.[0];
+        const acceptedCount = gameInvite.accepted || 0;
+        const totalPlayers = request?.playersNeeded || 0;
+
+        const isFullyAccepted = acceptedCount === totalPlayers;
+        const statusText = isFullyAccepted ? 'Accepted' : 'Pending';
+        const statusColor = isFullyAccepted ? '#429645' : '#c47602';
+
+        const peopleText = `${totalPlayers} ${totalPlayers === 1 ? 'Person' : 'People'} Invited`;
+        const { dateString, timeString } = formatDateParts(gameInvite.dateTimeMs);
+
+        const onPress = () => {
+          const encoded = encodeURIComponent(JSON.stringify(gameInvite));
+          router.push(`/invite-summary?data=${encoded}`);
+        };
+
         return (
-            <View
-                key={gameInvite.requestId}
-                style={styles.row}
-                onTouchEnd={() => {
-                    const encoded = encodeURIComponent(JSON.stringify(gameInvite));
-                    router.push(`/invite-summary?data=${encoded}`);
-                }}              
-            >
-            <View style={styles.fullLine}>
-              <View style={styles.leftTextBlock}>
-                <Text style={styles.placeText}>{gameInvite.placeToPlay}</Text>
-                <Text style={styles.dateText}>{gameInvite.date}</Text>
-                <Text style={styles.greenText}>
-                  Accepted: {gameInvite.accepted} / {request?.playersNeeded}
+          <View key={`${gameInvite.requestId}-${index}`} style={styles.card} onTouchEnd={onPress}>
+            <View style={styles.statusBadgeContainer}>
+              <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+                <Text style={styles.statusBadgeText}>
+                  {acceptedCount}/{totalPlayers} {statusText}
                 </Text>
               </View>
-          
-              <IconButton
-                icon={
-                  gameInvite.pending !== 0 ? 'clock-outline' : 'check-circle-outline'
-                }
-                iconColor={gameInvite.pending !== 0 ? 'orange' : 'green'}
-                size={20}
-              />
             </View>
-          </View>          
+
+            <Text style={styles.placeText} numberOfLines={1}>
+              {gameInvite.placeToPlay}
+            </Text>
+
+            <View style={styles.datePeopleRow}>
+              <Text style={styles.dateText}>{dateString} | {timeString}</Text>
+              <Text style={styles.separator}>|</Text>
+              <Text style={styles.peopleText}>{peopleText}</Text>
+            </View>
+          </View>
         );
       })}
     </View>
   );
 };
+
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomColor: '#eee',
+  container: {
+    marginVertical: 8,
+  },
+  card: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 2,
     borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  fullLine: {
-    flex: 1,
+  statusBadgeContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    marginBottom: 6,
   },
-  leftTextBlock: {
-    flexShrink: 1,
-    flex: 1,
+  statusBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+  },
+  statusBadgeText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 12,
+    letterSpacing: 0.3,
   },
   placeText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-    flexWrap: 'wrap',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 4,
+  },
+  datePeopleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   dateText: {
     fontSize: 13,
     color: '#555',
-    marginVertical: 2,
   },
-  greenText: {
-    color: 'green',
+  separator: {
+    marginHorizontal: 8,
+    fontSize: 14,
+    color: '#bbb',
+  },
+  peopleText: {
     fontSize: 13,
-  },
-  noInvitesText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: '#888',
+    color: '#555',
   },
 });

@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   ScrollView,
@@ -16,6 +17,7 @@ import {
 import { useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
+import { useDeleteUserById } from '@/hooks/apis/user/useDeleteUserById';
 
 type Place = {
   id: string;
@@ -78,6 +80,9 @@ const UserProfile = () => {
   const [suggestedPlaces, setSuggestedPlaces] = useState<Place[]>([]);
   const [showPreferredTimeModal, setShowPreferredTimeModal] = useState(false);
   const [selectedTime, setSelectedTime] = useState(userData.preferredTime || '');
+  const [modalVisible, setModalVisible] = useState(false);
+  const { deleteUserById, status, error } = useDeleteUserById();
+  const isLoading = status === 'loading';
   const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
   const dispatch = useDispatch();
   const router = useRouter();
@@ -95,6 +100,23 @@ const UserProfile = () => {
       },
     ]);
   };
+
+const handleDelete = async () => {
+  try {
+    if (!userData.userId) {
+      console.error('User ID not found.');
+      return;
+    }
+
+    await deleteUserById(userData.userId);
+    setModalVisible(false);
+
+    // Redirect to login/signup after deletion
+    router.replace('/');
+  } catch (err) {
+    console.error('Failed to delete user:', err);
+  }
+};
 
   useEffect(() => {
     const loginAndGetToken = async () => {
@@ -383,13 +405,61 @@ const UserProfile = () => {
       </View>
 
       <View style={styles.DetailsCard}>
-        {/* DELETE ACCOUNT */}
-        <View style={styles.sectionCard}>
-          <TouchableOpacity style={styles.actionRow}>
-            <Text style={styles.actionText}>Delete Account</Text>
-            <Text style={styles.actionArrow}>{'>'}</Text>
-          </TouchableOpacity>
+      {/* DELETE ACCOUNT SECTION */}
+      <View style={styles.sectionCard}>
+        <TouchableOpacity
+          style={styles.actionRow}
+          onPress={() => setModalVisible(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.actionText}>Delete Account</Text>
+          <Text style={styles.actionArrow}>{'>'}</Text>
+        </TouchableOpacity>
+      </View>
+      {/* DELETE CONFIRMATION MODAL */}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+          {error && (
+            <Text style={{ color: 'red', marginTop: 8 }}>{error}</Text>
+          )}
+            <View style={styles.iconWrapper}>
+              <Ionicons name="delete" size={28} color="#FF3B30" />
+            </View>
+            <Text style={styles.modalTitle}>Delete Account</Text>
+            <Text style={styles.modalDescription}>
+              This action can’t be reversed. All the data associated with this account will be permanently deleted. Are you sure you want to proceed?
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelDelete]}
+                onPress={() => setModalVisible(false)}
+                disabled={isLoading}
+              >
+                <Text style={[styles.buttonText, { color: '#4A4A4A' }]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.button, styles.deleteButton]}
+                onPress={handleDelete}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={[styles.buttonText, { color: '#fff' }]}>Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
+      </Modal>
 
         {/* LOGOUT BUTTON */}
         <View style={styles.sectionCard}>
@@ -427,7 +497,7 @@ const UserProfile = () => {
         animationType="slide"
         onRequestClose={() => setShowPlaceModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.modal_Overlay}>
           <View style={styles.modal_Container}>
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
               <Text style={styles.modal_Title}>Select Preferred Places</Text>
@@ -494,7 +564,7 @@ const UserProfile = () => {
         animationType="slide"
         onRequestClose={() => setShowPreferredTimeModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.modal_Overlay}>
           <View style={styles.modal_Container}>
             <Text style={styles.modal_Title}>Preferred Time</Text>
 
@@ -569,7 +639,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F1F1',
     color: '#999',
   },
-  modalOverlay: {
+  modal_Overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -807,5 +877,68 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontSize: 16,
     color: '#FF3B30',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    width: '100%',
+    paddingVertical: 30,
+    paddingHorizontal: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  iconWrapper: {
+    backgroundColor: '#FDECEA', // Light red background
+    borderRadius: 50,
+    padding: 14,
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E1E1E',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#4A4A4A',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  cancelDelete: {
+    backgroundColor: '#F3F3F3',
+    marginRight: 10,
+  },
+  deleteButton: {
+    backgroundColor: '#FF3B30',
+    marginLeft: 10,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

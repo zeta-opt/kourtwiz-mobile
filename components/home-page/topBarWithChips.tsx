@@ -28,7 +28,7 @@ const InvitationTopBar = ({
 
         <Text style={styles.headerTitle}>Request</Text>
 
-        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+        <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
           <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
@@ -36,14 +36,14 @@ const InvitationTopBar = ({
       <View style={styles.chipRow}>
         <TouchableOpacity
           style={[styles.chip, active === 'all' && styles.activeChip]}
-          onPress={() => router.push('/home')}
+          onPress={() => router.replace('/home')}
         >
           <Text style={[styles.chipText, active === 'all' && styles.activeChipText]}>All</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.chip, active === 'incoming' && styles.activeChip]}
-          onPress={() => router.push('/player-invitations')}
+          onPress={() => router.replace('/player-invitations')}
         >
           <Text style={[styles.chipText, active === 'incoming' && styles.activeChipText]}>
             Incoming PF {inviteCount ? `(${inviteCount})` : ''}
@@ -52,7 +52,7 @@ const InvitationTopBar = ({
 
         <TouchableOpacity
           style={[styles.chip, active === 'sent' && styles.activeChip]}
-          onPress={() => router.push('/find-players')}
+          onPress={() => router.replace('/find-players')}
         >
           <Text style={[styles.chipText, active === 'sent' && styles.activeChipText]}>
             Sent Request
@@ -61,7 +61,7 @@ const InvitationTopBar = ({
 
         <TouchableOpacity
           style={[styles.chip, active === 'open' && styles.activeChip]}
-          onPress={() => router.push('/home')}
+          onPress={() => router.replace('/home')}
         >
           <Text style={[styles.chipText, active === 'open' && styles.activeChipText]}>Open Play</Text>
         </TouchableOpacity>

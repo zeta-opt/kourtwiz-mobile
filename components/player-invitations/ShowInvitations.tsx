@@ -24,6 +24,7 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { useSelector } from 'react-redux';
+import { clearAllFilters, filterInvitations } from '../home-page/filters';
 
 const API_URL = 'http://44.216.113.234:8080';
 
@@ -108,33 +109,15 @@ const ShowInvitations = () => {
 
   const uniqueLocations = Array.from(new Set((invites ?? []).map((inv) => inv.placeToPlay).filter(Boolean)));
 
-  const filteredInvites = (invites ?? []).filter((invite) => {
-    let matches = true;
-
-    if (selectedDate) {
-      const inviteDate = new Date(invite.playTime[0], invite.playTime[1] - 1, invite.playTime[2]);
-      matches &&= inviteDate.toDateString() === selectedDate.toDateString();
-    }
-
-    if (selectedTime) {
-      const inviteTime = new Date(invite.playTime[0], invite.playTime[1] - 1, invite.playTime[2], invite.playTime[3], invite.playTime[4]);
-      matches &&=
-        inviteTime.getHours() === selectedTime.getHours() &&
-        inviteTime.getMinutes() === selectedTime.getMinutes();
-    }
-
-    if (selectedLocation) {
-      matches &&= invite.placeToPlay === selectedLocation;
-    }
-
-    return matches;
-  });
+  const filteredInvites = filterInvitations(invites ?? [], selectedDate, selectedTime, selectedLocation);
 
   const clearFilters = () => {
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setSelectedLocation(null);
-  };
+    clearAllFilters({
+      setSelectedDate,
+      setSelectedTime,
+      setSelectedLocation,
+    });
+  };  
 
   return (
     <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
