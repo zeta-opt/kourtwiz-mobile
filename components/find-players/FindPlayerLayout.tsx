@@ -18,11 +18,11 @@ import {
   closeSearchPlaceModal,
   openPlayerFinderModal,
 } from '../../store/uiSlice';
+import PreferredPlacesModal from '../find-player/preferred-places-modal/PreferredPlacesModal';
+import SearchPlacesModal from '../find-player/search-places-modal/SearchPlacesModal';
 import ChooseContactsModal from './choose-contacts-modal/ChooseContactsModal';
 import MultiStepInviteModal from './FindPLayerMoadal';
 import InviteSummaryModal from './invite-summary modal/InviteSummaryModal';
-import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
-import SearchPlacesModal from './search-places-modal/SearchPlacesModal';
 
 const FindPlayerLayout = () => {
   const dispatch = useDispatch<AppDispatch>();

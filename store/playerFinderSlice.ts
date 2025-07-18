@@ -1,13 +1,13 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Contacts from 'expo-contacts';
 import { simplifyContacts } from '@/helpers/find-players/phoneContactsToList';
 import { AppDispatch, RootState } from '@/store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import * as Contacts from 'expo-contacts';
 
 const CONTACT_LIST_KEY = 'cachedContactList';
 
 // Define the shape of a single preferred contact
-interface Contact {
+export interface Contact {
   contactName: string;
   contactPhoneNumber: string;
 }
@@ -92,7 +92,10 @@ const playerFinderDataSlice = createSlice({
     setContactList: (state, action: PayloadAction<Contact[]>) => {
       console.log('setting contact list ');
       state.contactList = action.payload;
-      AsyncStorage.setItem(CONTACT_LIST_KEY, JSON.stringify(action.payload)).catch(console.error);
+      AsyncStorage.setItem(
+        CONTACT_LIST_KEY,
+        JSON.stringify(action.payload)
+      ).catch(console.error);
     },
     // Load from AsyncStorage
     loadContactListFromStorage: (state, action: PayloadAction<Contact[]>) => {
@@ -105,7 +108,7 @@ const playerFinderDataSlice = createSlice({
     },
     setContactLoading: (state, action: PayloadAction<boolean>) => {
       state.isContactLoading = action.payload;
-    },    
+    },
     // Action to reset all player finder data to its initial state
     resetPlayerFinderData: () => initialState,
   },
@@ -129,46 +132,49 @@ export const {
   resetPlayerFinderData,
 } = playerFinderDataSlice.actions;
 
-export const loadContacts = (forceRefresh = false) => async (dispatch: AppDispatch, getState: () => RootState) => {
-  dispatch(setContactLoading(true));
-  try {
-    const currentList = getState().playerFinder.contactList;
+export const loadContacts =
+  (forceRefresh = false) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    dispatch(setContactLoading(true));
+    try {
+      const currentList = getState().playerFinder.contactList;
 
-    // If contacts already loaded and not forcing refresh, use existing
-    if (!forceRefresh && currentList.length > 0) {
+      // If contacts already loaded and not forcing refresh, use existing
+      if (!forceRefresh && currentList.length > 0) {
+        dispatch(setContactLoading(false));
+        return;
+      }
+
+      // Try loading from cache first
+      const cachedJson = await AsyncStorage.getItem(CONTACT_LIST_KEY);
+      if (cachedJson && !forceRefresh) {
+        const cachedContacts = JSON.parse(cachedJson);
+        dispatch(loadContactListFromStorage(cachedContacts));
+        return;
+      }
+
+      // Request permission to access device contacts
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        throw new Error('Permission to access contacts was denied');
+      }
+
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.PhoneNumbers],
+      });
+
+      const simplified = simplifyContacts(data);
+      simplified.sort((a, b) =>
+        (a.contactName || '')
+          .toLowerCase()
+          .localeCompare((b.contactName || '').toLowerCase())
+      );
+      dispatch(setContactList(simplified));
+    } catch (error) {
+      console.error('Failed to load contacts from storage', error);
+    } finally {
       dispatch(setContactLoading(false));
-      return;
     }
-
-    // Try loading from cache first
-    const cachedJson = await AsyncStorage.getItem(CONTACT_LIST_KEY);
-    if (cachedJson && !forceRefresh) {
-      const cachedContacts = JSON.parse(cachedJson);
-      dispatch(loadContactListFromStorage(cachedContacts));
-      return;
-    }
-
-    // Request permission to access device contacts
-    const { status } = await Contacts.requestPermissionsAsync();
-    if (status !== 'granted') {
-      throw new Error('Permission to access contacts was denied');
-    }
-
-    const { data } = await Contacts.getContactsAsync({
-      fields: [Contacts.Fields.PhoneNumbers],
-    });
-
-    const simplified = simplifyContacts(data);
-    simplified.sort((a, b) =>
-      (a.contactName || '').toLowerCase().localeCompare((b.contactName || '').toLowerCase())
-    );    
-    dispatch(setContactList(simplified));
-
-  } catch (error) {
-    console.error('Failed to load contacts from storage', error);
-  } finally {
-    dispatch(setContactLoading(false));
-  }
-};
+  };
 
 export default playerFinderDataSlice.reducer;

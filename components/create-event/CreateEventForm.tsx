@@ -18,7 +18,7 @@ import {
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import PreferredPlacesModal from '../find-players/preferred-places-modal/PreferredPlacesModal';
+import PreferredPlacesModal from '../find-player/preferred-places-modal/PreferredPlacesModal';
 
 const CreateEventForm = () => {
   const { user } = useSelector((state: RootState) => state.auth);

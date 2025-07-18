@@ -1,42 +1,82 @@
+import { useRequestPlayerFinder } from '@/hooks/apis/player-finder/useRequestPlayerFinder';
 import { AppDispatch, RootState } from '@/store';
-import { loadContacts } from '@/store/playerFinderSlice';
+import {
+  Contact,
+  loadContacts,
+  resetPlayerFinderData,
+  setPreferredContacts,
+} from '@/store/playerFinderSlice';
 import {
   closePreferredPlaceModal,
+  closePreferredPlayersModal,
   openPreferredPlaceModal,
+  openPreferredPlayersModal,
 } from '@/store/uiSlice';
 import Slider from '@react-native-community/slider';
+import * as Contacts from 'expo-contacts';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Chip, Icon, IconButton, Text } from 'react-native-paper';
+import {
+  Button,
+  Dialog,
+  Icon,
+  IconButton,
+  Portal,
+  Text,
+} from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
-import PreferredPlacesModal from '../find-players/preferred-places-modal/PreferredPlacesModal';
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PlayerCountDropdown from '../player-count/PlayerCountDropdown';
+import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
+import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
+import ContactsModal from './contacts-modal/ContactsModal';
+import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
+
 const getSliderColor = (value: number): string => {
   if (value <= 2) return '#f4d03f';
   if (value <= 3) return '#90ee90';
   if (value <= 4) return '#f39c12';
   return '#e74c3c';
 };
+
 const FindPlayerLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  // Get user from Redux
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userId = user?.userId;
 
   // State management
   const [clubName, setClubName] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
-  const [skillLevel, setSkillLevel] = useState(3);
+  const [skillLevel, setSkillLevel] = useState(
+    user?.playerDetails?.personalRating ?? 3
+  );
   const [playerCount, setPlayerCount] = useState(1);
-  const [preferredPlayers, setPreferredPlayers] = useState<string[]>([]);
+  const [contactsModalVisible, setContactsModalVisible] = useState(false);
+  const [conflictDialogVisible, setConflictDialogVisible] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  // Add the hook for player finder
+  const { requestPlayerFinder, status: finderStatus } =
+    useRequestPlayerFinder();
+
+  const preferredContacts = useSelector(
+    (state: RootState) => state.playerFinder.preferredContacts
+  );
+  console.log(preferredContacts);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState<
     boolean | null
   >(null);
 
   const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
+  const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
+
   const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
 
   // Check location permission status on mount
@@ -89,7 +129,165 @@ const FindPlayerLayout = () => {
     }
   };
 
+  const showPreferredPlayers = () => {
+    dispatch(openPreferredPlayersModal());
+  };
+
+  const handleAddContact = async () => {
+    const { status } = await Contacts.getPermissionsAsync();
+
+    if (status === 'granted') {
+      setContactsModalVisible(true);
+    } else {
+      const { status: newStatus } = await Contacts.requestPermissionsAsync();
+
+      if (newStatus === 'granted') {
+        setContactsModalVisible(true);
+      } else {
+        Alert.alert(
+          'Contacts Permission Required',
+          'To select contacts from your device, we need access to your contacts.',
+          [
+            {
+              text: "Don't Allow",
+            },
+            {
+              text: 'Allow',
+              onPress: async () => {
+                const { status: finalStatus } =
+                  await Contacts.requestPermissionsAsync();
+                if (finalStatus === 'granted') {
+                  setContactsModalVisible(true);
+                } else {
+                  Alert.alert(
+                    'Permission Denied',
+                    'You can still select players from your preferred contacts.'
+                  );
+                }
+              },
+            },
+          ]
+        );
+      }
+    }
+  };
+
+  const handleRemovePlayer = (index: number) => {
+    dispatch(
+      setPreferredContacts(preferredContacts.filter((_, i) => i !== index))
+    );
+  };
+
+  const handleSelectPlayers = (players: Contact[]) => {
+    dispatch(setPreferredContacts(players));
+  };
+
+  const handleSelectContactsFromDevice = (contacts: Contact[]) => {
+    // Directly replace the preferred contacts with the selection from modal
+    dispatch(setPreferredContacts(contacts));
+    setContactsModalVisible(false);
+  };
+
+  const toLocalISOString = (date: Date): string => {
+    const pad = (n: number, digits = 2) => String(n).padStart(digits, '0');
+
+    return (
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+        date.getDate()
+      )}` +
+      `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+        date.getSeconds()
+      )}` +
+      `.${pad(date.getMilliseconds(), 3)}Z`
+    );
+  };
+
+  // Add the handleSubmit function
+  const handleSubmit = async () => {
+    // Validate required fields
+    if (!placeToPlay) {
+      Alert.alert('Missing Information', 'Please select a place to play.');
+      return;
+    }
+
+    if (!selectedDate || !startTime) {
+      Alert.alert('Missing Information', 'Please select date and start time.');
+      return;
+    }
+
+    // Create play time from selected date and start time
+    const playTime = new Date(selectedDate);
+    playTime.setHours(startTime.getHours());
+    playTime.setMinutes(startTime.getMinutes());
+    playTime.setSeconds(0);
+
+    // Calculate end time - use provided end time or default to 2 hours after start
+    let finalEndTime: Date;
+    if (endTime) {
+      finalEndTime = new Date(selectedDate);
+      finalEndTime.setHours(endTime.getHours());
+      finalEndTime.setMinutes(endTime.getMinutes());
+      finalEndTime.setSeconds(0);
+    } else {
+      finalEndTime = new Date(playTime.getTime() + 2 * 60 * 60 * 1000);
+    }
+
+    console.log({
+      requestorId: userId,
+      placeToPlay,
+      playTime: toLocalISOString(playTime),
+      playEndTime: toLocalISOString(finalEndTime),
+      playersNeeded: playerCount,
+      skillRating: skillLevel,
+      preferredContacts,
+    });
+    requestPlayerFinder({
+      finderData: {
+        requestorId: userId,
+        placeToPlay,
+        playTime: toLocalISOString(playTime),
+        playEndTime: toLocalISOString(finalEndTime),
+        playersNeeded: playerCount,
+        skillRating: skillLevel,
+        preferredContacts,
+      },
+      callbacks: {
+        onSuccess: () => {
+          dispatch(resetPlayerFinderData());
+          setSubmitted(true);
+
+          // Show success message
+          Alert.alert(
+            'Success!',
+            'Your player finder request has been submitted.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Reset form
+                  setSelectedDate(null);
+                  setStartTime(null);
+                  setEndTime(null);
+                  setSkillLevel(user?.playerDetails?.personalRating ?? 3);
+                  setPlayerCount(1);
+                  setSubmitted(false);
+
+                  // Navigate back or to another screen
+                  router.back();
+                },
+              },
+            ]
+          );
+        },
+        onError: () => {
+          setConflictDialogVisible(true);
+        },
+      },
+    });
+  };
+
   const sliderColor = getSliderColor(skillLevel);
+
   return (
     <View style={styles.container}>
       {/* Main Header */}
@@ -186,73 +384,59 @@ const FindPlayerLayout = () => {
         </View>
 
         {/* Preferred Players Section */}
-        <View style={styles.formSection}>
-          <Text variant='titleMedium' style={styles.sectionTitle}>
-            Preferred Players
-          </Text>
+        <PreferredPlayersSelector
+          preferredContacts={preferredContacts}
+          onShowPreferredPlayers={showPreferredPlayers}
+          onAddContact={handleAddContact}
+          onRemovePlayer={handleRemovePlayer}
+        />
 
-          {/* Choose Preferred Players */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Select Preferred Players</Text>
-            <Button
-              mode='outlined'
-              icon='account-multiple'
-              style={styles.contactsButton}
-              onPress={() => {
-                console.log('Open contact selector');
-              }}
-            >
-              Choose from contacts
-            </Button>
-          </View>
+        <PreferredPlayersModal
+          visible={preferredPlayersModal}
+          onClose={() => dispatch(closePreferredPlayersModal())}
+          onSelectPlayers={handleSelectPlayers}
+          selectedPlayers={preferredContacts}
+        />
 
-          {/* Selected Preferred Players */}
-          {preferredPlayers.length > 0 && (
-            <View style={styles.selectedPlayersContainer}>
-              <Text style={styles.inputLabel}>
-                Selected Players ({preferredPlayers.length})
-              </Text>
-              <View style={styles.chipsContainer}>
-                {preferredPlayers.map((player, index) => (
-                  <Chip
-                    key={index}
-                    onClose={() => {
-                      setPreferredPlayers(
-                        preferredPlayers.filter((_, i) => i !== index)
-                      );
-                    }}
-                    style={styles.playerChip}
-                  >
-                    {player}
-                  </Chip>
-                ))}
-              </View>
-            </View>
-          )}
-        </View>
+        <ContactsModal
+          visible={contactsModalVisible}
+          onClose={() => setContactsModalVisible(false)}
+          onSelectContacts={handleSelectContactsFromDevice}
+          selectedContacts={preferredContacts}
+        />
 
         <View style={styles.actionButtonContainer}>
           <Button
             mode='contained'
             style={styles.findPlayerButton}
-            onPress={() => {
-              console.log('Finding players...');
-              console.log({
-                place: placeToPlay,
-                date: selectedDate,
-                startTime,
-                endTime,
-                skillLevel,
-                playerCount,
-                preferredPlayers,
-              });
-            }}
+            onPress={handleSubmit}
             icon='magnify'
+            loading={finderStatus === 'loading'}
+            disabled={finderStatus === 'loading' || submitted}
           >
-            Find Player
+            {submitted ? 'Submitted' : 'Find Player'}
           </Button>
         </View>
       </ScrollView>
+
+      {/* Booking conflict dialog */}
+      <Portal>
+        <Dialog
+          visible={conflictDialogVisible}
+          onDismiss={() => setConflictDialogVisible(false)}
+        >
+          <Dialog.Title>Booking Conflict</Dialog.Title>
+          <Dialog.Content>
+            <Text variant='bodyMedium'>
+              You already have a booking at this time. Please choose another
+              slot.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setConflictDialogVisible(false)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 };
@@ -391,15 +575,6 @@ const styles = StyleSheet.create({
   },
   selectedPlayersContainer: {
     marginBottom: 16,
-  },
-  chipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
-  },
-  playerChip: {
-    marginBottom: 4,
   },
   countSelector: {
     flexDirection: 'row',
