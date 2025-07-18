@@ -19,6 +19,8 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import PreferredPlacesModal from '../find-player/preferred-places-modal/PreferredPlacesModal';
+import { router } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const CreateEventForm = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -183,6 +185,12 @@ const CreateEventForm = () => {
 
   return (
     <>
+    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+      <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
+        <MaterialIcons name="arrow-back-ios" size={22} color="black" />
+      </TouchableOpacity>
+      <Text style={{ fontSize: 20, fontWeight: 'bold', marginVertical: 16 }}> Create Event</Text>
+    </View>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.label}>Event Name</Text>
         <View style={styles.pickerWrapper}>
