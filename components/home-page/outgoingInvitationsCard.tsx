@@ -14,11 +14,11 @@ export type Invite = {
   }[];
 };
 
-type OutgoingInvitationListProps = {
+type OutgoingInvitationCardProps = {
   invites: Invite[];
 };
 
-export const OutgoingInvitationList: React.FC<OutgoingInvitationListProps> = ({ invites }) => {
+export const OutgoingInvitationCard: React.FC<OutgoingInvitationCardProps> = ({ invites }) => {
   const router = useRouter();
 
   const formatDateParts = (timestamp: number) => {

@@ -22,7 +22,7 @@ const InvitationTopBar = ({
   return (
     <>
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
           <MaterialIcons name="arrow-back-ios" size={22} color="black" />
         </TouchableOpacity>
 

@@ -1,8 +1,10 @@
 import FindplayerCard from '@/components/home-page/FindplayerCard';
 import InvitationCard from '@/components/home-page/myInvitationsCard';
-import { OutgoingInvitationList } from '@/components/home-page/outgoingInvitationsList';
+import OpenPlayCard from '@/components/home-page/openPlayCard';
+import { OutgoingInvitationCard } from '@/components/home-page/outgoingInvitationsCard';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
+import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { getToken } from '@/shared/helpers/storeToken';
@@ -50,9 +52,11 @@ const Dashboard = () => {
   const { data: outgoingInvitesRaw } = useGetPlayerInvitationSent({
     inviteeEmail: user?.email,
   });
+  const clubId = user?.currentActiveClubId;
+  const { data: openPlayInvites = [] } = useGetPlays(clubId);
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING'>('INCOMING');
+  const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING' | 'OPENPLAY'>('INCOMING');
   const [selectedInvite, setSelectedInvite] = useState<any>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
@@ -64,9 +68,6 @@ const Dashboard = () => {
     outgoingInvitesRaw?.filter((invite) => invite.status !== 'WITHDRAWN') || []
   );
   const outgoingInvites = Object.values(groupedOutgoing);
-  const pendingOutgoingInvites = outgoingInvites.filter((inviteGroup: any) =>
-    inviteGroup.Requests?.some((r: any) => r.status === 'PENDING')
-  );
   const pendingOutCount = outgoingInvites.length;
 
   const allInvites = invites ?? [];
@@ -163,13 +164,23 @@ const Dashboard = () => {
                 >
                   Sent Request ({pendingOutCount})
                 </Text>
+                <Text
+                  style={[
+                    styles.chip,
+                    activeTab === 'OPENPLAY' ? styles.chipActive : styles.chipInactive,
+                  ]}
+                  onPress={() => setActiveTab('OPENPLAY')}
+                >
+                  Open Play ({pendingOutCount})
+                </Text>
               </View>
 
               {(activeTab === 'INCOMING' && allInvites.length > 0) ||
-              (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ? (
+              (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ||
+              (activeTab === 'OPENPLAY' && outgoingInvites.length > 0) ? (
                 <TouchableOpacity
                   onPress={() =>
-                    router.push(
+                    router.replace(
                       activeTab === 'INCOMING'
                         ? '/(authenticated)/player-invitations'
                         : '/(authenticated)/find-players'
@@ -199,10 +210,14 @@ const Dashboard = () => {
                       />
                     ))
                   )
-                ) : outgoingInvites.length === 0 ? (
-                  <Text style={styles.noInvitesText}>No sent invitations</Text>
+                ) : activeTab === 'OUTGOING' ? (
+                  outgoingInvites.length === 0 ? (
+                    <Text style={styles.noInvitesText}>No sent invitations</Text>
+                  ) : (
+                    <OutgoingInvitationCard invites={outgoingInvites} onPressCard={() => {}} />
+                  )
                 ) : (
-                  <OutgoingInvitationList invites={outgoingInvites} onPressCard={() => {}} />
+                  <OpenPlayCard />
                 )}
               </ScrollView>
             </LinearGradient>
@@ -247,7 +262,10 @@ const styles = StyleSheet.create({
   },
   chipGroup: {
     flexDirection: 'row',
-    gap: 8,
+    flexShrink: 1,
+    maxWidth: '80%',
+    overflow: 'hidden',
+    gap: 4,
   },
   chip: {
     paddingHorizontal: 12,
@@ -257,6 +275,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     overflow: 'hidden',
     borderWidth: 1,
+    marginBottom:1,
   },
   chipActive: {
     backgroundColor: '#E6F9FF',

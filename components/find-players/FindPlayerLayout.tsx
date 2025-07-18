@@ -4,7 +4,7 @@ import { useFilteredAndSortedInvites } from '@/hooks/playerfinder/filterInvitati
 import { AppDispatch, RootState } from '@/store';
 import { loadContacts } from '@/store/playerFinderSlice';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import {
   Button,
   Card,
@@ -23,6 +23,8 @@ import SearchPlacesModal from '../find-player/search-places-modal/SearchPlacesMo
 import ChooseContactsModal from './choose-contacts-modal/ChooseContactsModal';
 import MultiStepInviteModal from './FindPLayerMoadal';
 import InviteSummaryModal from './invite-summary modal/InviteSummaryModal';
+import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 const FindPlayerLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -81,6 +83,9 @@ const FindPlayerLayout = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
+      <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
+          <MaterialIcons name="arrow-back-ios" size={22} color="black" />
+        </TouchableOpacity>
         <Text variant='headlineMedium'>
           {capitalizeFirstLetter(filterStatus)} Invitations
         </Text>
