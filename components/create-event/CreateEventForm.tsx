@@ -112,9 +112,23 @@ const CreateEventForm = () => {
           minute: '2-digit',
         })
       : '';
-  console.log(place);
+  console.log(placeToPlay);
+
+  const formatDateToLocalISOString = (date: Date) => {
+    const pad = (num: number) => String(num).padStart(2, '0');
+
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1); // 0-based index
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
+  };
+
   const handleSubmit = async () => {
-    if (!eventName || !place || !date || !startTime || !endTime) {
+    if (!eventName || !placeToPlay || !date || !startTime || !endTime) {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
@@ -123,17 +137,20 @@ const CreateEventForm = () => {
       const durationMinutes = Math.floor(
         (endTime.getTime() - startTime.getTime()) / (1000 * 60)
       );
+
+      const startDateTime = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        startTime.getHours(),
+        startTime.getMinutes()
+      );
+
       const payload: any = {
         playTypeName: eventName,
         courtId: court || undefined,
         requestorId: userId,
-        startTime: new Date(
-          date.getFullYear(),
-          date.getMonth(),
-          date.getDate(),
-          startTime.getHours(),
-          startTime.getMinutes()
-        ).toISOString(),
+        startTime: formatDateToLocalISOString(startDateTime),
         durationMinutes,
         priceForPlay: Number(price),
         skillLevel: String(skillLevel),
@@ -142,14 +159,16 @@ const CreateEventForm = () => {
         ...(repeat &&
           repeat.toUpperCase() !== 'NONE' && {
             repeatInterval: Number(repeatInterval),
-            repeatEndDate: repeatEndDate?.toISOString(),
+            repeatEndDate: repeatEndDate
+              ? formatDateToLocalISOString(repeatEndDate)
+              : undefined,
             ...(repeat.toLowerCase() === 'weekly' && {
               repeatOnDays: [date.getDay().toString()],
             }),
           }),
         description: description || undefined,
         allCourts: {
-          Name: place,
+          Name: placeToPlay,
         },
       };
 
