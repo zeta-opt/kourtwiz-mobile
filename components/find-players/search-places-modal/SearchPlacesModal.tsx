@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  FlatList,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
-import { Portal, Modal, Text, Card, Button } from 'react-native-paper';
-import { useDispatch } from 'react-redux';
+import { useGetSearchPlaces } from '@/hooks/apis/player-finder/useGetSearchPlaces';
 import { setPlaceToPlay } from '@/store/playerFinderSlice';
 import * as Location from 'expo-location';
-import { useGetSearchPlaces } from '@/hooks/apis/player-finder/useGetSearchPlaces';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  TextInput,
+} from 'react-native';
+import { Button, Card, Modal, Portal, Text } from 'react-native-paper';
+import { useDispatch } from 'react-redux';
 
 type Props = {
   visible: boolean;
@@ -21,34 +21,34 @@ const SearchPlacesModal = ({ visible, handleClose }: Props) => {
   const [query, setQuery] = useState('');
   type Coordinates = { lat: number; lng: number } | null;
   const [coords, setCoords] = useState<Coordinates>(null);
-  
-    // Fetch user location on mount
-    useEffect(() => {
-        if (!visible) return;
 
-        const getLocation = async () => {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        console.log("Location Permission Status:", status);
-        if (status !== 'granted') {
-            console.warn('Permission to access location was denied');
-            return;
-        }
+  // Fetch user location on mount
+  useEffect(() => {
+    if (!visible) return;
 
-        const location = await Location.getCurrentPositionAsync({});
-        setCoords({
-            lat: location.coords.latitude,
-            lng: location.coords.longitude,
-        });
-        };
+    const getLocation = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('Location Permission Status:', status);
+      if (status !== 'granted') {
+        console.warn('Permission to access location was denied');
+        return;
+      }
 
-        getLocation();
-    }, [visible]);
+      const location = await Location.getCurrentPositionAsync({});
+      setCoords({
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      });
+    };
 
-    useEffect(() => {
-        if (coords?.lat && coords?.lng) {
-        refetch();
-        }
-    }, [coords]);
+    getLocation();
+  }, [visible]);
+
+  useEffect(() => {
+    if (coords?.lat && coords?.lng) {
+      refetch();
+    }
+  }, [coords]);
 
   const {
     data: places,
@@ -62,10 +62,12 @@ const SearchPlacesModal = ({ visible, handleClose }: Props) => {
     limit: 50,
   });
 
-  const filteredCourts = places?.filter(
-    (place) => typeof place.Name === 'string' &&
-      place.Name.toLowerCase().includes(query.toLowerCase())
-  ) ?? [];  
+  const filteredCourts =
+    places?.filter(
+      (place) =>
+        typeof place.Name === 'string' &&
+        place.Name.toLowerCase().includes(query.toLowerCase())
+    ) ?? [];
 
   return (
     <Portal>
@@ -77,14 +79,14 @@ const SearchPlacesModal = ({ visible, handleClose }: Props) => {
         <Text style={styles.heading}>Search Nearby Courts</Text>
 
         <TextInput
-          placeholder="Search courts..."
+          placeholder='Search courts...'
           style={styles.input}
           value={query}
           onChangeText={setQuery}
         />
 
         {status === 'loading' ? (
-          <ActivityIndicator size="large" style={{ marginVertical: 20 }} />
+          <ActivityIndicator size='large' style={{ marginVertical: 20 }} />
         ) : status === 'error' ? (
           <Text>Error fetching courts. Please try again.</Text>
         ) : filteredCourts.length === 0 ? (
@@ -109,9 +111,7 @@ const SearchPlacesModal = ({ visible, handleClose }: Props) => {
             )}
           />
         )}
-        <Button onPress={refetch}>
-            Retry Fetch
-        </Button>
+        <Button onPress={refetch}>Retry Fetch</Button>
         <Button onPress={handleClose} style={styles.closeButton}>
           Cancel
         </Button>

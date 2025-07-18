@@ -1,10 +1,10 @@
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { useFilteredAndSortedInvites } from '@/hooks/playerfinder/filterInvitations';
-import { RootState, AppDispatch } from '@/store';
-import { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { AppDispatch, RootState } from '@/store';
 import { loadContacts } from '@/store/playerFinderSlice';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import {
   Button,
   Card,
@@ -15,8 +15,8 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import {
   closePreferredPlaceModal,
-  openPlayerFinderModal,
   closeSearchPlaceModal,
+  openPlayerFinderModal,
 } from '../../store/uiSlice';
 import ChooseContactsModal from './choose-contacts-modal/ChooseContactsModal';
 import MultiStepInviteModal from './FindPLayerMoadal';
@@ -35,9 +35,8 @@ const FindPlayerLayout = () => {
   // State to manage sorting visual (for UI only, no sorting logic yet)
   const [isAscendingSort, setIsAscendingSort] = useState(true);
 
-  const { playerFinderModal, preferredPlaceModal, searchPlaceModal } = useSelector(
-    (state: RootState) => state.ui
-  );
+  const { playerFinderModal, preferredPlaceModal, searchPlaceModal } =
+    useSelector((state: RootState) => state.ui);
   const { user } = useSelector((state: RootState) => state.auth);
   const { data, refetch } = useGetPlayerInvitationSent({
     inviteeEmail: user?.email,
@@ -78,7 +77,7 @@ const FindPlayerLayout = () => {
     const date = new Date(year, month - 1, day, hour, minute);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -139,7 +138,9 @@ const FindPlayerLayout = () => {
                 key={gameInvite.requestId}
                 style={[
                   styles.card,
-                  (request.status === 'WITHDRAWN' || request.status === 'CANCELLED') && styles.disabledCard,
+                  (request.status === 'WITHDRAWN' ||
+                    request.status === 'CANCELLED') &&
+                    styles.disabledCard,
                 ]}
                 onPress={() => {
                   setSelectedInvite(gameInvite);
@@ -148,12 +149,13 @@ const FindPlayerLayout = () => {
               >
                 <Card.Content style={styles.cardContent}>
                   <View style={styles.cardLeft}>
-                    <Text variant="titleMedium">{gameInvite.placeToPlay}</Text>
+                    <Text variant='titleMedium'>{gameInvite.placeToPlay}</Text>
 
                     {/* Date-Time Display */}
                     {request?.playEndTime?.length ? (
                       <Text style={[styles.blackText, styles.disabledText]}>
-                        {gameInvite.date} - {formatTimeArray(request.playEndTime)}
+                        {gameInvite.date} -{' '}
+                        {formatTimeArray(request.playEndTime)}
                       </Text>
                     ) : null}
 
@@ -270,7 +272,7 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: '#999',
-  },  
+  },
   scrollArea: {
     flex: 1,
     marginBottom: 16,
