@@ -27,10 +27,12 @@ const FindplayerCard = () => {
 
           <View style={styles.featuredButtonColumn}>
             <TouchableOpacity
-              style={[styles.featuredButton, styles.disabledButton]}
-              disabled
+              style={styles.filledButton}
             >
-              <Text style={styles.disabledButtonText}>Create Event</Text>
+              <Text
+                style={styles.filledButton}
+                onPress={()=>router.replace('/(authenticated)/create-event')}
+                >Create Event</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -133,6 +135,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderColor: '#3F7CFF',
     borderWidth: 1,
+  },
+    
+  filledButton: {
+    backgroundColor: '#3F7CFF',
+    paddingVertical:8,
+    paddingBlockStart:4,
+    alignItems:'center',
   },
 
   outlinedButtonText: {
