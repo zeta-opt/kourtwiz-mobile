@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View, ActivityIndicator } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  ActivityIndicator,
+  Image,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Text, Divider, IconButton, Button } from 'react-native-paper';
 import { useSelector } from 'react-redux';
@@ -7,6 +15,8 @@ import { RootState } from '@/store';
 import { useGetPlayerFinderRequest, PlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
 import { GetCommentPlayerFinder } from '@/components/find-players/comment-layout/GetCommentPlayerFinder';
 import { PostCommentPlayerFinder } from '@/components/find-players/comment-layout/PostCommentPlayerFinder';
+import { MaterialIcons } from '@expo/vector-icons';
+import UserAvatar from '@/assets/UserAvatar';
 
 const statusColorMap: Record<string, string> = {
   ACCEPTED: 'green',
@@ -27,7 +37,6 @@ export default function InviteSummaryPage() {
   const userId = user?.userId ?? '';
   const { data, loading, error } = useGetPlayerFinderRequest(requestId);
   const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
-  console.log('Invite Summary Data:', data);
 
   if (loading) {
     return (
@@ -68,68 +77,121 @@ export default function InviteSummaryPage() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.heading}>{mainRequest.placeToPlay}</Text>
-      <Text>
-        {formatDateArray(mainRequest.playTime)}, {formatTimeArray(mainRequest.playTime)} - {formatTimeArray(mainRequest.playEndTime)}
-      </Text>
-      <Text>Skill Rating: {mainRequest.skillRating}</Text>
-      <Text style={{ marginTop: 4 }}>Accepted: {acceptedCount}/{totalNeeded}</Text>
-
-      <Divider style={{ marginVertical: 10 }} />
-
-      <Text style={styles.sectionLabel}>Players</Text>
-      <View style={styles.playersContainer}>
-        {data.map((player: PlayerFinderRequest) => {
-          const status = player.status?.toUpperCase() || 'PENDING';
-          return (
-            <View key={player.userId} style={styles.row}>
-              <Text style={[styles.nameText, { color: statusColorMap[status] || 'gray' }]}>{player.name}</Text>
-              <View style={styles.roleInfo}>
-                <IconButton
-                  icon={statusIconMap[status] || 'help-circle'}
-                  iconColor={statusColorMap[status] || 'gray'}
-                  size={18}
-                />
-                <Text style={{ color: statusColorMap[status] || 'gray' }}>{status}</Text>
-              </View>
-            </View>
-          );
-        })}
+    <View style={styles.page}>
+      {/* Top Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <MaterialIcons name="arrow-back-ios" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{mainRequest.placeToPlay || 'Request'}</Text>
+       <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+          <UserAvatar size={36} />
+        </TouchableOpacity>
       </View>
 
-      <Divider style={{ marginVertical: 10 }} />
-      <Text style={styles.subHeading}>Comments</Text>
-      <ScrollView style={styles.commentsContainer} nestedScrollEnabled>
-        <GetCommentPlayerFinder
-          requestId={mainRequest.requestId}
-          onRefetchAvailable={(ref) => setRefetchComments(() => ref)}
-        />
-      </ScrollView>
+      
+        {/* <Text>
+          {formatDateArray(mainRequest.playTime)}, {formatTimeArray(mainRequest.playTime)} - {formatTimeArray(mainRequest.playEndTime)}
+        </Text>
+        <Text>Skill Rating: {mainRequest.skillRating}</Text>
+        <Text style={{ marginTop: 4 }}>Accepted: {acceptedCount}/{totalNeeded}</Text>
+        <Divider style={{ marginVertical: 10 }} />
+        <Text style={styles.sectionLabel}>Players</Text> */}
+        {/* <View style={styles.playersContainer}>
+          {data.map((player: PlayerFinderRequest) => {
+            const status = player.status?.toUpperCase() || 'PENDING';
+            return (
+              <View key={player.userId} style={styles.row}>
+                <Text style={[styles.nameText, { color: statusColorMap[status] || 'gray' }]}>{player.name}</Text>
+                <View style={styles.roleInfo}>
+                  <IconButton
+                    icon={statusIconMap[status] || 'help-circle'}
+                    iconColor={statusColorMap[status] || 'gray'}
+                    size={18}
+                  />
+                  <Text style={{ color: statusColorMap[status] || 'gray' }}>{status}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View> */}
 
-      {userId && mainRequest.requestId && (
-        <>
-          <Divider style={{ marginVertical: 10 }} />
-          <PostCommentPlayerFinder
+        {/* <Divider style={{ marginVertical: 10 }} /> */}
+        {/* <Text style={styles.subHeading}>Comments</Text> */}
+        <View style={styles.commentSection}>
+        <ScrollView style={styles.chatBox} keyboardShouldPersistTaps="handled">
+          <GetCommentPlayerFinder
             requestId={mainRequest.requestId}
-            userId={userId}
-            onSuccess={() => refetchComments()}
+            onRefetchAvailable={(ref) => setRefetchComments(() => ref)}
           />
-        </>
-      )}
+        </ScrollView>
 
-      <Button mode="contained" onPress={() => router.back()} style={styles.backButton}>
-        Go Back
-      </Button>
-    </ScrollView>
+        {userId && mainRequest.requestId && (
+          <View style={styles.commentInputContainer}>
+            {/* <Divider style={{ marginVertical: 10 }} /> */}
+            <PostCommentPlayerFinder
+              requestId={mainRequest.requestId}
+              userId={userId}
+              onSuccess={() => refetchComments()}
+            />
+          </View>
+        )}
+        </View>
+
+        {/* <Button mode="contained" onPress={() => router.back()} style={styles.backButton}>
+          Go Back
+        </Button> */}
+      
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#fff',
-    padding: 20,
+  page: {
     flex: 1,
+    backgroundColor: '#E8F6F8',
+  },
+  commentSection: {
+   flex: 1,
+  justifyContent: 'flex-end',
+  backgroundColor: '#E8F6F8',
+},
+  header: {
+    backgroundColor: '#007A7A',
+    paddingTop: 48,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  profileImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  profilePlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#ccc',
+  },
+  commentInputContainer: {
+  borderTopWidth: 1,
+  borderTopColor: '#ccc',
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  backgroundColor: '#fff',
+},
+  content: {
+    padding: 16,
   },
   centered: {
     flex: 1,
@@ -154,37 +216,16 @@ const styles = StyleSheet.create({
     color: 'gray',
     marginBottom: 4,
   },
-  playersContainer: {
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
-    padding: 5,
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 4,
-  },
-  nameText: {
-    fontSize: 14,
-  },
-  roleInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  commentsContainer: {
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
-    padding: 5,
-    marginBottom: 10,
-    maxHeight: 200,
+  chatBox: {
+   flex: 1,
+  padding: 8,
+  backgroundColor: '#E8F6F8',
+  borderRadius: 12,
   },
   backButton: {
-    marginTop: 20,
+    marginTop: 10,
     borderRadius: 20,
+    backgroundColor: '#6A1B9A',
   },
   errorText: {
     color: '#D8000C',

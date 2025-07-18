@@ -74,30 +74,30 @@ export const PostCommentPlayerFinder: React.FC<Props> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Add a Comment:</Text>
+      {/* <Text style={styles.label}>Add a Comment:</Text> */}
 
       <View style={styles.row}>
         <TextInput
           value={commentText}
           onChangeText={setCommentText}
-          placeholder="Write a comment..."
+          placeholder="Type your message here..."
           multiline
           style={styles.input}
         />
 
         <IconButton
           icon="camera"
-          iconColor="#6200ee"
+          iconColor="#007A7A"
           size={24}
           onPress={handlePickImage}
         />
 
         {status === 'loading' ? (
-          <ActivityIndicator size="small" color="#6200ee" />
+          <ActivityIndicator size="small" color="#007A7A" />
         ) : (
           <IconButton
             icon="send"
-            iconColor="#6200ee"
+            iconColor="#007A7A"
             size={24}
             onPress={handlePost}
             disabled={!commentText.trim() && !image}
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 12,
     padding: 8,
     minHeight: 40,
     maxHeight: 100,
