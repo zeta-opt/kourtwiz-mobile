@@ -3,12 +3,15 @@ import InvitationCard from '@/components/home-page/myInvitationsCard';
 import OpenPlayCard from '@/components/home-page/openPlayCard';
 import { OutgoingInvitationCard } from '@/components/home-page/outgoingInvitationsCard';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
-import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
-import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
+import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
+import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
+import { resetInvitationsRefetch } from '@/store/refetchSlice'; // ADD THIS IMPORT
+import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -19,16 +22,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSelector } from 'react-redux';
 import {
+  Button,
   Dialog,
+  Provider as PaperProvider,
   Portal,
   TextInput,
-  Button,
-  Provider as PaperProvider,
 } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux'; // ADD useDispatch
 
 const API_URL = 'http://44.216.113.234:8080';
 
@@ -44,25 +45,41 @@ interface Invite {
 }
 
 const Dashboard = () => {
+  const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
   const { fetchUser } = useFetchUser();
   const router = useRouter();
 
-  const { data: invites, refetch } = useGetInvitations({ userId: user?.userId });
-  const { data: outgoingInvitesRaw } = useGetPlayerInvitationSent({
-    inviteeEmail: user?.email,
+  const { data: invites, refetch } = useGetInvitations({
+    userId: user?.userId,
   });
   const clubId = user?.currentActiveClubId;
   const { data: openPlayInvites = [] } = useGetPlays(clubId);
 
+  const { data: outgoingInvitesRaw, refetch: refetchOutgoing } =
+    useGetPlayerInvitationSent({
+      inviteeEmail: user?.email,
+    });
+
+  // ADD THIS LINE - Get the refetch trigger from Redux
+  const shouldRefetchInvitations = useSelector(
+    (state: RootState) => state.refetch.shouldRefetchInvitations
+  );
+
   const [loadingId, setLoadingId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING' | 'OPENPLAY'>('INCOMING');
+  const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING'>(
+    'INCOMING'
+  );
   const [selectedInvite, setSelectedInvite] = useState<any>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
-  const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(null);
+  const [selectedAction, setSelectedAction] = useState<
+    'accept' | 'reject' | null
+  >(null);
 
-  const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
+  const [playerCounts, setPlayerCounts] = useState<{
+    [key: string]: { accepted: number; total: number };
+  }>({});
 
   const groupedOutgoing = groupInviteeByRequestId(
     outgoingInvitesRaw?.filter((invite) => invite.status !== 'WITHDRAWN') || []
@@ -80,19 +97,33 @@ const Dashboard = () => {
     loadUser();
   }, []);
 
+  // ADD THIS useEffect - This handles the refetch when triggered from FindPlayerLayout
+  useEffect(() => {
+    if (shouldRefetchInvitations) {
+      refetchOutgoing();
+      dispatch(resetInvitationsRefetch());
+    }
+  }, [shouldRefetchInvitations, refetchOutgoing, dispatch]);
+
   useEffect(() => {
     const fetchCounts = async () => {
-      const newCounts: { [key: string]: { accepted: number; total: number } } = {};
+      const newCounts: { [key: string]: { accepted: number; total: number } } =
+        {};
       for (const invite of allInvites) {
         try {
           const token = await getToken();
-          const res = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
-            params: { requestId: invite.requestId },
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const res = await axios.get(
+            `${API_URL}/api/player-tracker/tracker/request`,
+            {
+              params: { requestId: invite.requestId },
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
 
           const total = res.data.length;
-          const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length;
+          const accepted = res.data.filter(
+            (p: any) => p.status === 'ACCEPTED'
+          ).length;
 
           newCounts[invite.requestId] = { accepted, total };
         } catch (error) {
@@ -120,7 +151,9 @@ const Dashboard = () => {
     try {
       setLoadingId(selectedInvite.id);
       const baseUrl =
-        selectedAction === 'accept' ? selectedInvite.acceptUrl : selectedInvite.declineUrl;
+        selectedAction === 'accept'
+          ? selectedInvite.acceptUrl
+          : selectedInvite.declineUrl;
       const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
       const response = await fetch(url);
       if (response.status === 200) {
@@ -129,10 +162,16 @@ const Dashboard = () => {
       } else {
         const errorText = await response.text();
         console.log('Error response:', errorText);
-        Alert.alert('Error', `Failed to ${selectedAction} invitation. You may have another event at the same time.`);
+        Alert.alert(
+          'Error',
+          `Failed to ${selectedAction} invitation. You may have another event at the same time.`
+        );
       }
     } catch (e) {
-      Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
+      Alert.alert(
+        'Error',
+        `Something went wrong while trying to ${selectedAction}`
+      );
     } finally {
       setLoadingId(null);
       setDialogVisible(false);
@@ -149,7 +188,9 @@ const Dashboard = () => {
                 <Text
                   style={[
                     styles.chip,
-                    activeTab === 'INCOMING' ? styles.chipActive : styles.chipInactive,
+                    activeTab === 'INCOMING'
+                      ? styles.chipActive
+                      : styles.chipInactive,
                   ]}
                   onPress={() => setActiveTab('INCOMING')}
                 >
@@ -158,7 +199,9 @@ const Dashboard = () => {
                 <Text
                   style={[
                     styles.chip,
-                    activeTab === 'OUTGOING' ? styles.chipActive : styles.chipInactive,
+                    activeTab === 'OUTGOING'
+                      ? styles.chipActive
+                      : styles.chipInactive,
                   ]}
                   onPress={() => setActiveTab('OUTGOING')}
                 >
@@ -167,7 +210,9 @@ const Dashboard = () => {
                 <Text
                   style={[
                     styles.chip,
-                    activeTab === 'OPENPLAY' ? styles.chipActive : styles.chipInactive,
+                    activeTab === 'OPENPLAY'
+                      ? styles.chipActive
+                      : styles.chipInactive,
                   ]}
                   onPress={() => setActiveTab('OPENPLAY')}
                 >
@@ -192,11 +237,19 @@ const Dashboard = () => {
               ) : null}
             </View>
 
-            <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={styles.inviteScrollContainer}>
-              <ScrollView nestedScrollEnabled contentContainerStyle={styles.inviteListContent}>
+            <LinearGradient
+              colors={['#E0F7FA', '#FFFFFF']}
+              style={styles.inviteScrollContainer}
+            >
+              <ScrollView
+                nestedScrollEnabled
+                contentContainerStyle={styles.inviteListContent}
+              >
                 {activeTab === 'INCOMING' ? (
                   allInvites.length === 0 ? (
-                    <Text style={styles.noInvitesText}>No incoming invitations</Text>
+                    <Text style={styles.noInvitesText}>
+                      No incoming invitations
+                    </Text>
                   ) : (
                     allInvites.map((invite) => (
                       <InvitationCard
@@ -205,16 +258,25 @@ const Dashboard = () => {
                         onAccept={() => showCommentDialog(invite, 'accept')}
                         onReject={() => showCommentDialog(invite, 'reject')}
                         loading={loadingId === invite.id}
-                        totalPlayers={playerCounts[invite.requestId]?.total ?? 1}
-                        acceptedPlayers={playerCounts[invite.requestId]?.accepted ?? 0}
+                        totalPlayers={
+                          playerCounts[invite.requestId]?.total ?? 1
+                        }
+                        acceptedPlayers={
+                          playerCounts[invite.requestId]?.accepted ?? 0
+                        }
                       />
                     ))
                   )
                 ) : activeTab === 'OUTGOING' ? (
                   outgoingInvites.length === 0 ? (
-                    <Text style={styles.noInvitesText}>No sent invitations</Text>
+                    <Text style={styles.noInvitesText}>
+                      No sent invitations
+                    </Text>
                   ) : (
-                    <OutgoingInvitationCard invites={outgoingInvites} onPressCard={() => {}} />
+                    <OutgoingInvitationCard
+                      invites={outgoingInvites}
+                      onPressCard={() => {}}
+                    />
                   )
                 ) : (
                   <OpenPlayCard />
@@ -228,14 +290,17 @@ const Dashboard = () => {
           <Text style={styles.noGames}>No upcoming games</Text>
 
           <Portal>
-            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+            <Dialog
+              visible={dialogVisible}
+              onDismiss={() => setDialogVisible(false)}
+            >
               <Dialog.Title>Add a message</Dialog.Title>
               <Dialog.Content>
                 <TextInput
-                  label="Comment (optional)"
+                  label='Comment (optional)'
                   value={comment}
                   onChangeText={setComment}
-                  mode="outlined"
+                  mode='outlined'
                 />
               </Dialog.Content>
               <Dialog.Actions>
@@ -275,7 +340,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     overflow: 'hidden',
     borderWidth: 1,
-    marginBottom:1,
+    marginBottom: 1,
   },
   chipActive: {
     backgroundColor: '#E6F9FF',

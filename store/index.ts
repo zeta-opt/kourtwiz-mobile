@@ -1,9 +1,10 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { persistReducer, persistStore } from 'redux-persist';
 
 import authReducer from './authSlice';
 import playerFinderDataSlice from './playerFinderSlice';
+import refetchReducer from './refetchSlice';
 import uiReducer from './uiSlice';
 
 // Combine reducers
@@ -11,6 +12,7 @@ const rootReducer = combineReducers({
   auth: authReducer,
   ui: uiReducer,
   playerFinder: playerFinderDataSlice,
+  refetch: refetchReducer,
 });
 
 // Persist config

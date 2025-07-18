@@ -6,6 +6,7 @@ import {
   resetPlayerFinderData,
   setPreferredContacts,
 } from '@/store/playerFinderSlice';
+import { triggerInvitationsRefetch } from '@/store/refetchSlice';
 import {
   closePreferredPlaceModal,
   closePreferredPlayersModal,
@@ -254,6 +255,7 @@ const FindPlayerLayout = () => {
       callbacks: {
         onSuccess: () => {
           dispatch(resetPlayerFinderData());
+          dispatch(triggerInvitationsRefetch()); // Add this line
           setSubmitted(true);
 
           // Show success message
@@ -272,8 +274,9 @@ const FindPlayerLayout = () => {
                   setPlayerCount(1);
                   setSubmitted(false);
 
-                  // Navigate back or to another screen
-                  router.back();
+                  setTimeout(() => {
+                    router.back();
+                  }, 100);
                 },
               },
             ]
