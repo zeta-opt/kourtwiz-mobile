@@ -1,3 +1,4 @@
+import PlayersNearbyMap from '@/components/players-nearby/PlayersNearbyMap';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { getToken } from '@/shared/helpers/storeToken';
@@ -130,6 +131,10 @@ const Dashboard = () => {
 
       <Text style={styles.upcomingGames}>Upcoming Games</Text>
       <Text style={styles.noGames}>No upcoming games</Text>
+
+      <Text style={styles.playersNearBy}>Players Nearby</Text>
+      <Text style={styles.playersNearByDesc}>See users playing near by</Text>
+      <PlayersNearbyMap />
     </ScrollView>
   );
 };
@@ -199,5 +204,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     marginTop: 6,
+  },
+  playersNearBy: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 24,
+  },
+  playersNearByDesc: {
+    fontSize: 14,
+    fontWeight: '400',
+    marginBottom: 20,
   },
 });
