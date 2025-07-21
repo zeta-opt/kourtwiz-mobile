@@ -3,6 +3,7 @@ import InvitationCard from '@/components/home-page/myInvitationsCard';
 import OpenPlayCard from '@/components/home-page/openPlayCard';
 import { OutgoingInvitationCard } from '@/components/home-page/outgoingInvitationsCard';
 import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
+import PlayersNearbyMap from '@/components/players-nearby/PlayersNearbyMap';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
@@ -304,8 +305,6 @@ const Dashboard = () => {
           </View>
 
           <FindplayerCard />
-          <Text style={styles.upcomingGames}>Upcoming Games</Text>
-          <Text style={styles.noGames}>No upcoming games</Text>
 
           <Portal>
             <Dialog
@@ -328,19 +327,23 @@ const Dashboard = () => {
             </Dialog>
           </Portal>
 
-<Portal>
-  <Modal
-    visible={playerDetailsVisible}
-    onDismiss={() => setPlayerDetailsVisible(false)}
-    contentContainerStyle={styles.bottomModal}
-  >
-    <ScrollView>
-      <ScrollView contentContainerStyle={styles.dialogContent}>
-        <PlayerDetailsModal players={selectedPlayers} />
-      </ScrollView>
-    </ScrollView>
-  </Modal>
-</Portal>
+          <Portal>
+            <Modal
+              visible={playerDetailsVisible}
+              onDismiss={() => setPlayerDetailsVisible(false)}
+              contentContainerStyle={styles.bottomModal}
+            >
+              <ScrollView>
+                <ScrollView contentContainerStyle={styles.dialogContent}>
+                  <PlayerDetailsModal players={selectedPlayers} />
+                </ScrollView>
+              </ScrollView>
+            </Modal>
+          </Portal>
+
+          <Text style={styles.playersNearBy}>Players Nearby</Text>
+          <Text style={styles.playersNearByDesc}>See users playing near by</Text>
+          <PlayersNearbyMap />
 
         </ScrollView>
       </LinearGradient>
@@ -445,5 +448,14 @@ bottomModal: {
 dialogContent: {
   paddingBottom: 20,
 },
-
+  playersNearBy: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 24,
+  },
+  playersNearByDesc: {
+    fontSize: 14,
+    fontWeight: '400',
+    marginBottom: 20,
+  },
 });
