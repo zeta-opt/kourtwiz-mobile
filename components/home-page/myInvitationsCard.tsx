@@ -26,7 +26,8 @@ interface InvitationCardProps {
   onReject: (invite: Invite) => void;
   loading: boolean;
   totalPlayers: number;
-  acceptedPlayers: number; // 💥 Add this prop to show accepted count
+  acceptedPlayers: number; 
+  onViewPlayers: (requestId: string) => void;
 }
 
 const InvitationCard: React.FC<InvitationCardProps> = ({
@@ -36,6 +37,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
   loading,
   totalPlayers,
   acceptedPlayers,
+  onViewPlayers,
 }) => {
   const router = useRouter();
   const now = new Date();
@@ -90,7 +92,14 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
         <View style={styles.acceptedRow}>
           <View style={styles.acceptedBox}>
             <MaterialCommunityIcons name="account-group" size={14} color="#007BFF" />
-            <Text style={styles.acceptedTextSmall}>{acceptedPlayers} / {totalPlayers} Accepted</Text>
+            <TouchableOpacity
+  style={styles.acceptedBox}
+  onPress={() => onViewPlayers(invite.requestId)} 
+>
+  {/* <MaterialCommunityIcons name="account-group" size={14} color="#007BFF" /> */}
+  <Text style={styles.acceptedTextSmall}>{acceptedPlayers} / {totalPlayers} Accepted</Text>
+</TouchableOpacity>
+
           </View>
           <TouchableOpacity
             style={styles.chatButton}

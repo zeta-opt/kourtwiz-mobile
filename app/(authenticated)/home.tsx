@@ -2,6 +2,7 @@ import FindplayerCard from '@/components/home-page/FindplayerCard';
 import InvitationCard from '@/components/home-page/myInvitationsCard';
 import OpenPlayCard from '@/components/home-page/openPlayCard';
 import { OutgoingInvitationCard } from '@/components/home-page/outgoingInvitationsCard';
+import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
@@ -28,6 +29,7 @@ import {
   Provider as PaperProvider,
   Portal,
   TextInput,
+  Modal,
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux'; // ADD useDispatch
 
@@ -55,6 +57,7 @@ const Dashboard = () => {
   });
   const clubId = user?.currentActiveClubId;
   const { data: openPlayInvites = [] } = useGetPlays(clubId);
+ 
 
   const { data: outgoingInvitesRaw, refetch: refetchOutgoing } =
     useGetPlayerInvitationSent({
@@ -67,7 +70,7 @@ const Dashboard = () => {
   );
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING'>(
+  const [activeTab, setActiveTab] = useState<'INCOMING' | 'OUTGOING' | 'OPENPLAY'>(
     'INCOMING'
   );
   const [selectedInvite, setSelectedInvite] = useState<any>(null);
@@ -77,15 +80,17 @@ const Dashboard = () => {
     'accept' | 'reject' | null
   >(null);
 
-  const [playerCounts, setPlayerCounts] = useState<{
-    [key: string]: { accepted: number; total: number };
-  }>({});
+ 
+  const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
+  const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
+  const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
 
   const groupedOutgoing = groupInviteeByRequestId(
     outgoingInvitesRaw?.filter((invite) => invite.status !== 'WITHDRAWN') || []
   );
   const outgoingInvites = Object.values(groupedOutgoing);
   const pendingOutCount = outgoingInvites.length;
+  const playCount = openPlayInvites?.length || 0;
 
   const allInvites = invites ?? [];
 
@@ -178,13 +183,30 @@ const Dashboard = () => {
     }
   };
 
+  const handleViewPlayers = async (requestId: string) => {
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
+        params: { requestId },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSelectedPlayers(res.data);
+      //  console.log('Selected Players:', res.data);
+      setPlayerDetailsVisible(true);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch player details');
+    }
+  };
+
   return (
     <PaperProvider>
       <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.inviteWrapper}>
             <View style={styles.tabRow}>
-              <View style={styles.chipGroup}>
+              <ScrollView   horizontal
+  showsHorizontalScrollIndicator={false}
+  contentContainerStyle={styles.chipGroup}>
                 <Text
                   style={[
                     styles.chip,
@@ -216,10 +238,9 @@ const Dashboard = () => {
                   ]}
                   onPress={() => setActiveTab('OPENPLAY')}
                 >
-                  Open Play ({pendingOutCount})
+                  Open Play ({playCount})
                 </Text>
-              </View>
-
+              </ScrollView>
               {(activeTab === 'INCOMING' && allInvites.length > 0) ||
               (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ||
               (activeTab === 'OPENPLAY' && outgoingInvites.length > 0) ? (
@@ -258,12 +279,9 @@ const Dashboard = () => {
                         onAccept={() => showCommentDialog(invite, 'accept')}
                         onReject={() => showCommentDialog(invite, 'reject')}
                         loading={loadingId === invite.id}
-                        totalPlayers={
-                          playerCounts[invite.requestId]?.total ?? 1
-                        }
-                        acceptedPlayers={
-                          playerCounts[invite.requestId]?.accepted ?? 0
-                        }
+                        totalPlayers={playerCounts[invite.requestId]?.total ?? 1}
+                        acceptedPlayers={playerCounts[invite.requestId]?.accepted ?? 0}
+                        onViewPlayers={handleViewPlayers}
                       />
                     ))
                   )
@@ -309,6 +327,21 @@ const Dashboard = () => {
               </Dialog.Actions>
             </Dialog>
           </Portal>
+
+<Portal>
+  <Modal
+    visible={playerDetailsVisible}
+    onDismiss={() => setPlayerDetailsVisible(false)}
+    contentContainerStyle={styles.bottomModal}
+  >
+    <ScrollView>
+      <ScrollView contentContainerStyle={styles.dialogContent}>
+        <PlayerDetailsModal players={selectedPlayers} />
+      </ScrollView>
+    </ScrollView>
+  </Modal>
+</Portal>
+
         </ScrollView>
       </LinearGradient>
     </PaperProvider>
@@ -327,10 +360,11 @@ const styles = StyleSheet.create({
   },
   chipGroup: {
     flexDirection: 'row',
-    flexShrink: 1,
-    maxWidth: '80%',
-    overflow: 'hidden',
+    // flexShrink: 1,
+    // maxWidth: '80%',
+    // overflow: 'hidden',
     gap: 4,
+    paddingRight: 8,
   },
   chip: {
     paddingHorizontal: 12,
@@ -389,4 +423,27 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 6,
   },
+bottomModal: {
+  position: 'absolute',
+  bottom: 0,
+  width: '100%',
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  backgroundColor: 'white',
+  padding: 20,
+  elevation: 10,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: -2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 5,
+  // height: '50%',
+  // marginTop:400,
+  maxHeight: '90%',
+  marginTop: 'auto',
+  alignSelf: 'stretch',
+},
+dialogContent: {
+  paddingBottom: 20,
+},
+
 });

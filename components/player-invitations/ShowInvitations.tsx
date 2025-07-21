@@ -25,6 +25,7 @@ import {
 } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { clearAllFilters, filterInvitations } from '../home-page/filters';
+import PlayerDetailsModal from '../home-page/PlayerDetailsModal';
 
 const API_URL = 'http://44.216.113.234:8080';
 
@@ -118,6 +119,24 @@ const ShowInvitations = () => {
       setSelectedLocation,
     });
   };  
+    // const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
+    const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
+    const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
+  const handleViewPlayers = async (requestId: string) => {
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
+        params: { requestId },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSelectedPlayers(res.data);
+      //  console.log('Selected Players:', res.data);
+      setPlayerDetailsVisible(true);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch player details');
+    }
+  };
+
 
   return (
     <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
@@ -203,6 +222,7 @@ const ShowInvitations = () => {
                 loading={loadingId === invite.id}
                 totalPlayers={playerCounts[invite.requestId]?.total ?? 1}
                 acceptedPlayers={playerCounts[invite.requestId]?.accepted ?? 0}
+                onViewPlayers={handleViewPlayers}
               />
             </View>
           ))
@@ -250,6 +270,19 @@ const ShowInvitations = () => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+      <Portal>
+  <Dialog
+    visible={playerDetailsVisible}
+    onDismiss={() => setPlayerDetailsVisible(false)}
+    style={styles.bottomDialog}
+  >
+    <Dialog.ScrollArea>
+      <ScrollView contentContainerStyle={styles.dialogContent}>
+        <PlayerDetailsModal players={selectedPlayers} />
+      </ScrollView>
+    </Dialog.ScrollArea>
+  </Dialog>
+</Portal>
     </LinearGradient>
   );
 };
@@ -335,4 +368,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
   },
+  bottomDialog: {
+  position: 'absolute',
+  bottom: 0,
+  left: 0,              
+  right: 0,             
+  margin: 0,
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  backgroundColor: 'white',
+  overflow: 'hidden',
+  elevation: 10,        
+  shadowColor: '#000',  
+  shadowOffset: { width: 0, height: -2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 5,
+},
+dialogContent: {
+  padding: 16,
+},
 });
