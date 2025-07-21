@@ -17,8 +17,15 @@ import Slider from '@react-native-community/slider';
 import * as Contacts from 'expo-contacts';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Animated,
+  LayoutChangeEvent,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import {
   Button,
   Dialog,
@@ -36,10 +43,10 @@ import ContactsModal from './contacts-modal/ContactsModal';
 import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
 
 const getSliderColor = (value: number): string => {
-  if (value <= 2) return '#f4d03f';
-  if (value <= 3) return '#90ee90';
-  if (value <= 4) return '#f39c12';
-  return '#e74c3c';
+  if (value <= 2) return '#4B9BFF';
+  if (value <= 3) return '#3182CE';
+  if (value <= 4) return '#2563EB';
+  return '#1E40AF';
 };
 
 const FindPlayerLayout = () => {
@@ -184,7 +191,6 @@ const FindPlayerLayout = () => {
   };
 
   const handleSelectContactsFromDevice = (contacts: Contact[]) => {
-    // Directly replace the preferred contacts with the selection from modal
     dispatch(setPreferredContacts(contacts));
     setContactsModalVisible(false);
   };
@@ -288,8 +294,20 @@ const FindPlayerLayout = () => {
       },
     });
   };
+  const sliderWidth = useRef(0);
+  const animatedValue = useRef(new Animated.Value(skillLevel)).current;
+  const [sliderPos, setSliderPos] = useState(0);
 
-  const sliderColor = getSliderColor(skillLevel);
+  const handleLayout = (e: LayoutChangeEvent) => {
+    sliderWidth.current = e.nativeEvent.layout.width;
+  };
+
+  const handleValueChange = (value: number) => {
+    setSkillLevel(value);
+    animatedValue.setValue(value);
+    const pos = (value / 5) * sliderWidth.current;
+    setSliderPos(pos);
+  };
 
   return (
     <View style={styles.container}>
@@ -299,17 +317,20 @@ const FindPlayerLayout = () => {
           <IconButton
             icon='arrow-left'
             size={24}
+            iconColor='white'
             onPress={() => router.back()}
             style={styles.backButton}
           />
-          <Text variant='headlineLarge'>Find Player</Text>
+          <Text variant='headlineLarge' style={styles.headerTitle}>
+            Find Player
+          </Text>
         </View>
       </View>
 
       <ScrollView style={styles.formScrollView}>
-        {/* Club Details Section */}
+        {/* Club Name Section */}
         <Text variant='titleMedium' style={styles.sectionTitle}>
-          Club Details
+          Club Name
         </Text>
         <View style={styles.dropdownRow}>
           <Button
@@ -317,6 +338,7 @@ const FindPlayerLayout = () => {
             onPress={handleClubDetailsClick}
             style={styles.dropdownButton}
             contentStyle={styles.dropdownContent}
+            textColor='#2563EB'
           >
             <View style={styles.buttonContent}>
               <Text style={styles.buttonText}>
@@ -324,7 +346,7 @@ const FindPlayerLayout = () => {
               </Text>
               <View style={styles.iconContainer}>
                 {locationPermissionGranted && (
-                  <Icon source='map-marker' size={16} color='#2C7E88' />
+                  <Icon source='map-marker' size={16} color='#2563EB' />
                 )}
                 <Icon source='chevron-down' size={20} />
               </View>
@@ -363,20 +385,30 @@ const FindPlayerLayout = () => {
         />
 
         <View style={styles.formSection}>
-          <View style={styles.container}>
-            <Text variant='titleMedium'>Skill Level</Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={5}
-              step={0.1}
-              value={skillLevel ?? 1}
-              minimumTrackTintColor={sliderColor}
-              maximumTrackTintColor='#ccc'
-              thumbTintColor={sliderColor}
-              onValueChange={(value) => setSkillLevel(value)}
-            />
-            <Text>Selected: {skillLevel.toFixed(1)}</Text>
+          <View style={styles.sliderSection}>
+            <Text variant='titleMedium' style={styles.skillLevelTitle}>
+              Skill Level
+            </Text>
+            <View onLayout={handleLayout} style={styles.sliderWrapper}>
+              {/* Floating Label */}
+              <Animated.View
+                style={[styles.floatingLabel, { left: sliderPos - 10 }]}
+              >
+                <Text style={styles.floatingText}>{skillLevel.toFixed(1)}</Text>
+              </Animated.View>
+
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={5}
+                step={0.1}
+                value={skillLevel}
+                minimumTrackTintColor='#007AFF'
+                maximumTrackTintColor='#E5E7EB'
+                thumbTintColor='#007AFF'
+                onValueChange={handleValueChange}
+              />
+            </View>
           </View>
         </View>
         <View style={styles.formSection}>
@@ -416,6 +448,7 @@ const FindPlayerLayout = () => {
             icon='magnify'
             loading={finderStatus === 'loading'}
             disabled={finderStatus === 'loading' || submitted}
+            buttonColor='#2563EB'
           >
             {submitted ? 'Submitted' : 'Find Player'}
           </Button>
@@ -436,7 +469,12 @@ const FindPlayerLayout = () => {
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setConflictDialogVisible(false)}>OK</Button>
+            <Button
+              onPress={() => setConflictDialogVisible(false)}
+              textColor='#2563EB'
+            >
+              OK
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -449,14 +487,18 @@ export default FindPlayerLayout;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: '#fff',
   },
   mainHeader: {
-    marginBottom: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    backgroundColor: '#2563EB',
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   headerContent: {
     flexDirection: 'row',
@@ -466,18 +508,23 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginLeft: -8,
   },
+  headerTitle: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   dropdownRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 24,
   },
   dropdownButton: {
     flex: 1,
     height: 48,
-    borderColor: '#ccc',
     marginTop: 8,
     marginRight: 8,
     justifyContent: 'center',
     borderRadius: 8,
+    borderWidth: 1.5,
   },
   dropdownContent: {
     height: '100%',
@@ -500,29 +547,28 @@ const styles = StyleSheet.create({
   },
   permissionHint: {
     fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    color: '#6B7280',
+    marginTop: -16,
+    marginBottom: 16,
     marginLeft: 4,
   },
   disabledPlus: {
-    backgroundColor: '#2C7E88',
+    backgroundColor: '#2563EB',
     marginTop: 8,
     borderRadius: 8,
     opacity: 1,
   },
   formScrollView: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   formSection: {
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    marginBottom: 32,
   },
   sectionTitle: {
     marginBottom: 4,
-    fontWeight: 'condensed',
-    color: '#333',
+    fontWeight: '600',
   },
   inputGroup: {
     marginBottom: 16,
@@ -531,36 +577,52 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 14,
     fontWeight: '500',
-    color: '#555',
+    color: '#374151',
   },
   textInput: {
     backgroundColor: '#fff',
+    borderRadius: 8,
   },
-  sliderContainer: {
-    marginTop: 8,
+  sliderSection: {
+    paddingHorizontal: 16,
+  },
+  skillLevelTitle: {
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  sliderWrapper: {
+    position: 'relative',
+    height: 60,
+    justifyContent: 'center',
   },
   slider: {
     width: '100%',
     height: 40,
   },
-  skillLevelLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    marginTop: -5,
+  floatingLabel: {
+    position: 'absolute',
+    top: 0,
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 10,
   },
-  skillLabel: {
-    fontSize: 11,
-    color: '#888',
-  },
-  activeSkillLabel: {
+  floatingText: {
+    color: 'white',
     fontWeight: 'bold',
-    color: '#1976d2',
+    fontSize: 12,
+  },
+  selectedValue: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#2563EB',
+    fontWeight: '500',
   },
   selectedSkillLevel: {
     marginTop: 8,
     fontSize: 14,
-    color: '#1976d2',
+    color: '#2563EB',
     fontWeight: '500',
   },
   playerCountContainer: {
@@ -572,9 +634,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     minWidth: 40,
     textAlign: 'center',
+    color: '#2563EB',
   },
   contactsButton: {
     justifyContent: 'flex-start',
+    borderColor: '#2563EB',
   },
   selectedPlayersContainer: {
     marginBottom: 16,
@@ -586,6 +650,7 @@ const styles = StyleSheet.create({
   },
   countButton: {
     marginHorizontal: 4,
+    borderColor: '#2563EB',
   },
   actionButtonContainer: {
     marginTop: 24,
@@ -593,5 +658,6 @@ const styles = StyleSheet.create({
   },
   findPlayerButton: {
     paddingVertical: 8,
+    borderRadius: 8,
   },
 });

@@ -8,7 +8,6 @@ import {
   Checkbox,
   Divider,
   IconButton,
-  List,
   Modal,
   Portal,
   Searchbar,
@@ -133,27 +132,27 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
       player.contactPhoneNumber.startsWith('preferred-');
 
     return (
-      <List.Item
+      <View
         key={`${player.contactPhoneNumber || index}-${index}`}
-        title={player.contactName || 'Unknown Player'}
-        description={
-          isPreferred ? 'Preferred Player' : player.contactPhoneNumber || ''
-        }
-        left={() => (
+        style={styles.playerCard}
+      >
+        <View style={styles.playerContent}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.playerName}>
+              {player.contactName || 'Unknown Player'}
+            </Text>
+            <Text style={styles.playerSubText}>
+              {isPreferred
+                ? 'Preferred Player'
+                : player.contactPhoneNumber || ''}
+            </Text>
+          </View>
           <Checkbox
             status={isPlayerSelected(player) ? 'checked' : 'unchecked'}
             onPress={() => handleTogglePlayer(player)}
           />
-        )}
-        right={() =>
-          isPreferred ? (
-            <View style={styles.preferredBadge}>
-              <Text style={styles.preferredBadgeText}>Preferred</Text>
-            </View>
-          ) : null
-        }
-        style={styles.listItem}
-      />
+        </View>
+      </View>
     );
   };
 
@@ -245,21 +244,15 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
         <Divider />
 
         <View style={styles.footer}>
-          <Text style={styles.selectedCount}>
-            {tempSelectedPlayers.length} player(s) selected
-          </Text>
-          <View style={styles.buttonRow}>
-            <Button
-              mode='outlined'
-              onPress={handleCancel}
-              style={styles.button}
-            >
-              Cancel
-            </Button>
-            <Button mode='contained' onPress={handleSave} style={styles.button}>
-              Save
-            </Button>
-          </View>
+          <Button
+            mode='contained'
+            onPress={handleSave}
+            style={styles.addPlayersButton}
+            contentStyle={{ paddingVertical: 10 }}
+            labelStyle={{ fontSize: 16 }}
+          >
+            Add Players ({tempSelectedPlayers.length})
+          </Button>
         </View>
       </Modal>
     </Portal>
@@ -268,11 +261,41 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
 
 const styles = StyleSheet.create({
   modalContainer: {
+    flex: 1,
     backgroundColor: 'white',
-    margin: 20,
-    borderRadius: 8,
-    maxHeight: '80%',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
+  playerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  playerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  playerName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+
+  playerSubText: {
+    fontSize: 13,
+    color: '#777',
+    marginTop: 2,
+  },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -330,6 +353,13 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  addPlayersButton: {
+    width: '100%',
+    borderRadius: 8,
   },
   selectedCount: {
     marginBottom: 12,

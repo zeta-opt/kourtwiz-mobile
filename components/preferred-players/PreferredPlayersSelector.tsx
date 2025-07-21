@@ -26,17 +26,15 @@ const PreferredPlayersSelector: React.FC<PreferredPlayersSelectorProps> = ({
         Preferred Players
       </Text>
 
-      {/* Square box for players */}
       <View style={styles.playersBoxContainer}>
         <TouchableOpacity
           style={styles.playersBox}
           onPress={onShowPreferredPlayers}
           activeOpacity={0.7}
         >
-          <Text style={styles.clickToAddText}>Click to Add</Text>
+          <Text style={styles.selectPlayerText}>Select Player</Text>
         </TouchableOpacity>
 
-        {/* Display selected players as chips */}
         {preferredContacts.length > 0 && (
           <ScrollView
             horizontal
@@ -59,7 +57,6 @@ const PreferredPlayersSelector: React.FC<PreferredPlayersSelectorProps> = ({
           </ScrollView>
         )}
 
-        {/* Small link below the box */}
         <TouchableOpacity
           onPress={onAddContact}
           style={styles.addFromContactsLink}
@@ -80,7 +77,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 4,
-    fontWeight: 'condensed',
     color: '#333',
   },
   playersBoxContainer: {
@@ -88,19 +84,16 @@ const styles = StyleSheet.create({
   },
   playersBox: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    minHeight: 120,
-    padding: 12,
-    backgroundColor: '#ffffff',
+    borderColor: '#ccc',
+    borderRadius: 6,
+    height: 48,
+    paddingHorizontal: 12,
     justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#fff',
   },
-  clickToAddText: {
-    color: '#1976d2',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '500',
+  selectPlayerText: {
+    color: '#999',
+    fontSize: 15,
   },
   chipsContainer: {
     marginTop: 12,

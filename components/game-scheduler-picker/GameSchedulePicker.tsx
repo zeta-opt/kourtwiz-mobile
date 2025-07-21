@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { Button, Text } from 'react-native-paper';
+import { Button, Icon, Text } from 'react-native-paper';
 
 interface GameSchedulePickerProps {
   selectedDate: Date | null;
@@ -20,13 +20,11 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
   onStartTimeChange,
   onEndTimeChange,
 }) => {
-  // Date/Time picker visibility states
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [isStartTimePickerVisible, setStartTimePickerVisibility] =
     useState(false);
   const [isEndTimePickerVisible, setEndTimePickerVisibility] = useState(false);
 
-  // Date picker handlers
   const showDatePicker = () => setDatePickerVisibility(true);
   const hideDatePicker = () => setDatePickerVisibility(false);
   const handleDateConfirm = (date: Date) => {
@@ -34,37 +32,21 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
     hideDatePicker();
   };
 
-  // Start time picker handlers
   const showStartTimePicker = () => setStartTimePickerVisibility(true);
   const hideStartTimePicker = () => setStartTimePickerVisibility(false);
   const handleStartTimeConfirm = (time: Date) => {
-    // If there's a selected date, combine the date with the selected time
-    if (selectedDate) {
-      const newStartTime = new Date(selectedDate);
-      newStartTime.setHours(time.getHours());
-      newStartTime.setMinutes(time.getMinutes());
-      newStartTime.setSeconds(0);
-      onStartTimeChange(newStartTime);
-    } else {
-      onStartTimeChange(time);
-    }
+    const newTime = selectedDate ? new Date(selectedDate) : new Date();
+    newTime.setHours(time.getHours(), time.getMinutes(), 0);
+    onStartTimeChange(newTime);
     hideStartTimePicker();
   };
 
-  // End time picker handlers
   const showEndTimePicker = () => setEndTimePickerVisibility(true);
   const hideEndTimePicker = () => setEndTimePickerVisibility(false);
   const handleEndTimeConfirm = (time: Date) => {
-    // If there's a selected date, combine the date with the selected time
-    if (selectedDate) {
-      const newEndTime = new Date(selectedDate);
-      newEndTime.setHours(time.getHours());
-      newEndTime.setMinutes(time.getMinutes());
-      newEndTime.setSeconds(0);
-      onEndTimeChange(newEndTime);
-    } else {
-      onEndTimeChange(time);
-    }
+    const newTime = selectedDate ? new Date(selectedDate) : new Date();
+    newTime.setHours(time.getHours(), time.getMinutes(), 0);
+    onEndTimeChange(newTime);
     hideEndTimePicker();
   };
 
@@ -77,7 +59,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
           <Button
             mode='outlined'
             icon='calendar'
-            style={styles.dateTimeButton}
+            style={[styles.dateTimeButton, styles.roundedButton]}
             onPress={showDatePicker}
           >
             {selectedDate
@@ -92,53 +74,69 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
         <View style={styles.timeRow}>
           {/* Start Time */}
           <View style={[styles.inputGroup, styles.timeInput]}>
-            <Text style={styles.inputLabel}>Start Time *</Text>
+            <Text style={styles.inputLabel}>Duration *</Text>
             <Button
               mode='outlined'
-              icon='clock-outline'
-              style={styles.dateTimeButton}
+              style={[
+                styles.dateTimeButton,
+                styles.roundedButton,
+                styles.whiteButton,
+                styles.rowButton,
+              ]}
               onPress={showStartTimePicker}
             >
-              {startTime
-                ? startTime.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : 'Select Time'}
+              <Text style={styles.greyText}>
+                {startTime
+                  ? startTime.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : 'Start Time'}
+              </Text>
+              <Text style={styles.arrow}>
+                <Icon source='chevron-down' size={20} color={'#9F9F9F'} />
+              </Text>
             </Button>
           </View>
 
           {/* End Time */}
           <View style={[styles.inputGroup, styles.timeInput]}>
-            <Text style={styles.inputLabel}>End Time *</Text>
+            <Text style={styles.inputLabel}>Duration *</Text>
             <Button
               mode='outlined'
-              icon='clock-outline'
-              style={styles.dateTimeButton}
+              style={[
+                styles.dateTimeButton,
+                styles.roundedButton,
+                styles.whiteButton,
+                styles.rowButton,
+              ]}
               onPress={showEndTimePicker}
             >
-              {endTime
-                ? endTime.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : 'Select Time'}
+              <Text style={styles.greyText}>
+                {endTime
+                  ? endTime.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : 'End Time'}
+              </Text>
+              <Text style={styles.arrow}>
+                <Icon source='chevron-down' size={20} color={'#9F9F9F'} />
+              </Text>
             </Button>
           </View>
         </View>
       </View>
 
-      {/* Date Picker Modal */}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode='date'
         date={selectedDate || new Date()}
         onConfirm={handleDateConfirm}
         onCancel={hideDatePicker}
-        display='spinner'
+        display='calendar'
       />
 
-      {/* Start Time Picker Modal */}
       <DateTimePickerModal
         isVisible={isStartTimePickerVisible}
         mode='time'
@@ -148,16 +146,11 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
         display='spinner'
       />
 
-      {/* End Time Picker Modal */}
+      {/* End Time Picker */}
       <DateTimePickerModal
         isVisible={isEndTimePickerVisible}
         mode='time'
-        date={
-          endTime ||
-          (startTime
-            ? new Date(startTime.getTime() + 2 * 60 * 60 * 1000)
-            : new Date())
-        }
+        date={endTime || startTime || new Date()}
         onConfirm={handleEndTimeConfirm}
         onCancel={hideEndTimePicker}
         display='spinner'
@@ -187,6 +180,33 @@ const styles = StyleSheet.create({
   dateTimeButton: {
     justifyContent: 'flex-start',
   },
+  roundedButton: {
+    borderRadius: 8,
+  },
+  whiteButton: {
+    backgroundColor: '#fff',
+    borderColor: '#ccc',
+  },
+
+  greyText: {
+    color: '#9F9F9F',
+    flex: 1,
+    textAlign: 'left',
+  },
+
+  arrow: {
+    color: '#000',
+    marginLeft: 4,
+  },
+
+  rowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    height: 48,
+  },
+
   timeRow: {
     flexDirection: 'row',
     gap: 12,

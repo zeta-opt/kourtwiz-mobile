@@ -13,7 +13,6 @@ import {
   Checkbox,
   Divider,
   IconButton,
-  List,
   Modal,
   Portal,
   Searchbar,
@@ -171,19 +170,28 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
     contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderContact = ({ item }: { item: DeviceContact }) => (
-    <List.Item
-      title={item.name}
-      description={getContactDisplayNumber(item)}
-      left={() => (
-        <Checkbox
-          status={isContactSelected(item) ? 'checked' : 'unchecked'}
-          onPress={() => handleToggleContact(item)}
-        />
-      )}
-      style={styles.listItem}
-    />
-  );
+  const renderContact = ({ item }: { item: DeviceContact }) => {
+    const appContact = convertToAppContact(item);
+    const isSelected = isContactSelected(item);
+
+    return (
+      <View key={item.id} style={styles.contactCard}>
+        <View style={styles.contactContent}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.contactName}>{item.name}</Text>
+            <Text style={styles.contactSubText}>
+              {getContactDisplayNumber(item)}
+            </Text>
+          </View>
+          <Checkbox
+            status={isSelected ? 'checked' : 'unchecked'}
+            onPress={() => handleToggleContact(item)}
+          />
+        </View>
+      </View>
+    );
+  };
+
   const selectedLocalDeviceContacts = tempSelectedContacts.filter((c) =>
     deviceContacts.some(
       (d) =>
@@ -251,21 +259,16 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
         <Divider />
 
         <View style={styles.footer}>
-          <Text style={styles.selectedCount}>
-            {selectedLocalDeviceContacts.length} contact(s) selected
-          </Text>
-          <View style={styles.buttonRow}>
-            <Button
-              mode='outlined'
-              onPress={handleCancel}
-              style={styles.button}
-            >
-              Cancel
-            </Button>
-            <Button mode='contained' onPress={handleSave} style={styles.button}>
-              Add Selected
-            </Button>
-          </View>
+          <Button
+            mode='contained'
+            onPress={handleSave}
+            buttonColor='#1976d2'
+            style={styles.addButton}
+            contentStyle={{ paddingVertical: 10 }}
+            labelStyle={{ fontSize: 16 }}
+          >
+            Add Contacts ({selectedLocalDeviceContacts.length})
+          </Button>
         </View>
       </Modal>
     </Portal>
@@ -274,10 +277,10 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
 
 const styles = StyleSheet.create({
   modalContainer: {
+    flex: 1,
     backgroundColor: 'white',
-    margin: 20,
-    borderRadius: 8,
-    maxHeight: '80%',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   header: {
     flexDirection: 'row',
@@ -290,6 +293,44 @@ const styles = StyleSheet.create({
     margin: 16,
     marginTop: 8,
   },
+  footer: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  addButton: {
+    width: '100%',
+    borderRadius: 8,
+  },
+
+  contactCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  contactContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  contactName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  contactSubText: {
+    fontSize: 13,
+    color: '#777',
+    marginTop: 2,
+  },
+
   listItem: {
     paddingVertical: 8,
   },
@@ -313,9 +354,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  footer: {
-    padding: 16,
-  },
+
   selectedCount: {
     marginBottom: 12,
     color: '#666',
