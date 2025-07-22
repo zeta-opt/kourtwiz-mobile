@@ -2,27 +2,29 @@ import { getToken } from '@/shared/helpers/storeToken';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
+import { Invite } from '@/components/home-page/outgoingInvitationsCard';
 
 type UseGetUsersReturn = {
-  data: Record<string, any>[] | null;
+  data: Invite[] | null;
   status: 'loading' | 'error' | 'success';
   refetch: () => void;
 };
 
+type Props = {
+  inviteeEmail: string;
+};
+
 export const useGetPlayerInvitationSent = ({
   inviteeEmail,
-}: {
-  inviteeEmail: string;
-}): UseGetUsersReturn => {
-  const [data, setData] = useState<Record<string, any>[] | null>(null);
-  const [status, setStatus] = useState<'loading' | 'error' | 'success'>(
-    'loading'
-  );
-
+}: Props): UseGetUsersReturn => {
+  const [data, setData] = useState<Invite[] | null>(null);
+  const [status, setStatus] = useState<'loading' | 'error' | 'success'>('loading');
   const [refetchState, setRefetchState] = useState(false);
+
   const refetch = () => {
     setRefetchState((prev) => !prev);
   };
+  
   useEffect(() => {
     const fetchClubCourt = async (): Promise<void> => {
       setStatus('loading');

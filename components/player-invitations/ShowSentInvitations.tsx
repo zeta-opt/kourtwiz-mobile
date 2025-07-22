@@ -1,125 +1,107 @@
-import InvitationCard from '@/components/home-page/myInvitationsCard';
-import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
-import { getToken } from '@/shared/helpers/storeToken';
-import { RootState } from '@/store';
-import { MaterialIcons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import TopBarWithChips from '@/components/home-page/topBarWithChips';
-import axios from 'axios';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import {
-  Button,
-  Dialog,
-  Menu,
-  Portal,
-  Text,
-  TextInput,
-} from 'react-native-paper';
-import { useSelector } from 'react-redux';
+import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
+import OutgoingInviteCardItem, { Invite } from '@/components/home-page/outgoingInvitationsCard';
 import { clearAllFilters, filterInvitations } from '../home-page/filters';
+import { RootState } from '@/store';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Dialog, Menu, Portal, Text } from 'react-native-paper';
+import { useSelector } from 'react-redux';
+import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import TopBarWithChips from '../home-page/topBarWithChips';
+import { getToken } from '@/shared/helpers/storeToken';
+import axios from 'axios';
 import PlayerDetailsModal from '../home-page/PlayerDetailsModal';
 
 const API_URL = 'http://44.216.113.234:8080';
 
-const ShowInvitations = () => {
+const ShowSentInvitations = () => {
   const { user } = useSelector((state: RootState) => state.auth);
-  const router = useRouter();
 
-  const { data: invites, refetch } = useGetInvitations({ userId: user?.userId });
+  const { data: invites = [] } = useGetPlayerInvitationSent({ inviteeEmail: user?.email }) as { data: Invite[] | null };
+    const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
 
-  const [loadingId, setLoadingId] = useState<number | null>(null);
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [selectedInvite, setSelectedInvite] = useState<any>(null);
-  const [comment, setComment] = useState('');
-  const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(null);
-
-  const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
-
-  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [locationMenuVisible, setLocationMenuVisible] = useState(false);
-
-  const showCommentDialog = (invite: any, action: 'accept' | 'reject') => {
-    setSelectedInvite(invite);
-    setSelectedAction(action);
-    setDialogVisible(true);
-    setComment('');
-  };
-
-  const handleDialogSubmit = async () => {
-    if (!selectedInvite || !selectedAction) return;
-    try {
-      setLoadingId(selectedInvite.id);
-      const baseUrl = selectedAction === 'accept' ? selectedInvite.acceptUrl : selectedInvite.declineUrl;
-      const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
-
-      const response = await fetch(url);
-      if (response.status === 200) {
-        Alert.alert('Success', `Invitation ${selectedAction}ed`);
-        refetch();
-      } else {
-        const errorText = await response.text();
-        console.log('Error response:', errorText);
-        Alert.alert('Error', `Failed to ${selectedAction} invitation. You may have another event at the same time.`);
-      }
-    } catch (e) {
-      Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
-    } finally {
-      setLoadingId(null);
-      setDialogVisible(false);
-    }
-  };
+  const playerCountCache = useRef<{ [key: string]: { accepted: number; total: number } }>({});
 
   useEffect(() => {
     const fetchCounts = async () => {
       const newCounts: { [key: string]: { accepted: number; total: number } } = {};
-      for (const invite of invites ?? []) {
-        try {
-          const token = await getToken();
-          const res = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
-            params: { requestId: invite.requestId },
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          const total = res.data[0]?.playersNeeded || 1;
-          const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length;
-
-          newCounts[invite.requestId] = { accepted, total };
-        } catch (error) {
-          newCounts[invite.requestId] = { accepted: 0, total: 1 };
-        }
+      const promises = [];
+  
+      const requestIdsToFetch = (invites ?? [])
+        .map(inv => inv.requestId)
+        .filter((requestId, index, self) =>
+          self.indexOf(requestId) === index && !playerCountCache.current[requestId]
+        );
+  
+      if (requestIdsToFetch.length === 0) {
+        setPlayerCounts({ ...playerCountCache.current });
+        return;
       }
-      setPlayerCounts(newCounts);
+  
+      const token = await getToken();
+  
+      for (const requestId of requestIdsToFetch) {
+        const promise = axios
+          .get(`${API_URL}/api/player-tracker/tracker/request`, {
+            params: { requestId },
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          .then(res => {
+            const total = res.data[0]?.playersNeeded || 1;
+            const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length;
+            newCounts[requestId] = { accepted, total };
+            playerCountCache.current[requestId] = { accepted, total };
+          })
+          .catch(() => {
+            newCounts[requestId] = { accepted: 0, total: 1 };
+            playerCountCache.current[requestId] = { accepted: 0, total: 1 };
+          });
+  
+        promises.push(promise);
+      }
+  
+      await Promise.all(promises);
+      setPlayerCounts({ ...playerCountCache.current });
     };
-
+  
     if (invites && invites.length > 0) {
       fetchCounts();
     }
   }, [invites]);
 
-  const uniqueLocations = Array.from(new Set((invites ?? []).map((inv) => inv.placeToPlay).filter(Boolean)));
+  const uniqueLocations = useMemo(
+    () => Array.from(new Set((invites ?? []).map((inv) => inv.placeToPlay).filter(Boolean))),
+    [invites]
+  );
 
-  const filteredInvites = filterInvitations(invites ?? [], selectedDate, selectedTime, selectedLocation);
-
-  const clearFilters = () => {
+  const filteredInvites = useMemo(() => {
+    const uniqueMap = new Map<string, Invite>();
+  
+    for (const inv of invites ?? []) {
+      if (inv.status !== 'WITHDRAWN' || !uniqueMap.has(inv.requestId)) {
+        uniqueMap.set(inv.requestId, inv);
+      }
+    }
+  
+    const uniqueInvites = Array.from(uniqueMap.values());
+    return filterInvitations(uniqueInvites, selectedDate, selectedTime, selectedLocation);
+  }, [invites, selectedDate, selectedTime, selectedLocation]);
+  
+  const clearFiltersHandler = () => {
     clearAllFilters({
       setSelectedDate,
       setSelectedTime,
       setSelectedLocation,
     });
-  };  
-  // const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
+  };
   const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
   const handleViewPlayers = async (requestId: string) => {
@@ -130,18 +112,19 @@ const ShowInvitations = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSelectedPlayers(res.data);
-      //  console.log('Selected Players:', res.data);
       setPlayerDetailsVisible(true);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch player details');
     }
   };
 
-
   return (
     <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
-      <TopBarWithChips active="incoming" />
+    <TopBarWithChips active="sent" />
+      {/* Filters */}
       <View style={styles.filterRow}>
+        {/* Date */}
         <Button
           mode="outlined"
           compact
@@ -155,6 +138,7 @@ const ShowInvitations = () => {
           </View>
         </Button>
 
+        {/* Time */}
         <Button
           mode="outlined"
           compact
@@ -168,6 +152,7 @@ const ShowInvitations = () => {
           </View>
         </Button>
 
+        {/* Location */}
         <Menu
           visible={locationMenuVisible}
           onDismiss={() => setLocationMenuVisible(false)}
@@ -198,37 +183,50 @@ const ShowInvitations = () => {
           ))}
         </Menu>
 
+        {/* Clear Filters */}
         <Button
           mode="outlined"
           compact
-          onPress={clearFilters}
+          onPress={clearFiltersHandler}
           style={styles.smallClearButton}
           contentStyle={styles.filterButtonContent}
         >
-          <Text style={styles.clearButtonLabel}>Clear Filters</Text>
+          <Text style={styles.clearButtonLabel}>Clear filters</Text>
         </Button>
       </View>
 
+      {/* List */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {filteredInvites.length === 0 ? (
-          <Text style={styles.noData}>No invitations to show.</Text>
+          <Text style={styles.noData}>No outgoing invites found.</Text>
         ) : (
-          filteredInvites.map((invite) => (
-            <View key={invite.id} style={styles.cardContainer}>
-              <InvitationCard
-                invite={invite}
-                onAccept={() => showCommentDialog(invite, 'accept')}
-                onReject={() => showCommentDialog(invite, 'reject')}
-                loading={loadingId === invite.id}
-                totalPlayers={playerCounts[invite.requestId]?.total ?? 1}
-                acceptedPlayers={playerCounts[invite.requestId]?.accepted ?? 0}
-                onViewPlayers={handleViewPlayers}
-              />
+          filteredInvites.map((invite, idx) => (
+            <View key={idx} style={styles.cardContainer}>
+                <OutgoingInviteCardItem
+                    invite={{
+                        requestId: invite.requestId,
+                        playTime: invite.playTime,
+                        placeToPlay: invite.placeToPlay,
+                        dateTimeMs: new Date(
+                            invite.playTime[0],
+                            invite.playTime[1] - 1,
+                            invite.playTime[2],
+                            invite.playTime[3] || 0,
+                            invite.playTime[4] || 0
+                        ).getTime(),
+                        accepted: playerCounts[invite.requestId]?.accepted ?? 0,
+                        playersNeeded: invite.playersNeeded ?? playerCounts[invite.requestId]?.total ?? 0,
+                        status: invite.status,
+                    }}
+                    disabled
+                    onViewPlayers={handleViewPlayers}
+                    />
             </View>
           ))
         )}
       </ScrollView>
 
+      {/* Pickers */}
       {showDatePicker && (
         <DateTimePicker
           value={selectedDate || new Date()}
@@ -240,7 +238,6 @@ const ShowInvitations = () => {
           }}
         />
       )}
-
       {showTimePicker && (
         <DateTimePicker
           value={selectedTime || new Date()}
@@ -252,24 +249,6 @@ const ShowInvitations = () => {
           }}
         />
       )}
-
-      <Portal>
-        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>Add a message</Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              label="Comment (optional)"
-              value={comment}
-              onChangeText={setComment}
-              mode="outlined"
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
-            <Button onPress={handleDialogSubmit}>Submit</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
       <Portal>
         <Dialog
           visible={playerDetailsVisible}
@@ -287,9 +266,15 @@ const ShowInvitations = () => {
   );
 };
 
-export default ShowInvitations;
+export default ShowSentInvitations;
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    justifyContent: 'space-between',
+  },
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -352,6 +337,12 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 24,
   },
+  noData: {
+    marginTop: 20,
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#777',
+  },
   cardContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
@@ -359,26 +350,21 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 16,
   },
-  noData: {
-    marginTop: 20,
-    textAlign: 'center',
-    fontSize: 16,
-  },
   bottomDialog: {
-  position: 'absolute',
-  bottom: 0,
-  left: 0,              
-  right: 0,             
-  margin: 0,
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-  backgroundColor: 'white',
-  overflow: 'hidden',
-  elevation: 10,        
-  shadowColor: '#000',  
-  shadowOffset: { width: 0, height: -2 },
-  shadowOpacity: 0.2,
-  shadowRadius: 5,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,              
+    right: 0,             
+    margin: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    backgroundColor: 'white',
+    overflow: 'hidden',
+    elevation: 10,        
+    shadowColor: '#000',  
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
   },
   dialogContent: {
     padding: 16,

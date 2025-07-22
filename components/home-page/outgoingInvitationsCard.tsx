@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Pressable } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export type Invite = {
   requestId: string;
@@ -9,17 +10,29 @@ export type Invite = {
   placeToPlay: string;
   dateTimeMs: number;
   accepted: number;
-  Requests: {
-    playersNeeded: number;
-  }[];
+  playersNeeded: number;
+  status: string;
 };
 
-type OutgoingInvitationCardProps = {
-  invites: Invite[];
+type OutgoingInviteCardItemProps = {
+  invite: Invite;
+  disabled?: boolean;
+  onViewPlayers: (requestId: string) => void;
 };
 
-export const OutgoingInvitationCard: React.FC<OutgoingInvitationCardProps> = ({ invites }) => {
+const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite, disabled = false, onViewPlayers }) => {
   const router = useRouter();
+
+  //const request = invite.Requests?.[0];
+  const acceptedCount = invite.accepted || 0;
+  const totalPlayers = invite.playersNeeded || 0;
+  console.log('Invite:', invite);
+
+  const isFullyAccepted = acceptedCount === totalPlayers;
+  const statusText = isFullyAccepted ? 'Accepted' : 'Pending';
+  const statusColor = isFullyAccepted ? '#429645' : '#c47602';
+
+  const peopleText = `${totalPlayers} ${totalPlayers === 1 ? 'Person' : 'People'} Invited`;
 
   const formatDateParts = (timestamp: number) => {
     const dateObj = new Date(timestamp);
@@ -37,55 +50,58 @@ export const OutgoingInvitationCard: React.FC<OutgoingInvitationCardProps> = ({ 
     return { dateString, timeString };
   };
 
+  const { dateString, timeString } = formatDateParts(invite.dateTimeMs);
+
+  const handlePress = () => {
+    const encoded = encodeURIComponent(JSON.stringify(invite));
+    router.push(`/invite-summary?data=${encoded}`);
+  };
+
   return (
-    <View style={styles.container}>
-      {invites.map((gameInvite, index) => {
-        const request = gameInvite.Requests?.[0];
-        const acceptedCount = gameInvite.accepted || 0;
-        const totalPlayers = request?.playersNeeded || 0;
-
-        const isFullyAccepted = acceptedCount === totalPlayers;
-        const statusText = isFullyAccepted ? 'Accepted' : 'Pending';
-        const statusColor = isFullyAccepted ? '#429645' : '#c47602';
-
-        const peopleText = `${totalPlayers} ${totalPlayers === 1 ? 'Person' : 'People'} Invited`;
-        const { dateString, timeString } = formatDateParts(gameInvite.dateTimeMs);
-
-        const onPress = () => {
-          const encoded = encodeURIComponent(JSON.stringify(gameInvite));
-          router.push(`/invite-summary?data=${encoded}`);
-        };
-
-        return (
-          <View key={`${gameInvite.requestId}-${index}`} style={styles.card} onTouchEnd={onPress}>
-            <View style={styles.statusBadgeContainer}>
-              <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-                <Text style={styles.statusBadgeText}>
-                  {acceptedCount}/{totalPlayers} {statusText}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.placeText} numberOfLines={1}>
-              {gameInvite.placeToPlay}
-            </Text>
-
-            <View style={styles.datePeopleRow}>
-              <Text style={styles.dateText}>{dateString} | {timeString}</Text>
-              <Text style={styles.separator}>|</Text>
-              <Text style={styles.peopleText}>{peopleText}</Text>
+    <TouchableOpacity style={styles.card} disabled={disabled} onPress={handlePress}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', }}>
+        <View style={{ flex: 1 }}>
+          <View style={styles.statusBadgeContainer}>
+            <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+              <Text style={styles.statusBadgeText}>
+                {acceptedCount}/{totalPlayers} {statusText}
+              </Text>
             </View>
           </View>
-        );
-      })}
-    </View>
+
+          <Text style={styles.placeText} numberOfLines={1}>
+            {invite.placeToPlay}
+          </Text>
+
+          <View style={styles.datePeopleRow}>
+            <Text style={styles.dateText}>{dateString} | {timeString}</Text>
+            <Text style={styles.separator}>|</Text>
+            <Text style={styles.peopleText}>{peopleText}</Text>
+          </View>
+        </View>
+
+        {/* View Players Row */}
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            onViewPlayers?.(invite.requestId);
+          }}
+          style={({ pressed }) => [
+            styles.acceptedBox,
+            pressed && styles.pressedStyle, // Optional pressed effect
+          ]}
+        >
+          <MaterialCommunityIcons name="account" size={14} color="#007BFF" />
+          <Text style={styles.acceptedTextSmall}>  {acceptedCount} / {totalPlayers} Invited</Text>
+        </Pressable>
+      </View>
+    </TouchableOpacity>
   );
 };
 
+export default OutgoingInviteCardItem;
+
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
   card: {
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -121,16 +137,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dateText: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#555',
   },
   separator: {
     marginHorizontal: 8,
     fontSize: 14,
-    color: '#bbb',
+    color: '#555',
   },
+  acceptedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E6F7FF',
+    borderRadius: 16,
+    padding: 6,
+  },
+  acceptedTextSmall: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '600',
+  },
+  pressedStyle: {
+    opacity: 0.6,
+    transform: [{ scale: 0.97 }],
+  },  
   peopleText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#555',
   },
 });

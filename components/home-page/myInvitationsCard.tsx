@@ -40,7 +40,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
   onViewPlayers,
 }) => {
   const router = useRouter();
-  const now = new Date();
+  //const now = new Date();
   const date = new Date(
     invite.playTime[0],
     invite.playTime[1] - 1,
@@ -49,34 +49,34 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
     invite.playTime[4]
   );
 
-  const diffInMs = date.getTime() - now.getTime();
+  //const diffInMs = date.getTime() - now.getTime();
   const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const dateString = date.toLocaleDateString('en-GB');
 
-  let timeLeftText = '';
-  let badgeColor = '#ffffff';
+  // let timeLeftText = '';
+  // let badgeColor = '#ffffff';
 
-  if (diffInMs > 0) {
-    const totalSeconds = Math.floor(diffInMs / 1000);
-    const totalMinutes = Math.floor(totalSeconds / 60);
-    const totalHours = Math.floor(totalMinutes / 60);
-    const totalDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  // if (diffInMs > 0) {
+  //   const totalSeconds = Math.floor(diffInMs / 1000);
+  //   const totalMinutes = Math.floor(totalSeconds / 60);
+  //   const totalHours = Math.floor(totalMinutes / 60);
+  //   const totalDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-    if (totalDays >= 1) {
-      timeLeftText = `${totalDays} Day${totalDays > 1 ? 's' : ''} Left`;
-      badgeColor = '#3CB371';
-    } else if (totalHours >= 1) {
-      const hours = totalHours.toString().padStart(2, '0');
-      const minutes = (totalMinutes % 60).toString().padStart(2, '0');
-      timeLeftText = `${hours}:${minutes} Hrs Left`;
-      badgeColor = '#3CB371';
-    } else {
-      const minutes = totalMinutes.toString().padStart(2, '0');
-      const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-      timeLeftText = `${minutes}:${seconds} Mins Left`;
-      badgeColor = '#d00';
-    }
-  }
+  //   if (totalDays >= 1) {
+  //     timeLeftText = `${totalDays} Day${totalDays > 1 ? 's' : ''} Left`;
+  //     badgeColor = '#3CB371';
+  //   } else if (totalHours >= 1) {
+  //     const hours = totalHours.toString().padStart(2, '0');
+  //     const minutes = (totalMinutes % 60).toString().padStart(2, '0');
+  //     timeLeftText = `${hours}:${minutes} Hrs Left`;
+  //     badgeColor = '#3CB371';
+  //   } else {
+  //     const minutes = totalMinutes.toString().padStart(2, '0');
+  //     const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+  //     timeLeftText = `${minutes}:${seconds} Mins Left`;
+  //     badgeColor = '#d00';
+  //   }
+  // }
 
   return (
     <View style={styles.row}>
@@ -93,12 +93,12 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
           <View style={styles.acceptedBox}>
             <MaterialCommunityIcons name="account-group" size={14} color="#007BFF" />
             <TouchableOpacity
-  style={styles.acceptedBox}
-  onPress={() => onViewPlayers(invite.requestId)} 
->
-  {/* <MaterialCommunityIcons name="account-group" size={14} color="#007BFF" /> */}
-  <Text style={styles.acceptedTextSmall}>{acceptedPlayers} / {totalPlayers} Accepted</Text>
-</TouchableOpacity>
+              style={styles.acceptedBox}
+              onPress={() => onViewPlayers(invite.requestId)} 
+            >
+              {/* <MaterialCommunityIcons name="account-group" size={14} color="#007BFF" /> */}
+              <Text style={styles.acceptedTextSmall}>{acceptedPlayers} / {totalPlayers} Accepted</Text>
+            </TouchableOpacity>
 
           </View>
           <TouchableOpacity

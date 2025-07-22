@@ -1,7 +1,7 @@
 import FindplayerCard from '@/components/home-page/FindplayerCard';
 import InvitationCard from '@/components/home-page/myInvitationsCard';
 import OpenPlayCard from '@/components/home-page/openPlayCard';
-import { OutgoingInvitationCard } from '@/components/home-page/outgoingInvitationsCard';
+import OutgoingInviteCardItem from '@/components/home-page/outgoingInvitationsCard';
 import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
 import PlayersNearbyMap from '@/components/players-nearby/PlayersNearbyMap';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
@@ -11,7 +11,7 @@ import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
-import { resetInvitationsRefetch } from '@/store/refetchSlice'; // ADD THIS IMPORT
+import { resetInvitationsRefetch } from '@/store/refetchSlice';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -56,15 +56,12 @@ const Dashboard = () => {
   const { data: invites, refetch } = useGetInvitations({
     userId: user?.userId,
   });
+  const { data: outgoingInvitesRaw, refetch: refetchOutgoing } = useGetPlayerInvitationSent({
+      inviteeEmail: user?.email,
+    });
   const clubId = user?.currentActiveClubId;
   const { data: openPlayInvites = [] } = useGetPlays(clubId);
  
-
-  const { data: outgoingInvitesRaw, refetch: refetchOutgoing } =
-    useGetPlayerInvitationSent({
-      inviteeEmail: user?.email,
-    });
-
   // ADD THIS LINE - Get the refetch trigger from Redux
   const shouldRefetchInvitations = useSelector(
     (state: RootState) => state.refetch.shouldRefetchInvitations
@@ -126,7 +123,7 @@ const Dashboard = () => {
             }
           );
 
-          const total = res.data.length;
+          const total = res.data[0]?.playersNeeded || 1;
           const accepted = res.data.filter(
             (p: any) => p.status === 'ACCEPTED'
           ).length;
@@ -206,8 +203,8 @@ const Dashboard = () => {
           <View style={styles.inviteWrapper}>
             <View style={styles.tabRow}>
               <ScrollView   horizontal
-  showsHorizontalScrollIndicator={false}
-  contentContainerStyle={styles.chipGroup}>
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipGroup}>
                 <Text
                   style={[
                     styles.chip,
@@ -249,9 +246,9 @@ const Dashboard = () => {
                   onPress={() =>
                     router.replace(
                       activeTab === 'INCOMING'
-                        ? '/(authenticated)/player-invitations'
-                        : '/(authenticated)/find-players'
-                    )
+                        ? '/(authenticated)/player-invitations?type=incoming'
+                        : '/(authenticated)/player-invitations?type=outgoing'
+                    )                    
                   }
                 >
                   <Text style={styles.viewAllText}>View All</Text>
@@ -288,14 +285,14 @@ const Dashboard = () => {
                   )
                 ) : activeTab === 'OUTGOING' ? (
                   outgoingInvites.length === 0 ? (
-                    <Text style={styles.noInvitesText}>
-                      No sent invitations
-                    </Text>
+                    <Text style={styles.noInvitesText}>No sent invitations</Text>
                   ) : (
-                    <OutgoingInvitationCard
-                      invites={outgoingInvites}
-                      onPressCard={() => {}}
-                    />
+                    outgoingInvites.map((invite) => (
+                      <OutgoingInviteCardItem 
+                      key={invite.requestId} 
+                      invite={invite} 
+                      onViewPlayers={handleViewPlayers}/>
+                    ))
                   )
                 ) : (
                   <OpenPlayCard />

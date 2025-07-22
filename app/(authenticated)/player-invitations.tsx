@@ -1,16 +1,20 @@
 import ShowInvitations from '@/components/player-invitations/ShowInvitations';
+import ShowSentInvitations from '@/components/player-invitations/ShowSentInvitations';
+import { useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 const PlayerInvitations = () => {
+  const { type } = useLocalSearchParams(); // e.g., type=incoming or type=outgoing
+
   return (
     <View style={styles.container}>
-      
       <ScrollView style={styles.scrollArea}>
-        <ShowInvitations />
+        {type === 'incoming' ? <ShowInvitations /> : <ShowSentInvitations />}
       </ScrollView>
     </View>
   );
 };
+
 
 export default PlayerInvitations;
 

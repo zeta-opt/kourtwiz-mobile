@@ -1,10 +1,9 @@
-// components/home-page/InvitationTopBar.tsx
-
 import UserAvatar from '@/assets/UserAvatar';
+import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
+import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { RootState } from '@/store';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useSelector } from 'react-redux';
@@ -17,7 +16,18 @@ const InvitationTopBar = ({
   inviteCount?: number;
 }) => {
   const router = useRouter();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  const { data: outgoingInvitesRaw } = useGetPlayerInvitationSent({
+      inviteeEmail: user?.email,
+    });
+  const groupedOutgoing = groupInviteeByRequestId(
+    outgoingInvitesRaw?.filter((invite) => invite.status !== 'WITHDRAWN') || []
+  );
+  const outgoingInvites = Object.values(groupedOutgoing);
+  const pendingOutCount = outgoingInvites.length;
+  console.log('Pending Outgoing Invites Count:', pendingOutCount);
+  console.log(inviteCount, 'inviteCount');
 
   return (
     <>
@@ -43,19 +53,19 @@ const InvitationTopBar = ({
 
         <TouchableOpacity
           style={[styles.chip, active === 'incoming' && styles.activeChip]}
-          onPress={() => router.replace('/player-invitations')}
+          onPress={() => router.replace('/(authenticated)/player-invitations?type=incoming')}
         >
           <Text style={[styles.chipText, active === 'incoming' && styles.activeChipText]}>
-            Incoming PF {inviteCount ? `(${inviteCount})` : ''}
+            Incoming PF ({inviteCount ? `(${inviteCount})` : 0})
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.chip, active === 'sent' && styles.activeChip]}
-          onPress={() => router.replace('/find-players')}
+          onPress={() => router.replace('/(authenticated)/player-invitations?type=outgoing')}
         >
           <Text style={[styles.chipText, active === 'sent' && styles.activeChipText]}>
-            Sent Request
+            Sent Request ({pendingOutCount})
           </Text>
         </TouchableOpacity>
 
