@@ -125,7 +125,7 @@ const PreferredPlacesModal = ({
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.contentArea}>
-              <Text style={styles.heading}>Choose a place to play</Text>
+              <Text style={styles.heading}>Select Court</Text>
 
               {/* Search Input */}
               <View style={styles.searchContainer}>
@@ -468,6 +468,7 @@ const styles = StyleSheet.create({
   doneButton: {
     marginHorizontal: 0,
     elevation: 0,
+    backgroundColor: '#2C7E88',
   },
   moreResultsText: {
     textAlign: 'center',

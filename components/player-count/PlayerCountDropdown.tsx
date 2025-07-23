@@ -32,7 +32,7 @@ const PlayerCountDropdown: React.FC<PlayerCountDropdownProps> = ({
   return (
     <View style={styles.container}>
       <Text variant='titleMedium' style={styles.title}>
-        How many players are you looking for?
+        Total Players
       </Text>
 
       <View style={styles.dropdownWrapper}>

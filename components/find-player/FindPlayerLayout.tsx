@@ -42,13 +42,6 @@ import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelec
 import ContactsModal from './contacts-modal/ContactsModal';
 import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
 
-const getSliderColor = (value: number): string => {
-  if (value <= 2) return '#4B9BFF';
-  if (value <= 3) return '#3182CE';
-  if (value <= 4) return '#2563EB';
-  return '#1E40AF';
-};
-
 const FindPlayerLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -338,16 +331,13 @@ const FindPlayerLayout = () => {
             onPress={handleClubDetailsClick}
             style={styles.dropdownButton}
             contentStyle={styles.dropdownContent}
-            textColor='#2563EB'
+            textColor='#2C7E88'
           >
             <View style={styles.buttonContent}>
-              <Text style={styles.buttonText}>
+              <Text style={styles.buttonText} numberOfLines={1}>
                 {placeToPlay || 'Enter Place Name'}
               </Text>
               <View style={styles.iconContainer}>
-                {locationPermissionGranted && (
-                  <Icon source='map-marker' size={16} color='#2563EB' />
-                )}
                 <Icon source='chevron-down' size={20} />
               </View>
             </View>
@@ -448,7 +438,7 @@ const FindPlayerLayout = () => {
             icon='magnify'
             loading={finderStatus === 'loading'}
             disabled={finderStatus === 'loading' || submitted}
-            buttonColor='#2563EB'
+            buttonColor='#2C7E88'
           >
             {submitted ? 'Submitted' : 'Find Player'}
           </Button>
@@ -471,7 +461,7 @@ const FindPlayerLayout = () => {
           <Dialog.Actions>
             <Button
               onPress={() => setConflictDialogVisible(false)}
-              textColor='#2563EB'
+              textColor='#2C7E88'
             >
               OK
             </Button>
@@ -490,7 +480,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   mainHeader: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#2C7E88',
     paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: 16,
@@ -520,7 +510,6 @@ const styles = StyleSheet.create({
   dropdownButton: {
     flex: 1,
     height: 48,
-    marginTop: 8,
     marginRight: 8,
     justifyContent: 'center',
     borderRadius: 8,
@@ -532,17 +521,21 @@ const styles = StyleSheet.create({
   },
   buttonContent: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     width: '100%',
   },
+
   buttonText: {
-    flex: 1,
-    textAlign: 'left',
+    flexShrink: 1,
+    fontSize: 15,
+    marginLeft: -10,
   },
+
   iconContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: -12,
     gap: 4,
   },
   permissionHint: {
@@ -553,7 +546,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   disabledPlus: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#2C7E88',
     marginTop: 8,
     borderRadius: 8,
     opacity: 1,
@@ -567,7 +560,6 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   sectionTitle: {
-    marginBottom: 4,
     fontWeight: '600',
   },
   inputGroup: {
@@ -616,13 +608,13 @@ const styles = StyleSheet.create({
   selectedValue: {
     marginTop: 8,
     fontSize: 14,
-    color: '#2563EB',
+    color: '#2C7E88',
     fontWeight: '500',
   },
   selectedSkillLevel: {
     marginTop: 8,
     fontSize: 14,
-    color: '#2563EB',
+    color: '#2C7E88',
     fontWeight: '500',
   },
   playerCountContainer: {
@@ -634,11 +626,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     minWidth: 40,
     textAlign: 'center',
-    color: '#2563EB',
+    color: '#2C7E88',
   },
   contactsButton: {
     justifyContent: 'flex-start',
-    borderColor: '#2563EB',
+    borderColor: '#2C7E88',
   },
   selectedPlayersContainer: {
     marginBottom: 16,
@@ -650,7 +642,7 @@ const styles = StyleSheet.create({
   },
   countButton: {
     marginHorizontal: 4,
-    borderColor: '#2563EB',
+    borderColor: '#2C7E88',
   },
   actionButtonContainer: {
     marginTop: 24,

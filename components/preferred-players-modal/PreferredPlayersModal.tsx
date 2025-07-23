@@ -150,6 +150,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
           <Checkbox
             status={isPlayerSelected(player) ? 'checked' : 'unchecked'}
             onPress={() => handleTogglePlayer(player)}
+            color='#2C7E88'
           />
         </View>
       </View>
@@ -167,7 +168,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
         contentContainerStyle={styles.modalContainer}
       >
         <View style={styles.header}>
-          <Text variant='headlineSmall'>Select Players</Text>
+          <Text variant='headlineSmall'>Players</Text>
           <IconButton icon='close' size={24} onPress={handleCancel} />
         </View>
 
@@ -229,12 +230,12 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
             <Text style={styles.emptyText}>No players found</Text>
           )}
 
-          {/* Load more for registered players */}
           {hasMore && registeredStatus === 'success' && (
             <Button
               mode='text'
               onPress={loadMore}
               style={styles.loadMoreButton}
+              textColor='#2C7E88'
             >
               Load More
             </Button>
@@ -306,6 +307,7 @@ const styles = StyleSheet.create({
   searchBar: {
     margin: 16,
     marginTop: 8,
+    backgroundColor: '#D9D9D9',
   },
   scrollView: {
     flex: 1,
@@ -323,17 +325,7 @@ const styles = StyleSheet.create({
   listItem: {
     paddingVertical: 8,
   },
-  preferredBadge: {
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  preferredBadgeText: {
-    color: '#1976d2',
-    fontSize: 12,
-    fontWeight: '500',
-  },
+
   loader: {
     marginTop: 50,
   },
@@ -360,6 +352,7 @@ const styles = StyleSheet.create({
   addPlayersButton: {
     width: '100%',
     borderRadius: 8,
+    backgroundColor: '#2C7E88', // Changed to a more suitable color
   },
   selectedCount: {
     marginBottom: 12,

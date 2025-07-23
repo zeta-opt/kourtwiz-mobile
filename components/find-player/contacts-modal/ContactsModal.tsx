@@ -186,6 +186,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
           <Checkbox
             status={isSelected ? 'checked' : 'unchecked'}
             onPress={() => handleToggleContact(item)}
+            color='#2C7E88'
           />
         </View>
       </View>
@@ -250,7 +251,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
         contentContainerStyle={styles.modalContainer}
       >
         <View style={styles.header}>
-          <Text variant='headlineSmall'>Add from Contacts</Text>
+          <Text variant='headlineSmall'>Contacts</Text>
           <IconButton icon='close' size={24} onPress={handleCancel} />
         </View>
 
@@ -262,7 +263,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
           <Button
             mode='contained'
             onPress={handleSave}
-            buttonColor='#1976d2'
+            buttonColor='#2C7E88'
             style={styles.addButton}
             contentStyle={{ paddingVertical: 10 }}
             labelStyle={{ fontSize: 16 }}
@@ -292,6 +293,7 @@ const styles = StyleSheet.create({
   searchBar: {
     margin: 16,
     marginTop: 8,
+    backgroundColor: '#D9D9D9',
   },
   footer: {
     padding: 16,
