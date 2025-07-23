@@ -1,13 +1,23 @@
 import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay';
-import { RootState } from '@/store';
+import { AppDispatch, RootState } from '@/store';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Slider from '@react-native-community/slider';
 import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import * as Contacts from 'expo-contacts';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  Contact,
+  loadContacts,
+  resetPlayerFinderData,
+  setPreferredContacts,
+} from '@/store/playerFinderSlice';
 import {
   Alert,
+  Animated,
   Button,
+  LayoutChangeEvent,
   Modal,
   Platform,
   ScrollView,
@@ -17,12 +27,26 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSelector } from 'react-redux';
 import PreferredPlacesModal from '../find-player/preferred-places-modal/PreferredPlacesModal';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
+import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
+import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
+import ContactsModal from '../find-player/contacts-modal/ContactsModal';
+import { closePreferredPlayersModal, openPreferredPlayersModal } from '@/store/uiSlice';
+import { Calendar } from 'react-native-calendars';
+import { IconButton } from 'react-native-paper';
+
+const getSliderColor = (value: number): string => {
+  if (value <= 2) return '#4B9BFF';
+  if (value <= 3) return '#3182CE';
+  if (value <= 4) return '#2563EB';
+  return '#1E40AF';
+};
 
 const CreateEventForm = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
 
@@ -30,6 +54,9 @@ const CreateEventForm = () => {
   const [place, setPlace] = useState('');
   const [court, setCourt] = useState('');
   const [date, setDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [customRepeatDays, setCustomRepeatDays] = useState<string[]>([]); 
+  const [customRepeatDates, setCustomRepeatDates] = useState<Date[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [repeat, setRepeat] = useState('');
   const [skillLevel, setSkillLevel] = useState(0);
@@ -52,6 +79,7 @@ const CreateEventForm = () => {
   const [repeatInterval, setRepeatInterval] = useState('1');
   const [repeatEndDate, setRepeatEndDate] = useState<Date | null>(null);
   const [showRepeatEndDatePicker, setShowRepeatEndDatePicker] = useState(false);
+  const [contactsModalVisible, setContactsModalVisible] = useState(false);
 
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customRepeat, setCustomRepeat] = useState<
@@ -59,11 +87,40 @@ const CreateEventForm = () => {
   >('daily');
   const [customInterval, setCustomInterval] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
+  
+  const sliderWidth = useRef(0);
+  const animatedValue = useRef(new Animated.Value(skillLevel)).current;
+  const [sliderPos, setSliderPos] = useState(0);
 
+  const handleLayout = (e: LayoutChangeEvent) => {
+      sliderWidth.current = e.nativeEvent.layout.width;
+    };
+  
+    const handleValueChange = (value: number) => {
+      setSkillLevel(value);
+      animatedValue.setValue(value);
+      const pos = (value / 5) * sliderWidth.current;
+      setSliderPos(pos);
+    };
+  
+    const handleBack = () => {
+  
+  if (router.canGoBack?.()) {
+    router.back();
+  } else {
+    router.replace('/(authenticated)/home');
+  }
+};
   const handleModalClose = () => {
     setModalVisible(false);
   };
+const preferredContacts = useSelector(
+    (state: RootState) => state.playerFinder.preferredContacts
+  );
+  console.log(preferredContacts);
 
+  const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
+  const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
   useEffect(() => {
     const requestPermission = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -71,6 +128,64 @@ const CreateEventForm = () => {
     };
     requestPermission();
   }, []);
+
+    const showPreferredPlayers = () => {
+      dispatch(openPreferredPlayersModal());
+    };
+  
+    const handleAddContact = async () => {
+      const { status } = await Contacts.getPermissionsAsync();
+  
+      if (status === 'granted') {
+        setContactsModalVisible(true);
+      } else {
+        const { status: newStatus } = await Contacts.requestPermissionsAsync();
+  
+        if (newStatus === 'granted') {
+          setContactsModalVisible(true);
+        } else {
+          Alert.alert(
+            'Contacts Permission Required',
+            'To select contacts from your device, we need access to your contacts.',
+            [
+              {
+                text: "Don't Allow",
+              },
+              {
+                text: 'Allow',
+                onPress: async () => {
+                  const { status: finalStatus } =
+                    await Contacts.requestPermissionsAsync();
+                  if (finalStatus === 'granted') {
+                    setContactsModalVisible(true);
+                  } else {
+                    Alert.alert(
+                      'Permission Denied',
+                      'You can still select players from your preferred contacts.'
+                    );
+                  }
+                },
+              },
+            ]
+          );
+        }
+      }
+    };
+  
+    const handleRemovePlayer = (index: number) => {
+      dispatch(
+        setPreferredContacts(preferredContacts.filter((_, i) => i !== index))
+      );
+    };
+  
+    const handleSelectPlayers = (players: Contact[]) => {
+      dispatch(setPreferredContacts(players));
+    };
+  
+    const handleSelectContactsFromDevice = (contacts: Contact[]) => {
+      dispatch(setPreferredContacts(contacts));
+      setContactsModalVisible(false);
+    };
 
   const handleRepeatChange = (value: string) => {
     if (value === 'custom') {
@@ -128,8 +243,21 @@ const CreateEventForm = () => {
 
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
   };
-
-  const handleSubmit = async () => {
+  useEffect(() => {
+  if (customRepeat === 'monthly') {
+    const now = new Date();
+    setCustomRepeatDates([
+      new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        startTime?.getHours(),
+        startTime?.getMinutes()
+      ),
+    ]);
+  }
+}, [customRepeat, startTime]);
+  const handleSubmit = async (sendToPreferredPlayers: boolean = false) => {
     if (!eventName || !placeToPlay || !date || !startTime || !endTime) {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
@@ -139,40 +267,79 @@ const CreateEventForm = () => {
       const durationMinutes = Math.floor(
         (endTime.getTime() - startTime.getTime()) / (1000 * 60)
       );
+      
 
-      const startDateTime = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
+      const startDateTime = new Date( 
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
         startTime.getHours(),
         startTime.getMinutes()
       );
+      const formatDatesArray = (dates: Date[]) =>
+      dates.map(formatDateToLocalISOString);
 
       const payload: any = {
-        playTypeName: eventName,
-        courtId: court || undefined,
-        requestorId: userId,
-        startTime: formatDateToLocalISOString(startDateTime),
-        durationMinutes,
-        priceForPlay: Number(price),
-        skillLevel: String(skillLevel),
-        maxPlayers: Number(maxPlayers),
-        eventRepeatType: repeat.toUpperCase() || 'NONE',
-        ...(repeat &&
-          repeat.toUpperCase() !== 'NONE' && {
-            repeatInterval: Number(repeatInterval),
-            repeatEndDate: repeatEndDate
-              ? formatDateToLocalISOString(repeatEndDate)
-              : undefined,
-            ...(repeat.toLowerCase() === 'weekly' && {
-              repeatOnDays: [date.getDay().toString()],
-            }),
-          }),
-        description: description || undefined,
-        allCourts: {
-          Name: placeToPlay,
-        },
-      };
+  eventName,
+  courtId: court || undefined,
+  requestorId: userId,
+  startTime: formatDateToLocalISOString(startDateTime),
+  durationMinutes,
+  priceForPlay: Number(price),
+  skillLevel: Number(skillLevel.toFixed(2)),
+  maxPlayers: Number(maxPlayers),
+  eventRepeatType:
+    repeat === 'custom'
+      ? (customRepeat === 'weekly' ? 'DAYS' : customRepeat.toUpperCase())
+      : repeat.toUpperCase(),
+
+  ...(repeat && repeat.toUpperCase() !== 'NONE' && {
+    repeatInterval: Number(repeatInterval),
+    repeatEndDate: repeatEndDate
+      ? formatDateToLocalISOString(repeatEndDate)
+      : undefined,
+
+    ...(repeat === 'custom' && customRepeat === 'weekly' && {
+      repeatOnDays: customRepeatDays,
+    }),
+
+    ...(repeat === 'custom' && customRepeat === 'monthly' && {
+      repeatOnDates: formatDatesArray(customRepeatDates),
+    }),
+
+    ...(repeat === 'monthly' && {
+      repeatOnDates: [
+        formatDateToLocalISOString(
+          new Date(
+            selectedDate.getFullYear(),
+            selectedDate.getMonth(),
+            selectedDate.getDate(),
+            startTime.getHours(),
+            startTime.getMinutes()
+          )
+        ),
+      ],
+    }),
+
+    ...(repeat === 'weekly' && {
+      repeatOnDays: [
+        selectedDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+        }).toUpperCase(),
+      ],
+    }),
+  }),
+
+  description: description || undefined,
+  allCourts: {
+    Name: placeToPlay,
+  },
+
+  ...(sendToPreferredPlayers && preferredContacts.length > 0 && {
+  preferredPlayers: preferredContacts,
+  }),
+
+};
 
       await createSession(payload);
       Alert.alert('Success', 'Session created successfully');
@@ -185,25 +352,30 @@ const CreateEventForm = () => {
 
   return (
     <>
-    <View style={{flexDirection: 'row', alignItems: 'center'}}>
-      <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
-        <MaterialIcons name="arrow-back-ios" size={22} color="black" />
-      </TouchableOpacity>
-      <Text style={{ fontSize: 20, fontWeight: 'bold', marginVertical: 16 }}> Create Event</Text>
-    </View>
+    <View style={{ flex: 1 ,margin:0}}>
+
+  <View style={styles.mainHeader}>
+        <View style={styles.headerContent}>
+          <IconButton
+            icon='arrow-left'
+            size={24}
+            iconColor='white'
+            onPress={() => handleBack()}
+            style={styles.backButton}
+          />
+          <Text  style={styles.headerTitle}>
+            Create Event
+          </Text>
+        </View>
+      </View>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.label}>Event Name</Text>
-        <View style={styles.pickerWrapper}>
-          <Picker selectedValue={eventName} onValueChange={setEventName}>
-            <Picker.Item label='Select Event Type' value='' />
-            <Picker.Item label='Open Play' value='OPEN_PLAY' />
-            <Picker.Item label='Private Lesson' value='PRIVATE_LESSON' />
-            <Picker.Item label='Group Lesson' value='GROUP_LESSON' />
-            <Picker.Item label='Clinic' value='CLINIC' />
-            <Picker.Item label='Tournament' value='TOURNAMENT' />
-            <Picker.Item label='League' value='LEAGUE' />
-          </Picker>
-        </View>
+        <TextInput
+          style={styles.input}
+          placeholder='Enter Event Name'
+          value={eventName}
+          onChangeText={setEventName}
+        />
 
         <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
@@ -229,62 +401,20 @@ const CreateEventForm = () => {
           value={court}
           onChangeText={setCourt}
         />
-
-        <Text style={styles.label}>Date</Text>
-        <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-          <TextInput
-            style={styles.input}
-            value={date.toLocaleDateString()}
-            editable={false}
-          />
-        </TouchableOpacity>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode='date'
-            display='default'
-            onChange={(event, selectedDate) => {
-              setShowDatePicker(false);
-              if (selectedDate) setDate(selectedDate);
-            }}
-          />
-        )}
-
-        <Text style={styles.label}>Duration</Text>
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={styles.timeInput}
-            onPress={() => setShowTimePicker({ visible: true, type: 'start' })}
-          >
-            <Text>{formatTime(startTime) || 'Start Time'}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.timeInput}
-            onPress={() => setShowTimePicker({ visible: true, type: 'end' })}
-          >
-            <Text>{formatTime(endTime) || 'End Time'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {showTimePicker.visible && (
-          <DateTimePicker
-            value={startTime || new Date()}
-            mode='time'
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            is24Hour={false}
-            onChange={handleTimeChange}
-          />
-        )}
-
-        <Text style={{ fontWeight: 'bold' }}>Repeat:</Text>
+        <GameSchedulePicker
+          selectedDate={selectedDate}
+          startTime={startTime}
+          endTime={endTime}
+          onDateChange={setSelectedDate}
+          onStartTimeChange={setStartTime}
+          onEndTimeChange={setEndTime}
+        />
+        <Text style={styles.label}>Repeat Event</Text>
         <Picker selectedValue={repeat} onValueChange={handleRepeatChange}>
           <Picker.Item label='None' value='none' />
           <Picker.Item label='Daily' value='daily' />
           <Picker.Item label='Weekly' value='weekly' />
           <Picker.Item label='Monthly' value='monthly' />
-          <Picker.Item label='Yearly' value='yearly' />
           <Picker.Item label='Custom' value='custom' />
         </Picker>
 
@@ -308,18 +438,33 @@ const CreateEventForm = () => {
           />
         )}
 
-        <Text style={styles.label}>Minimum Skill Level</Text>
-        <Slider
-          minimumValue={0}
-          maximumValue={5}
-          step={0.1}
-          value={skillLevel}
-          onValueChange={setSkillLevel}
-          minimumTrackTintColor='#007bff'
-          maximumTrackTintColor='#ccc'
-          style={{ width: '100%' }}
-        />
-        <Text style={styles.sliderValue}>{skillLevel.toFixed(1)}</Text>
+        <View style={styles.formSection}>
+          <View style={styles.sliderSection}>
+            <Text style={styles.skillLevelTitle}>
+              Skill Level
+            </Text>
+            <View onLayout={handleLayout} style={styles.sliderWrapper}>
+
+              <Animated.View
+                style={[styles.floatingLabel, { left: sliderPos - 10 }]}
+              >
+                <Text style={styles.floatingText}>{skillLevel.toFixed(1)}</Text>
+              </Animated.View>
+
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={5}
+                step={0.1}
+                value={skillLevel}
+                minimumTrackTintColor='#007AFF'
+                maximumTrackTintColor='#E5E7EB'
+                thumbTintColor='#007AFF'
+                onValueChange={handleValueChange}
+              />
+            </View>
+          </View>
+        </View>
 
         <View style={styles.row}>
           <View style={styles.halfInput}>
@@ -354,19 +499,42 @@ const CreateEventForm = () => {
           multiline
           numberOfLines={3}
         />
+                  <PreferredPlayersSelector
+          preferredContacts={preferredContacts}
+          onShowPreferredPlayers={showPreferredPlayers}
+          onAddContact={handleAddContact}
+          onRemovePlayer={handleRemovePlayer}
+        />
 
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>
-              Send to Preferred Player
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <PreferredPlayersModal
+          visible={preferredPlayersModal}
+          onClose={() => dispatch(closePreferredPlayersModal())}
+          onSelectPlayers={handleSelectPlayers}
+          selectedPlayers={preferredContacts}
+        />
 
-        <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit}>
+        <ContactsModal
+          visible={contactsModalVisible}
+          onClose={() => setContactsModalVisible(false)}
+          onSelectContacts={handleSelectContactsFromDevice}
+          selectedContacts={preferredContacts}
+        />
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => handleSubmit(true)}
+        >
+          <Text style={styles.buttonText}>Send to Preferred Players</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => handleSubmit(false)}
+        >
           <Text style={styles.buttonText}>Create Event</Text>
         </TouchableOpacity>
+
       </ScrollView>
+      </View>
 
       <Modal visible={showCustomModal} animationType='slide'>
         <View style={{ padding: 20 }}>
@@ -392,6 +560,71 @@ const CreateEventForm = () => {
             onChangeText={(text) => setCustomInterval(Number(text))}
             style={{ borderWidth: 1, padding: 5, marginVertical: 10 }}
           />
+
+          {customRepeat === 'weekly' && (
+            <>
+              <Text>Select Days to Repeat:</Text>
+              {['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'].map(day => (
+                <TouchableOpacity
+                  key={day}
+                  onPress={() =>
+                    setCustomRepeatDays(prev =>
+                      prev.includes(day)
+                        ? prev.filter(d => d !== day)
+                        : [...prev, day]
+                    )
+                  }
+                  style={{
+                    backgroundColor: customRepeatDays.includes(day) ? '#007bff' : '#eee',
+                    padding: 8,
+                    marginVertical: 4,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ color: customRepeatDays.includes(day) ? 'white' : 'black' }}>
+                    {day}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
+      {customRepeat === 'monthly' && (
+        <>
+          <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>
+            Select Dates to Repeat On:
+          </Text>
+
+          <Calendar
+            onDayPress={(day) => {
+              const dateStr = day.dateString; // e.g. "2025-07-23"
+              const selected = customRepeatDates.find(d =>
+                formatDateToLocalISOString(d).startsWith(dateStr)
+              );
+
+              if (selected) {
+                // remove
+                setCustomRepeatDates(prev =>
+                  prev.filter(d => !formatDateToLocalISOString(d).startsWith(dateStr))
+                );
+              } else {
+                // add
+                setCustomRepeatDates(prev => [
+                  ...prev,
+                  new Date(`${dateStr}T09:00:00.000Z`),
+                ]);
+              }
+            }}
+            markedDates={Object.fromEntries(
+              customRepeatDates.map(d => [
+                formatDateToLocalISOString(d).substring(0, 10),
+                { selected: true, marked: true, selectedColor: '#007bff' },
+              ])
+            )}
+            enableSwipeMonths={true}
+          />
+        </>
+      )}
 
           <Text>End Date:</Text>
           <TouchableOpacity
@@ -431,7 +664,33 @@ const CreateEventForm = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    gap: 12,
+    gap: 8,
+  },
+  mainHeader: {
+    backgroundColor: '#51a4b0',
+    paddingTop: 25,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    borderBottomLeftRadius:15,
+    borderBottomRightRadius:15,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 8,
+    marginLeft: -8,
+  },
+  headerTitle: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize:24,
   },
   row: {
     flexDirection: 'row',
@@ -482,20 +741,67 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   secondaryButton: {
-    borderColor: '#007bff',
+    borderColor: '#4ea0ac',
     borderWidth: 1,
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,
   },
   secondaryButtonText: {
-    color: '#007bff',
+    color: '#4ea0ac',
     fontWeight: '600',
   },
+  formSection: {
+    marginBottom: 5,
+  },
+  sliderSection: {
+    paddingHorizontal: 16,
+  },
+  skillLevelTitle: {
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  sliderWrapper: {
+    position: 'relative',
+    height: 60,
+    justifyContent: 'center',
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  floatingLabel: {
+    position: 'absolute',
+    top: 0,
+    backgroundColor: '#4ea0ac',
+    paddingHorizontal: 2,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 10,
+  },
+  floatingText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  selectedValue: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#2563EB',
+    fontWeight: '500',
+  },
+  selectedSkillLevel: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#2563EB',
+    fontWeight: '500',
+  },
   primaryButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#4ea0ac',
     borderRadius: 20,
+    color:'#FFFFFF',
     paddingVertical: 12,
+    paddingLeft:0,
     alignItems: 'center',
   },
   buttonText: {

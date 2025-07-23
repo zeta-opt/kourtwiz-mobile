@@ -142,6 +142,8 @@ const styles = StyleSheet.create({
     paddingVertical:8,
     paddingBlockStart:4,
     alignItems:'center',
+    borderRadius:5,
+    color:'#FFFFFF',
   },
 
   outlinedButtonText: {
