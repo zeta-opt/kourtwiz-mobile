@@ -79,7 +79,13 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
   // }
 
   return (
-    <View style={styles.row}>
+    <TouchableOpacity
+  style={styles.row}
+  activeOpacity={0.9}
+  onPress={() =>
+    router.push({ pathname: '/(authenticated)/myRequestsDetailedView', params: { requestId: invite.requestId } })
+  }
+>
       <View style={styles.textBlock}>
         {/* <View style={[styles.badge, { backgroundColor: badgeColor }]}>
           <Text style={styles.badgeText}>{timeLeftText}</Text>
@@ -133,7 +139,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
       </View>
 
       {loading && <ActivityIndicator style={styles.loading} size="small" />}
-    </View>
+    </TouchableOpacity>
   );
 };
 
