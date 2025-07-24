@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { getToken } from '@/shared/helpers/storeToken';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 
-const API_URL = 'http://44.216.113.234:8080'; 
+const API_URL = 'https://api.vddette.com';
 
 export interface PlayerFinderRequest {
   id: string;
@@ -52,18 +52,25 @@ export const useGetPlayerFinderRequest = (requestId: string | undefined) => {
         console.log('Fetching player finder request with ID:', requestId);
         console.log('Using token:', token);
 
-        const response = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
-          params: { requestId },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.get(
+          `${API_URL}/api/player-tracker/tracker/request`,
+          {
+            params: { requestId },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         console.log('Full API response:', response.data);
         setData(response.data);
       } catch (err: any) {
         console.error('Failed to fetch player finder request:', err);
-        setError(err?.response?.data?.message || err.message || 'Failed to fetch request details');
+        setError(
+          err?.response?.data?.message ||
+            err.message ||
+            'Failed to fetch request details'
+        );
       } finally {
         setLoading(false);
       }

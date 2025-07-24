@@ -1,26 +1,32 @@
+import OutgoingInviteCardItem, {
+  Invite,
+} from '@/components/home-page/outgoingInvitationsCard';
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
-import OutgoingInviteCardItem, { Invite } from '@/components/home-page/outgoingInvitationsCard';
-import { clearAllFilters, filterInvitations } from '../home-page/filters';
+import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Dialog, Menu, Portal, Text } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import TopBarWithChips from '../home-page/topBarWithChips';
-import { getToken } from '@/shared/helpers/storeToken';
-import axios from 'axios';
+import { clearAllFilters, filterInvitations } from '../home-page/filters';
 import PlayerDetailsModal from '../home-page/PlayerDetailsModal';
+import TopBarWithChips from '../home-page/topBarWithChips';
 
-const API_URL = 'http://44.216.113.234:8080';
+const API_URL = 'https://api.vddette.com';
 
 const ShowSentInvitations = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
-  const { data: invites = [] } = useGetPlayerInvitationSent({ inviteeEmail: user?.email }) as { data: Invite[] | null };
-    const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
+  const { data: invites = [] } = useGetPlayerInvitationSent({
+    inviteeEmail: user?.email,
+  }) as { data: Invite[] | null };
+  const [playerCounts, setPlayerCounts] = useState<{
+    [key: string]: { accepted: number; total: number };
+  }>({});
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
@@ -28,35 +34,42 @@ const ShowSentInvitations = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [locationMenuVisible, setLocationMenuVisible] = useState(false);
-  const playerCountCache = useRef<{ [key: string]: { accepted: number; total: number } }>({});
+  const playerCountCache = useRef<{
+    [key: string]: { accepted: number; total: number };
+  }>({});
 
   useEffect(() => {
     const fetchCounts = async () => {
-      const newCounts: { [key: string]: { accepted: number; total: number } } = {};
+      const newCounts: { [key: string]: { accepted: number; total: number } } =
+        {};
       const promises = [];
-  
+
       const requestIdsToFetch = (invites ?? [])
-        .map(inv => inv.requestId)
-        .filter((requestId, index, self) =>
-          self.indexOf(requestId) === index && !playerCountCache.current[requestId]
+        .map((inv) => inv.requestId)
+        .filter(
+          (requestId, index, self) =>
+            self.indexOf(requestId) === index &&
+            !playerCountCache.current[requestId]
         );
-  
+
       if (requestIdsToFetch.length === 0) {
         setPlayerCounts({ ...playerCountCache.current });
         return;
       }
-  
+
       const token = await getToken();
-  
+
       for (const requestId of requestIdsToFetch) {
         const promise = axios
           .get(`${API_URL}/api/player-tracker/tracker/request`, {
             params: { requestId },
             headers: { Authorization: `Bearer ${token}` },
           })
-          .then(res => {
+          .then((res) => {
             const total = res.data[0]?.playersNeeded || 1;
-            const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length;
+            const accepted = res.data.filter(
+              (p: any) => p.status === 'ACCEPTED'
+            ).length;
             newCounts[requestId] = { accepted, total };
             playerCountCache.current[requestId] = { accepted, total };
           })
@@ -64,37 +77,45 @@ const ShowSentInvitations = () => {
             newCounts[requestId] = { accepted: 0, total: 1 };
             playerCountCache.current[requestId] = { accepted: 0, total: 1 };
           });
-  
+
         promises.push(promise);
       }
-  
+
       await Promise.all(promises);
       setPlayerCounts({ ...playerCountCache.current });
     };
-  
+
     if (invites && invites.length > 0) {
       fetchCounts();
     }
   }, [invites]);
 
   const uniqueLocations = useMemo(
-    () => Array.from(new Set((invites ?? []).map((inv) => inv.placeToPlay).filter(Boolean))),
+    () =>
+      Array.from(
+        new Set((invites ?? []).map((inv) => inv.placeToPlay).filter(Boolean))
+      ),
     [invites]
   );
 
   const filteredInvites = useMemo(() => {
     const uniqueMap = new Map<string, Invite>();
-  
+
     for (const inv of invites ?? []) {
       if (inv.status !== 'WITHDRAWN' || !uniqueMap.has(inv.requestId)) {
         uniqueMap.set(inv.requestId, inv);
       }
     }
-  
+
     const uniqueInvites = Array.from(uniqueMap.values());
-    return filterInvitations(uniqueInvites, selectedDate, selectedTime, selectedLocation);
+    return filterInvitations(
+      uniqueInvites,
+      selectedDate,
+      selectedTime,
+      selectedLocation
+    );
   }, [invites, selectedDate, selectedTime, selectedLocation]);
-  
+
   const clearFiltersHandler = () => {
     clearAllFilters({
       setSelectedDate,
@@ -107,13 +128,16 @@ const ShowSentInvitations = () => {
   const handleViewPlayers = async (requestId: string) => {
     try {
       const token = await getToken();
-      const res = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
-        params: { requestId },
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `${API_URL}/api/player-tracker/tracker/request`,
+        {
+          params: { requestId },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setSelectedPlayers(res.data);
       setPlayerDetailsVisible(true);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch player details');
     }
@@ -121,34 +145,40 @@ const ShowSentInvitations = () => {
 
   return (
     <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
-    <TopBarWithChips active="sent" />
+      <TopBarWithChips active='sent' />
       {/* Filters */}
       <View style={styles.filterRow}>
         {/* Date */}
         <Button
-          mode="outlined"
+          mode='outlined'
           compact
-          style={[styles.filterButtonSmall, selectedDate && styles.activeFilterButton]}
+          style={[
+            styles.filterButtonSmall,
+            selectedDate && styles.activeFilterButton,
+          ]}
           contentStyle={styles.filterButtonContent}
           onPress={() => setShowDatePicker(true)}
         >
           <View style={styles.buttonInner}>
             <Text style={styles.filterButtonLabel}>Date</Text>
-            <MaterialIcons name="keyboard-arrow-down" size={16} />
+            <MaterialIcons name='keyboard-arrow-down' size={16} />
           </View>
         </Button>
 
         {/* Time */}
         <Button
-          mode="outlined"
+          mode='outlined'
           compact
-          style={[styles.filterButtonSmall, selectedTime && styles.activeFilterButton]}
+          style={[
+            styles.filterButtonSmall,
+            selectedTime && styles.activeFilterButton,
+          ]}
           contentStyle={styles.filterButtonContent}
           onPress={() => setShowTimePicker(true)}
         >
           <View style={styles.buttonInner}>
             <Text style={styles.filterButtonLabel}>Time</Text>
-            <MaterialIcons name="keyboard-arrow-down" size={16} />
+            <MaterialIcons name='keyboard-arrow-down' size={16} />
           </View>
         </Button>
 
@@ -158,15 +188,18 @@ const ShowSentInvitations = () => {
           onDismiss={() => setLocationMenuVisible(false)}
           anchor={
             <Button
-              mode="outlined"
+              mode='outlined'
               compact
-              style={[styles.filterButtonLarge, selectedLocation && styles.activeFilterButton]}
+              style={[
+                styles.filterButtonLarge,
+                selectedLocation && styles.activeFilterButton,
+              ]}
               contentStyle={styles.filterButtonContent}
               onPress={() => setLocationMenuVisible(true)}
             >
               <View style={styles.buttonInner}>
                 <Text style={styles.filterButtonLabel}>Location</Text>
-                <MaterialIcons name="keyboard-arrow-down" size={16} />
+                <MaterialIcons name='keyboard-arrow-down' size={16} />
               </View>
             </Button>
           }
@@ -185,7 +218,7 @@ const ShowSentInvitations = () => {
 
         {/* Clear Filters */}
         <Button
-          mode="outlined"
+          mode='outlined'
           compact
           onPress={clearFiltersHandler}
           style={styles.smallClearButton}
@@ -202,25 +235,28 @@ const ShowSentInvitations = () => {
         ) : (
           filteredInvites.map((invite, idx) => (
             <View key={idx} style={styles.cardContainer}>
-                <OutgoingInviteCardItem
-                    invite={{
-                        requestId: invite.requestId,
-                        playTime: invite.playTime,
-                        placeToPlay: invite.placeToPlay,
-                        dateTimeMs: new Date(
-                            invite.playTime[0],
-                            invite.playTime[1] - 1,
-                            invite.playTime[2],
-                            invite.playTime[3] || 0,
-                            invite.playTime[4] || 0
-                        ).getTime(),
-                        accepted: playerCounts[invite.requestId]?.accepted ?? 0,
-                        playersNeeded: invite.playersNeeded ?? playerCounts[invite.requestId]?.total ?? 0,
-                        status: invite.status,
-                    }}
-                    disabled
-                    onViewPlayers={handleViewPlayers}
-                    />
+              <OutgoingInviteCardItem
+                invite={{
+                  requestId: invite.requestId,
+                  playTime: invite.playTime,
+                  placeToPlay: invite.placeToPlay,
+                  dateTimeMs: new Date(
+                    invite.playTime[0],
+                    invite.playTime[1] - 1,
+                    invite.playTime[2],
+                    invite.playTime[3] || 0,
+                    invite.playTime[4] || 0
+                  ).getTime(),
+                  accepted: playerCounts[invite.requestId]?.accepted ?? 0,
+                  playersNeeded:
+                    invite.playersNeeded ??
+                    playerCounts[invite.requestId]?.total ??
+                    0,
+                  status: invite.status,
+                }}
+                disabled
+                onViewPlayers={handleViewPlayers}
+              />
             </View>
           ))
         )}
@@ -230,8 +266,8 @@ const ShowSentInvitations = () => {
       {showDatePicker && (
         <DateTimePicker
           value={selectedDate || new Date()}
-          mode="date"
-          display="calendar"
+          mode='date'
+          display='calendar'
           onChange={(event, date) => {
             setShowDatePicker(false);
             if (date) setSelectedDate(date);
@@ -241,8 +277,8 @@ const ShowSentInvitations = () => {
       {showTimePicker && (
         <DateTimePicker
           value={selectedTime || new Date()}
-          mode="time"
-          display="spinner"
+          mode='time'
+          display='spinner'
           onChange={(event, time) => {
             setShowTimePicker(false);
             if (time) setSelectedTime(time);
@@ -353,15 +389,15 @@ const styles = StyleSheet.create({
   bottomDialog: {
     position: 'absolute',
     bottom: 0,
-    left: 0,              
-    right: 0,             
+    left: 0,
+    right: 0,
     margin: 0,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     backgroundColor: 'white',
     overflow: 'hidden',
-    elevation: 10,        
-    shadowColor: '#000',  
+    elevation: 10,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
