@@ -35,7 +35,7 @@ export const useWithdrawRequest = (): UseWithdrawRequestReturn => {
         },
       });
 
-      console.log('Cancel response:', response.data);
+      console.log('Success response:', response.data);
       setStatus('success');
       refetch();
     } catch (err: any) {
