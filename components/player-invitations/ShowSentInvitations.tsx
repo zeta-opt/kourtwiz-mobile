@@ -254,7 +254,7 @@ const ShowSentInvitations = () => {
                     0,
                   status: invite.status,
                 }}
-                disabled
+                //disabled
                 onViewPlayers={handleViewPlayers}
               />
             </View>

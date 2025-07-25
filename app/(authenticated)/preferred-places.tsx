@@ -23,7 +23,11 @@ import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import axios from 'axios';
 import Constants from 'expo-constants';
 
-type Place = { id: string; Name: string };
+type Place = {
+  id: string;
+  Name: string;
+  Location?: string;
+};
 
 export default function PreferredPlacesScreen() {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -42,7 +46,8 @@ export default function PreferredPlacesScreen() {
   const normalizePlace = (place: any): Place => ({
     id: String(place.id).trim(),
     Name: place.Name || place.name || 'Unnamed Place',
-  });
+    Location: place.Location || place.location || '',
+  });  
 
   useEffect(() => {
     if (showPlaceModal) {
@@ -59,55 +64,40 @@ export default function PreferredPlacesScreen() {
     try {
       const profileRes = await axios.get(`${BASE_URL}/users/${user?.userId}`);
       const profile = profileRes.data;
-
+  
       const preferred: Place[] = (profile?.playerDetails?.preferPlacesToPlay || []).map(normalizePlace);
       const preferredIds = new Set(preferred.map((p) => p.id));
-
+  
       let nearby: Place[] = [];
-
-      // Attempt fetch using user address
-      const query = new URLSearchParams({
-        address: profile.address || '',
-        city: profile.city || '',
-        state: profile.state || '',
-        zipCode: profile.zipCode || '',
-        country: profile.country || '',
+  
+      // Build the query only once
+      const queryParams = new URLSearchParams({
+        address: profile.address || '6 Parkwood Lane',
+        city: profile.city || 'Mendham',
+        state: profile.state || 'New Jersey',
+        zipCode: profile.zipCode || '07945',
+        country: profile.country || 'United States',
         maxDistanceInKm: '5',
         page: '0',
         limit: '20',
       }).toString();
-
+  
       try {
-        const nearbyRes = await axios.get(`${BASE_URL}/api/import/nearbyaddress?${query}`);
+        const nearbyRes = await axios.get(`${BASE_URL}/api/import/nearbyaddress?${queryParams}`);
         nearby = (nearbyRes.data || []).map(normalizePlace);
       } catch {
-        nearby = [];
-      }
-
-      // Fallback to default if no nearby places
-      if (nearby.length === 0) {
-        const defaultQuery = new URLSearchParams({
-          address: '6 Parkwood Lane',
-          city: 'Mendham',
-          state: 'New Jersey',
-          zipCode: '07945',
-          country: 'United States',
-          maxDistanceInKm: '5',
-          page: '0',
-          limit: '20',
-        }).toString();
-
+        console.warn('⚠️ First nearby fetch failed, trying fallback');
         try {
-          const fallbackRes = await axios.get(`${BASE_URL}/api/import/nearbyaddress?${defaultQuery}`);
+          const fallbackRes = await axios.get(`${BASE_URL}/api/import/nearbyaddress?${queryParams}`);
           nearby = (fallbackRes.data || []).map(normalizePlace);
         } catch (fallbackError) {
           console.warn('❗ Fallback location fetch failed', fallbackError);
           nearby = [];
         }
       }
-
+  
       const otherSuggested = nearby.filter((place) => !preferredIds.has(place.id));
-
+  
       setPreferredPlaces(preferred);
       setSuggestedPlaces(otherSuggested);
       setSelectedPlaces(preferred.map((p) => p.id));
@@ -115,7 +105,7 @@ export default function PreferredPlacesScreen() {
       console.error('❌ Error fetching preferred places:', err);
       Alert.alert('Error', 'Failed to load preferred places.');
     }
-  };
+  };  
 
   const handleSavePlaces = async (): Promise<void> => {
     try {
@@ -157,36 +147,56 @@ export default function PreferredPlacesScreen() {
   };
 
   const filteredPlaces = useMemo(() => {
-    // Combine and deduplicate by ID
     const placeMap = new Map<string, Place>();
     [...preferredPlaces, ...suggestedPlaces].forEach((place) => {
-      placeMap.set(place.id, place); // latest one wins, avoids duplicates
+      placeMap.set(place.id, place);
     });
     const allPlaces = Array.from(placeMap.values());
-  
-    // Filter by search text
-    const filtered = allPlaces.filter((place) =>
-      place.Name?.toLowerCase().includes(searchText.toLowerCase())
-    );
-  
-    // Split into selected and unselected
+    const filtered = allPlaces.filter((place) => {
+      const name = place.Name?.toLowerCase() || '';
+      const location = place.Location?.toLowerCase() || '';
+      const search = searchText.toLowerCase();
+      return name.includes(search) || location.includes(search);
+    });    
     const selectedData = filtered.filter((place) =>
       selectedPlaces.includes(place.id)
     );
-  
     const unselectedData = filtered
       .filter((place) => !selectedPlaces.includes(place.id))
       .sort((a, b) => a.Name.localeCompare(b.Name));
-  
     return { selectedData, unselectedData };
   }, [preferredPlaces, suggestedPlaces, selectedPlaces, searchText]);  
+
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setFilteredPreferredPlaces(preferredPlaces);
+      setFilteredSuggestedPlaces(suggestedPlaces);
+    } else {
+      const lower = searchText.toLowerCase();
+      const filteredPreferred = preferredPlaces.filter((place) => {
+        const name = place.Name?.toLowerCase() || '';
+        const location = place.Location?.toLowerCase() || '';
+        return name.includes(lower) || location.includes(lower);
+      });
+      const filteredSuggested = suggestedPlaces.filter((place) => {
+        const name = place.Name?.toLowerCase() || '';
+        const location = place.Location?.toLowerCase() || '';
+        return name.includes(lower) || location.includes(lower);
+      });      
+      setFilteredPreferredPlaces(filteredPreferred);
+      setFilteredSuggestedPlaces(filteredSuggested);
+    }
+  }, [searchText, preferredPlaces, suggestedPlaces]);
 
   const renderPlaceItem = ({ item }: { item: Place }) => {
     const checked = selectedPlaces.includes(item.id);
     return (
       <TouchableOpacity style={styles.placeItem} onPress={() => toggleSelect(item.id)}>
         <View style={styles.iconCircle}><FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" /></View>
-        <Text style={styles.placeName}>{item.Name}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.placeName}>{item.Name}</Text>
+          {item.Location && <Text style={styles.placeSubtitle}>{item.Location}</Text>}
+        </View>
         <Checkbox
           status={checked ? 'checked' : 'unchecked'}
           onPress={() => toggleSelect(item.id)}
@@ -195,23 +205,6 @@ export default function PreferredPlacesScreen() {
       </TouchableOpacity>
     );
   };
-
-  useEffect(() => {
-    if (!searchText.trim()) {
-      setFilteredPreferredPlaces(preferredPlaces);
-      setFilteredSuggestedPlaces(suggestedPlaces);
-    } else {
-      const lower = searchText.toLowerCase();
-      const filteredPreferred = preferredPlaces.filter((place) =>
-        place.Name?.toLowerCase().includes(lower)
-      );
-      const filteredSuggested = suggestedPlaces.filter((place) =>
-        place.Name?.toLowerCase().includes(lower)
-      );
-      setFilteredPreferredPlaces(filteredPreferred);
-      setFilteredSuggestedPlaces(filteredSuggested);
-    }
-  }, [searchText, preferredPlaces, suggestedPlaces]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -290,9 +283,12 @@ export default function PreferredPlacesScreen() {
                   filteredPlaces.selectedData.map((place) => (
                     <View key={`preferred-${place.id}`} style={styles.placeCard}>
                       <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" style={styles.placeIcon} />
-                      <Text style={styles.placeNameText}>
-                        {place.Name?.trim() || 'Unnamed Place'}
-                      </Text>
+                      <View>
+                        <Text style={styles.placeNameText}>{place.Name?.trim() || 'Unnamed Place'}</Text>
+                        {place.Location && (
+                          <Text style={styles.placeSubtitle}>{place.Location}</Text>
+                        )}
+                      </View>
                     </View>
                   ))
                 ) : (
@@ -314,14 +310,21 @@ export default function PreferredPlacesScreen() {
                     ]}
                     onPress={() => toggleSelect(place.id)}
                   >
-                    <Text
-                      style={[
-                        styles.timeOptionText,
-                        selectedPlaces.includes(place.id) && styles.timeOptionTextSelected,
-                      ]}
-                    >
-                      {place.Name?.trim() || 'Unnamed Place'}
-                    </Text>
+                    <View>
+                      <Text
+                        style={[
+                          styles.timeOptionText,
+                          selectedPlaces.includes(place.id) && styles.timeOptionTextSelected,
+                        ]}
+                      >
+                        {place.Name?.trim() || 'Unnamed Place'}
+                      </Text>
+                      {place.Location && (
+                        <Text style={styles.placeSubtitle}>
+                          <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" style={styles.placeIcon} /> {place.Location}
+                        </Text>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 ))
               ) : (
@@ -419,6 +422,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#ECECEC',
   },
+  placeSubtitle: {
+    fontSize: 13,
+    color: '#777',
+    marginTop: 2,
+    marginLeft: 2,
+  },  
   optionsContainer: {
     maxHeight: 550,
     margin: 15,

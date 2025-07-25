@@ -131,25 +131,31 @@ export default function SentRequestDetailedView() {
       {/* Player List */}
       <Text style={[styles.subheading, { marginTop: 20 }]}>Players</Text>
       <View style={styles.card}>
-        {invite?.Requests?.map((player: any) => {
-          const status = player.status?.toUpperCase() || 'PENDING';
-          return (
-            <View key={player.id} style={styles.row}>
-              <Text style={{ color: statusColorMap[status], fontWeight: '500' }}>
-                {player.name}
-              </Text>
-              <View style={styles.row}>
-                <FontAwesome5
-                  name={statusIconMap[status] || 'question'}
-                  size={14}
-                  color={statusColorMap[status]}
-                  style={{ marginRight: 4 }}
-                />
-                <Text style={{ color: statusColorMap[status] }}>{status}</Text>
+        <ScrollView
+          style={{ maxHeight: 220 }}
+          nestedScrollEnabled={true}
+          showsVerticalScrollIndicator={true}
+        >
+          {invite?.Requests?.map((player: any) => {
+            const status = player.status?.toUpperCase() || 'PENDING';
+            return (
+              <View key={player.id} style={styles.row}>
+                <Text style={{ color: statusColorMap[status], fontWeight: '500' }}>
+                  {player.name}
+                </Text>
+                <View style={styles.row}>
+                  <FontAwesome5
+                    name={statusIconMap[status] || 'question'}
+                    size={14}
+                    color={statusColorMap[status]}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={{ color: statusColorMap[status] }}>{status}</Text>
+                </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Chat Preview + Join Button */}
