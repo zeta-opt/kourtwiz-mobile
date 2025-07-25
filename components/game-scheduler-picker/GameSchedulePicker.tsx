@@ -188,7 +188,7 @@ export default GameSchedulePicker;
 const styles = StyleSheet.create({
   formSection: {
     marginBottom: 24,
-    paddingBottom: 16,
+    paddingBottom: 0,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
