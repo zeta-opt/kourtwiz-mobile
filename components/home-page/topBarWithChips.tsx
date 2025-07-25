@@ -71,7 +71,7 @@ const InvitationTopBar = ({
 
         <TouchableOpacity
           style={[styles.chip, active === 'open' && styles.activeChip]}
-          onPress={() => router.replace('/home')}
+          onPress={() => router.replace('/(authenticated)/open-play-viewall')}
         >
           <Text style={[styles.chipText, active === 'open' && styles.activeChipText]}>Open Play</Text>
         </TouchableOpacity>

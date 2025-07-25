@@ -60,7 +60,11 @@ const Dashboard = () => {
       inviteeEmail: user?.email,
     });
   const clubId = user?.currentActiveClubId;
-  const { data: openPlayInvites = [] } = useGetPlays(clubId);
+  const userId = user?.userId;
+  const openClubId = user?.currentActiveClubId || 'GLOBAL';
+  const { data: openPlayInvites, status , error } = useGetPlays(openClubId,userId);
+  
+  // console.log('Open Play Invites:', openPlayInvites);
  
   // ADD THIS LINE - Get the refetch trigger from Redux
   const shouldRefetchInvitations = useSelector(
@@ -241,15 +245,17 @@ const Dashboard = () => {
               </ScrollView>
               {(activeTab === 'INCOMING' && allInvites.length > 0) ||
               (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ||
-              (activeTab === 'OPENPLAY' && outgoingInvites.length > 0) ? (
+              (activeTab === 'OPENPLAY' && playCount > 0) ? (
                 <TouchableOpacity
-                  onPress={() =>
-                    router.replace(
-                      activeTab === 'INCOMING'
-                        ? '/(authenticated)/player-invitations?type=incoming'
-                        : '/(authenticated)/player-invitations?type=outgoing'
-                    )                    
-                  }
+                  onPress={() => {
+                      if (activeTab === 'INCOMING') {
+                        router.replace('/(authenticated)/player-invitations?type=incoming');
+                      } else if (activeTab === 'OUTGOING') {
+                        router.replace('/(authenticated)/player-invitations?type=outgoing');
+                      } else if (activeTab === 'OPENPLAY') {
+                        router.replace('/(authenticated)/open-play-viewall');
+                      }
+                    }}
                 >
                   <Text style={styles.viewAllText}>View All</Text>
                 </TouchableOpacity>

@@ -5,8 +5,8 @@ import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import { RootState } from '@/store';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Button, Text} from 'react-native-paper';
+import { StyleSheet, View, ViewStyle } from 'react-native';
+import { Button, Text } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
 
@@ -21,43 +21,28 @@ type PlayRow = {
   'filled slots': number;
   action: string;
   isFull: boolean;
-  isPlayerRegistered: boolean;
-  [key: string]: any; // Add index signature
+  isRegistered: boolean;
+  isWaitlisted: boolean;
+  priceForPlay: number;
+  'event name': string;
+  [key: string]: any;
 };
 
-const columnIcons: Record<string, React.ReactNode> = {
-  date: <MaterialCommunityIcons name='calendar' size={16} />,
-  time: <MaterialCommunityIcons name='clock-outline' size={16} />,
-  duration: <MaterialCommunityIcons name='timer-outline' size={16} />,
-  'skill level': <MaterialCommunityIcons name='chart-line' size={16} />,
-  court: <MaterialCommunityIcons name='tennis' size={16} />,
-  'max slots': <MaterialCommunityIcons name='account-multiple' size={16} />,
-  'filled slots': <MaterialCommunityIcons name='account-check' size={16} />,
-  action: <MaterialCommunityIcons name='play-circle-outline' size={16} />,
+type OpenPlayCardProps = {
+  cardStyle?: ViewStyle;
 };
 
-const OpenPlayCard = () => {
+const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
   const { user } = useSelector((state: RootState) => state.auth);
-  const clubId = user?.currentActiveClubId;
+  const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
-  const { data: playsData, status, refetch } = useGetPlays(clubId);
-  const { data: courtsData, status: courtsStatus } = useGetClubCourt({
-    clubId,
-  });
+  const { data: playsData, status, refetch } = useGetPlays(clubId, userId);
+  const { data: courtsData, status: courtsStatus } = useGetClubCourt({ clubId });
   const { joinPlaySession } = useMutateJoinPlay();
+
   const [rows, setRows] = useState<PlayRow[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
-
-  const columns = [
-    'date',
-    'time',
-    'duration',
-    'skill level',
-    'court',
-    'max slots',
-    'filled slots',
-    'action',
-  ];
+  const [waitlistedSet, setWaitlistedSet] = useState<Set<string>>(new Set());
 
   const handleJoinPlay = async (id: string, isFull: boolean) => {
     setLoadingId(id);
@@ -68,16 +53,34 @@ const OpenPlayCard = () => {
         onSuccess: () => {
           Toast.show({
             type: 'success',
-            text1: isFull ? 'Joined wait list' : 'joined play',
+            text1: isFull ? 'Joined waitlist' : 'Joined play',
             topOffset: 100,
           });
-          refetch();
+
+          if (isFull) {
+            setWaitlistedSet((prev) => new Set(prev).add(id));
+          }
+
+          setRows((prevRows) =>
+            prevRows.map((row) => {
+              if (row.id === id) {
+                return {
+                  ...row,
+                  isRegistered: !isFull,
+                  isWaitlisted: isFull,
+                };
+              }
+              return row;
+            })
+          );
+
           setLoadingId(null);
+          refetch();
         },
         onError: () => {
           Toast.show({
             type: 'error',
-            text1: 'unable to join',
+            text1: 'Unable to join',
             topOffset: 100,
           });
           setLoadingId(null);
@@ -86,59 +89,32 @@ const OpenPlayCard = () => {
     });
   };
 
-  const getRowValue = (row: PlayRow, col: string): string | number => {
-    switch (col) {
-      case 'date':
-        return row.date;
-      case 'time':
-        return row.time;
-      case 'duration':
-        return row.duration;
-      case 'skill level':
-        return row['skill level'];
-      case 'court':
-        return row.court;
-      case 'max slots':
-        return row['max slots'];
-      case 'filled slots':
-        return row['filled slots'];
-      case 'action':
-        return row.action;
-      default:
-        return '';
-    }
-  };
-
-  const buttonMessage = (isRegistered: boolean, isFull: boolean): string => {
-    if (!isRegistered && !isFull) {
-      return 'Join Play';
-    } else if (!isRegistered && isFull) {
-      return 'Join Waitlist';
-    } else {
-      return 'Joined';
-    }
+  const buttonMessage = (
+    isRegistered: boolean,
+    isWaitlisted: boolean,
+    isFull: boolean
+  ): string => {
+    if (isWaitlisted) return 'Waitlisted';
+    if (isRegistered) return 'Joined';
+    if (!isRegistered && isFull && !isWaitlisted) return 'Join Waitlist';
+    return 'Register';
   };
 
   useEffect(() => {
-    console.log('OpenPlayCard - playsData:', playsData);
-    console.log('OpenPlayCard - courtsData:', courtsData);
-    console.log('OpenPlayCard - clubId:', clubId);
-    console.log('OpenPlayCard - userId:', userId);
-    console.log('OpenPlayCard - status:', status);
-    console.log('OpenPlayCard - courtsStatus:', courtsStatus);
-    
     if (
       !playsData ||
-      playsData?.length === 0 ||
-      !courtsData ||
-      courtsData?.length === 0
-    )
+      playsData.length === 0 ||
+      (clubId !== 'GLOBAL' && (!courtsData || courtsData.length === 0))
+    ) {
       return;
+    }
 
     const courtMap: Record<string, string> = {};
-    courtsData.forEach((data: any) => {
-      courtMap[data.id] = data.name;
-    });
+    if (clubId !== 'GLOBAL' && courtsData?.length) {
+      courtsData.forEach((data: any) => {
+        courtMap[data.id] = data.name;
+      });
+    }
 
     const dataRows = playsData.map((play: any) => {
       const startDate = new Date(
@@ -149,8 +125,24 @@ const OpenPlayCard = () => {
         play.startTime[4]
       );
 
+      const courtName =
+        clubId !== 'GLOBAL'
+          ? play.courtId
+            ? courtMap[play.courtId] || play.allCourts?.Name || 'N/A'
+            : play.allCourts?.Name || 'N/A'
+          : play.allCourts?.Name || 'N/A';
+
+      const registeredPlayers = play.registeredPlayers || [];
+      const isRegistered = registeredPlayers.includes(userId);
+      const filledSlots = registeredPlayers.length-1;
+      const isFull = filledSlots >= play.maxPlayers;
+
+      const isWaitlisted = waitlistedSet.has(play.id);
+
       return {
         id: play.id,
+        'event name':
+          play.eventName?.split('_').join(' ').toLowerCase() || 'Unknown Event',
         date: startDate.toLocaleDateString(),
         time: startDate.toLocaleTimeString([], {
           hour: '2-digit',
@@ -158,186 +150,141 @@ const OpenPlayCard = () => {
         }),
         duration: play.durationMinutes,
         'skill level': play.skillLevel,
-        court: courtMap[play.courtId],
+        court: courtName,
         'max slots': play.maxPlayers,
-        'filled slots': play.registeredPlayers?.length,
-        action: play.playTypeName.split('_').join(' ').toLowerCase(),
-        isFull: play.registeredPlayers?.length >= play.maxPlayers,
-        isPlayerRegistered:
-          play.registeredPlayers?.some((id: string) => id === userId) ?? false,
+        'filled slots': filledSlots,
+        action: play.playTypeName?.split('_').join(' ').toLowerCase(),
+        isFull,
+        priceForPlay: play.priceForPlay || 0,
+        isRegistered,
+        isWaitlisted,
       };
     });
 
-    console.log('OpenPlayCard - processed rows:', dataRows);
     setRows(dataRows);
-  }, [clubId, playsData, courtsData, userId, status, courtsStatus]);
+  }, [clubId, playsData, courtsData, userId, status, courtsStatus, waitlistedSet]);
 
   if (!clubId) {
     return <Text style={styles.noDataText}>No open play sessions available</Text>;
   }
 
   if (status === 'loading' || courtsStatus === 'loading') {
-    console.log('OpenPlayCard - Loading state');
     return <LoaderScreen />;
   }
 
-  console.log('OpenPlayCard - Final render, rows.length:', rows.length);
-
   if (rows.length === 0) {
-    console.log('OpenPlayCard - No rows to display');
     return <Text style={styles.noDataText}>No open play sessions available</Text>;
   }
 
   return (
-    <View style={styles.container}>
-      {rows.map((row, idx) => {
-        const peopleText = `${row['max slots']} ${row['max slots'] === 1 ? 'Person' : 'People'} Total`;
-        // const statusText = row.isPlayerRegistered
-        //   ? 'Joined'
-        //   : row.isFull
-        //   ? 'Waitlist'
-        //   : 'Open';
-        const statusColor = row.isPlayerRegistered
-          ? '#ecfdff'
-          : row.isFull
-          ? '#ecfdff'
-          : '#ecfdff';
-  
-        return (
-        <View key={row.id} style={styles.card}>
-            <Text style={styles.placeText} numberOfLines={1}>
-            {row.court}
+    <View>
+      {rows.map((row) => (
+        <View key={row.id} style={[styles.card, cardStyle]}>
+          <Text style={styles.placeText} numberOfLines={1}>
+            {row['event name']}
+          </Text>
+          <View style={styles.datePeopleRow}>
+            <Text style={styles.dateText}>
+              {row.date} | {row.time}
             </Text>
-        
-            <View style={styles.datePeopleRow}>
-            <Text style={styles.dateText}>{row.date} | {row.time}</Text>
             <Text style={styles.separator}>|</Text>
-            <Text style={styles.peopleText}>{peopleText}</Text>
+            <Text style={styles.peopleText}>{row.court}</Text>
+          </View>
+          <View style={styles.rowBetween}>
+            <View
+              style={[styles.statusBadge, { flexDirection: 'row', alignItems: 'center' }]}
+            >
+              <MaterialIcons
+                name="person"
+                size={16}
+                color="#2F7C83"
+                style={{ marginRight: 4 }}
+              />
+              <Text style={styles.statusBadgeText}>
+                {row['filled slots']}/{row['max slots']} Accepted
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
+                <MaterialCommunityIcons
+                  name="wallet"
+                  size={16}
+                  color="#2F7C83"
+                  style={{ marginRight: 4 }}
+                />
+                <Text style={styles.priceText}>${row.priceForPlay.toFixed(2)}</Text>
+              </View>
             </View>
-        
-            <View style={styles.rowBetween}>
-                <View style={[styles.statusBadge, { flexDirection: 'row', alignItems: 'center' }]}>
-                    <MaterialIcons name="person" size={16} color="#2F7C83" style={{ marginRight: 4 }} />
-                    <Text style={styles.statusBadgeText}>
-                    {row['filled slots']}/{row['max slots']} Accepted
-                    </Text>
-                </View>
-
-                <Button
-                    mode="contained"
-                    onPress={() => handleJoinPlay(row.id, row.isFull)}
-                    style={styles.button}
-                    disabled={row.isPlayerRegistered}
-                    loading={row.id === loadingId}
-                    contentStyle={styles.buttonContent}
-                    labelStyle={styles.buttonLabel}
-                >
-                    {buttonMessage(row.isPlayerRegistered, row.isFull)}
-                </Button>
-            </View>
+            <Button
+              mode="contained"
+              onPress={() => handleJoinPlay(row.id, row.isFull)}
+              style={styles.button}
+              disabled={row.isRegistered || row.isWaitlisted}
+              loading={row.id === loadingId}
+              contentStyle={styles.buttonContent}
+              labelStyle={styles.buttonLabel}
+            >
+              {buttonMessage(row.isRegistered, row.isWaitlisted, row.isFull)}
+            </Button>
+          </View>
         </View>
-        );          
-      })}
+      ))}
     </View>
-  );  
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 10,
-      },
-    card: {
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        marginBottom: 2,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },      
-    placeText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#111827',
-        marginTop: 6,
-    },
-    datePeopleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 4,
-    },
-    dateText: {
-        fontSize: 13,
-        color: '#4B5563',
-    },
-    separator: {
-        marginHorizontal: 6,
-        color: '#9CA3AF',
-    },
-    peopleText: {
-        fontSize: 13,
-        color: '#4B5563',
-    },
-    statusBadge: {
-        borderRadius: 6,
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        backgroundColor: '#E0F7FA',
-        height: 36,
-        justifyContent: 'center',
-      },
-    statusBadgeText: {
-        color: '#333',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    rowBetween: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    buttonWrapper: {
-        alignItems: 'flex-end',
-    },
-    button: {
-        backgroundColor: '#2F7C83',
-        borderRadius: 6,
-        height: 36,
-        justifyContent: 'center',
-    },
-      
-    buttonContent: {
-        height: 36,
-        paddingHorizontal: 12,
-    },
-    buttonLabel: {
-        fontSize: 12,
-        fontWeight: 'bold',
-    },  
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    column: {
-        flex: 1,
-    },
-    field: {
-        marginBottom: 5,
-    },
-    label: {
-        fontWeight: 'bold',
-        fontSize: 14,
-        color: '#374151',
-    },
-    value: {
-        fontWeight: 'normal',
-        color: '#6B7280',
-    },
-    noDataText: {
-        textAlign: 'center',
-        color: '#000000',
-        fontSize: 14,
-        paddingVertical: 20,
-    },
+  card: {
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    padding: 6,
+  },
+  placeText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: 6,
+  },
+  datePeopleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  dateText: { fontSize: 13, color: '#4B5563' },
+  separator: { marginHorizontal: 6, color: '#9CA3AF' },
+  peopleText: { fontSize: 13, color: '#4B5563' },
+  statusBadge: {
+    borderRadius: 6,
+    backgroundColor: '#E0F7FA',
+    height: 35,
+    justifyContent: 'space-between',
+    padding: 6,
+  },
+  statusBadgeText: { color: '#000000', fontSize: 12 },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  button: {
+    backgroundColor: '#2F7C83',
+    borderRadius: 6,
+    height: 36,
+    justifyContent: 'center',
+  },
+  buttonContent: { height: 36, paddingHorizontal: 12,color: '#FFFFFF' },
+  buttonLabel: { fontSize: 12, fontWeight: 'bold', color: '#FFFFFF' },
+  noDataText: {
+    textAlign: 'center',
+    color: '#000000',
+    fontSize: 14,
+    paddingVertical: 20,
+  },
+  priceText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#000000',
+  },
 });
 
 export default OpenPlayCard;
