@@ -360,7 +360,7 @@ const handleDelete = async () => {
       <View style={styles.DetailsCard}>
         <Text style={styles.sectionTitle}>PLAY PREFERENCES</Text>
         <View style={styles.sectionCard}>
-          <TouchableOpacity style={styles.optionRow} onPress={() => setShowPlaceModal(true)}>
+          <TouchableOpacity style={styles.optionRow} onPress={() => {setShowPlaceModal(true); router.replace('/(authenticated)/preferred-places')}}>
             <Text style={styles.optionText}>Preferred places</Text>
             <Text style={styles.optionArrow}>{'>'}</Text>
           </TouchableOpacity>
@@ -371,7 +371,8 @@ const handleDelete = async () => {
             style={styles.optionRow}
             onPress={() => {
               setSelectedTime(userData.preferredTime || '');
-              setShowPreferredTimeModal(true);
+              //setShowPreferredTimeModal(true);
+              router.replace('/(authenticated)/preferred-time');
             }}
             >
             <Text style={styles.optionText}>Preferred time</Text>
@@ -481,8 +482,8 @@ const handleDelete = async () => {
           <View>
             <Text style={styles.infoText}>No preferred places found.</Text>
             {suggestedPlaces.length > 0 && (
-              <TouchableOpacity onPress={() => setShowPlaceModal(true)} style={styles.ModalButton}>
-                <Text style={styles.ModalButtonText}>Add Preferred Places</Text>
+              <TouchableOpacity onPress={() => setShowPlaceModal(true)} style={styles.modalButtons}>
+                <Text style={styles.buttonText}>Add Preferred Places</Text>
               </TouchableOpacity>
             )}
           </View>

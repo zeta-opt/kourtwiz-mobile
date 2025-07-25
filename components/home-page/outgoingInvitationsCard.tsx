@@ -53,9 +53,19 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite,
   const { dateString, timeString } = formatDateParts(invite.dateTimeMs);
 
   const handlePress = () => {
-    const encoded = encodeURIComponent(JSON.stringify(invite));
-    router.push(`/invite-summary?data=${encoded}`);
+    if (!invite) return;
+  
+    try {
+      const encoded = encodeURIComponent(JSON.stringify(invite));
+      router.push({
+        pathname: '/(authenticated)/sentRequestsDetailedView',
+        params: { data: encoded },
+      });
+    } catch (error) {
+      console.error('Failed to encode invite:', error);
+    }
   };
+  
 
   return (
     <TouchableOpacity style={styles.card} disabled={disabled} onPress={handlePress}>
