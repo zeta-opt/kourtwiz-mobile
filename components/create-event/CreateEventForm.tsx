@@ -104,7 +104,6 @@ const CreateEventForm = () => {
 const preferredContacts = useSelector(
     (state: RootState) => state.playerFinder.preferredContacts
   );
-  console.log(preferredContacts);
 
   const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
   const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
@@ -179,74 +178,90 @@ const preferredContacts = useSelector(
       dispatch(setPreferredContacts(contacts));
       setContactsModalVisible(false);
     };
+const handleRepeatChange = (value: string) => {
+  if (value === 'custom') {
+    setShowCustomModal(true);
+  } else {
+    setRepeat(value);
+    setRepeatInterval('1');
+    setRepeatEndDate(null);
 
-  const handleRepeatChange = (value: string) => {
-    if (value === 'custom') {
-      setShowCustomModal(true);
-    } else {
-      setRepeat(value);
-      setRepeatInterval('1');
-      setRepeatEndDate(null);
-    }
-  };
-
-  const handleCustomApply = () => {
-    setRepeat(customRepeat);
-    setRepeatInterval(String(customInterval));
-    setShowCustomModal(false);
-  };
-
-  console.log(placeToPlay);
-
-  const formatDateToLocalISOString = (date: Date) => {
-    const pad = (num: number) => String(num).padStart(2, '0');
-
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1); // 0-based index
-    const day = pad(date.getDate());
-    const hours = pad(date.getHours());
-    const minutes = pad(date.getMinutes());
-    const seconds = pad(date.getSeconds());
-
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
-  };
-  useEffect(() => {
-  if (customRepeat === 'monthly') {
-    const now = new Date();
-    setCustomRepeatDates([
-      new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        startTime?.getHours(),
-        startTime?.getMinutes()
-      ),
-    ]);
+    if (value === 'monthly') {
+  const date = new Date(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth(),
+    selectedDate.getDate(),
+    startTime?.getHours() || 0,
+    startTime?.getMinutes() || 0
+  );
+  console.log('Adding monthly date:', date);
+  setCustomRepeatDates((prev) => {
+    const formattedDate = formatDateToLocalISOString(date);
+    const exists = prev.some(d => formatDateToLocalISOString(d) === formattedDate);
+    return exists ? prev : [...prev, date];
+  });
+}
   }
-}, [customRepeat, startTime]);
-  const handleSubmit = async (sendToPreferredPlayers: boolean = false) => {
-    if (!eventName || !placeToPlay || !date || !startTime || !endTime) {
-      Alert.alert('Missing Fields', 'Please fill in all required fields.');
-      return;
-    }
+};
 
-    try {
-      const durationMinutes = Math.floor(
-        (endTime.getTime() - startTime.getTime()) / (1000 * 60)
-      );
-      
+const handleCustomApply = () => {
+  setRepeat('custom');
+  setRepeatInterval(String(customInterval));
+  setShowCustomModal(false);
 
-      const startDateTime = new Date( 
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate(),
-        startTime.getHours(),
-        startTime.getMinutes()
-      );
-      const formatDatesArray = (dates: Date[]) =>
-      dates.map(formatDateToLocalISOString);
+  if (customRepeat === 'monthly') {
+    const date = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      startTime?.getHours() || 0,
+      startTime?.getMinutes() || 0
+    );
 
-     const payload: any = {
+    setCustomRepeatDates((prev) => {
+      const formattedDate = formatDateToLocalISOString(date);
+      const exists = prev.some(d => formatDateToLocalISOString(d) === formattedDate);
+      return exists ? prev : [...prev, date];
+    });
+  }
+};
+
+const formatDateToLocalISOString = (date: Date) => {
+  const pad = (num: number) => String(num).padStart(2, '0');
+
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
+};
+
+const formatDatesArray = (dates: Date[]) =>
+  dates.map(formatDateToLocalISOString);
+
+const handleSubmit = async () => {
+  if (!eventName || !placeToPlay || !date || !startTime || !endTime) {
+    Alert.alert('Missing Fields', 'Please fill in all required fields.');
+    return;
+  }
+
+  try {
+    const durationMinutes = Math.floor(
+      (endTime.getTime() - startTime.getTime()) / (1000 * 60)
+    );
+
+    const startDateTime = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      startTime.getHours(),
+      startTime.getMinutes()
+    );
+ 
+    const payload: any = {
       eventName,
       ...(court?.trim() && { courtId: court.trim() }),
       ...(price?.trim() && { priceForPlay: Number(price) }),
@@ -255,66 +270,80 @@ const preferredContacts = useSelector(
       durationMinutes,
       skillLevel: Number(skillLevel.toFixed(2)),
       maxPlayers: Number(maxPlayers),
-      eventRepeatType:
-        repeat === 'custom'
-          ? (customRepeat === 'weekly' ? 'DAYS' : customRepeat.toUpperCase())
-          : repeat.toUpperCase(),
-
-      ...(repeat && repeat.toUpperCase() !== 'NONE' && {
-        repeatInterval: Number(repeatInterval),
-        repeatEndDate: repeatEndDate
-          ? formatDateToLocalISOString(repeatEndDate)
-          : undefined,
-
-        ...(repeat === 'custom' && customRepeat === 'weekly' && {
-          repeatOnDays: customRepeatDays,
-        }),
-
-        ...(repeat === 'custom' && customRepeat === 'monthly' && {
-          repeatOnDates: formatDatesArray(customRepeatDates),
-        }),
-
-        ...(repeat === 'monthly' && {
-          repeatOnDates: [
-            formatDateToLocalISOString(
-              new Date(
-                selectedDate.getFullYear(),
-                selectedDate.getMonth(),
-                selectedDate.getDate(),
-                startTime.getHours(),
-                startTime.getMinutes()
-              )
-            ),
-          ],
-        }),
-
-        ...(repeat === 'weekly' && {
-          repeatOnDays: [
-            selectedDate.toLocaleDateString('en-US', {
-              weekday: 'long',
-            }).toUpperCase(),
-          ],
-        }),
-      }),
-
       description: description || undefined,
       allCourts: {
         Name: placeToPlay,
       },
-
       ...(preferredContacts.length > 0 && {
         preferredPlayers: preferredContacts,
       }),
     };
 
-      await createSession(payload);
-      Alert.alert('Success', 'Session created successfully');
-      console.log(payload);
-    } catch (err: any) {
-      console.error('Error creating session:', err);
-      Alert.alert('Error', err.message || 'Failed to create session');
+
+    if (repeat && repeat.toUpperCase() !== 'NONE') {
+      let eventRepeatType = '';
+      let repeatOnDays: string[] | undefined;
+      let repeatOnDates: string[] | undefined;
+
+      const interval = Number(repeatInterval);
+
+      if (repeat === 'custom') {
+        if (customRepeat === 'daily') {
+          eventRepeatType = 'DAILY';
+        } else if (customRepeat === 'weekly') {
+          eventRepeatType = 'DAYS';
+          repeatOnDays = customRepeatDays;
+        } else if (customRepeat === 'monthly') {
+          eventRepeatType = 'MONTHLY';
+          repeatOnDates = formatDatesArray(customRepeatDates);
+        }
+      } else {
+        // Standard repeat: daily, weekly, monthly
+        eventRepeatType = repeat.toUpperCase();
+        console.log(repeat)
+        if (repeat === 'WEEKLY') {
+          repeatOnDays = [
+            selectedDate.toLocaleDateString('en-US', {
+              weekday: 'long',
+            }).toUpperCase(),
+          ];
+        }
+        if (repeat === 'MONTHLY') {
+          const date = new Date(
+            selectedDate.getFullYear(),
+            selectedDate.getMonth(),
+            selectedDate.getDate(),
+            startTime?.getHours() || 0,
+            startTime?.getMinutes() || 0
+          );
+          repeatOnDates = [formatDateToLocalISOString(date)];
+        }
+        if (repeat === 'custom' && customRepeat === 'monthly') {
+          repeatOnDates = formatDatesArray(customRepeatDates);
+        }
+      }
+      payload.eventRepeatType = eventRepeatType;
+      payload.repeatInterval = interval;
+
+      if (repeatEndDate) {
+        payload.repeatEndDate = formatDateToLocalISOString(repeatEndDate);
+      }
+      if (repeatOnDays) {
+        payload.repeatOnDays = repeatOnDays;
+      }
+      if (repeatOnDates) {
+        payload.repeatOnDates = repeatOnDates;
+      }
     }
-  };
+
+    await createSession(payload);
+    Alert.alert('Success', 'Session created successfully');
+    console.log(payload);
+  } catch (err: any) {
+    console.error('Error creating session:', err);
+    Alert.alert('Error', err.message || 'Failed to create session');
+  }
+};
 
   return (
     <>
@@ -489,7 +518,7 @@ const preferredContacts = useSelector(
 
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => handleSubmit}
+          onPress={handleSubmit}
         >
           <Text style={styles.buttonText}>Create Event</Text>
         </TouchableOpacity>
@@ -562,10 +591,10 @@ const preferredContacts = useSelector(
             </View>
           )}
 
-            {customRepeat === 'monthly' && (
-              <View style={styles.calendarWrapper}>
-                <Calendar
-                  onDayPress={(day) => {
+           {customRepeat === 'monthly' && (
+            <View style={styles.calendarWrapper}>
+              <Calendar
+                onDayPress={(day) => {
                   const dateStr = day.dateString;
                   const selected = customRepeatDates.find(d =>
                     formatDateToLocalISOString(d).startsWith(dateStr)
@@ -578,13 +607,21 @@ const preferredContacts = useSelector(
                   } else {
                     setCustomRepeatDates(prev => [
                       ...prev,
-                      new Date(`${dateStr}T09:00:00.000Z`)
+                      new Date(`${dateStr}T${startTime?.getHours() || 0}:${startTime?.getMinutes() || 0}:00.00`)
                     ]);
                   }
                 }}
-                />
-              </View>
-            )}
+                markedDates={
+                  customRepeatDates.reduce((acc, date) => {
+                    const formatted = formatDateToLocalISOString(date).split('T')[0];
+                    acc[formatted] = { selected: true, selectedColor: '#00adf5' };
+                    return acc;
+                  }, {} as Record<string, any>)
+                }
+              />
+            </View>
+          )}
+
           <TouchableOpacity style={styles.button} onPress={handleCustomApply}>
             <Text style={styles.buttonText}>Customize</Text>
           </TouchableOpacity>
