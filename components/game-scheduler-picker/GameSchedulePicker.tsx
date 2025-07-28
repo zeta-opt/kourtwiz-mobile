@@ -58,20 +58,32 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
           <Text style={styles.inputLabel}>Date *</Text>
           <Button
             mode='outlined'
-            icon='calendar'
             style={[
               styles.dateTimeButton,
               styles.roundedButton,
+              styles.whiteButton,
               styles.blackBorder,
             ]}
-            textColor={selectedDate ? '#000' : '#9F9F9F'}
             onPress={showDatePicker}
+            contentStyle={styles.fullWidth} // 👈 new
           >
-            {selectedDate
-              ? new Intl.DateTimeFormat('en-US', {
-                  dateStyle: 'medium',
-                }).format(selectedDate)
-              : 'Select Date'}
+            <View style={styles.buttonContent}>
+              <Text
+                style={[
+                  styles.timeText,
+                  { color: selectedDate ? '#000' : '#9F9F9F' },
+                ]}
+              >
+                {selectedDate
+                  ? selectedDate.toLocaleDateString('en-GB')
+                  : 'DD/MM/YYYY'}
+              </Text>
+              <Icon
+                source='calendar'
+                size={20}
+                color={selectedDate ? '#000' : '#9F9F9F'}
+              />
+            </View>
           </Button>
         </View>
 
@@ -86,31 +98,31 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
                 styles.dateTimeButton,
                 styles.roundedButton,
                 styles.whiteButton,
-                styles.rowButton,
                 styles.blackBorder,
               ]}
+              contentStyle={styles.fullWidth}
               onPress={showStartTimePicker}
             >
-              <Text
-                style={[
-                  styles.timeText,
-                  { color: startTime ? '#000' : '#9F9F9F' },
-                ]}
-              >
-                {startTime
-                  ? startTime.toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : 'Start Time'}
-              </Text>
-              <Text style={styles.arrow}>
+              <View style={styles.buttonContent}>
+                <Text
+                  style={[
+                    styles.timeText,
+                    { color: startTime ? '#000' : '#9F9F9F' },
+                  ]}
+                >
+                  {startTime
+                    ? startTime.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'Start Time'}
+                </Text>
                 <Icon
                   source='chevron-down'
                   size={20}
                   color={startTime ? '#000' : '#9F9F9F'}
                 />
-              </Text>
+              </View>
             </Button>
           </View>
 
@@ -123,36 +135,37 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
                 styles.dateTimeButton,
                 styles.roundedButton,
                 styles.whiteButton,
-                styles.rowButton,
                 styles.blackBorder,
               ]}
+              contentStyle={styles.fullWidth}
               onPress={showEndTimePicker}
             >
-              <Text
-                style={[
-                  styles.timeText,
-                  { color: endTime ? '#000' : '#9F9F9F' },
-                ]}
-              >
-                {endTime
-                  ? endTime.toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : 'End Time'}
-              </Text>
-              <Text style={styles.arrow}>
+              <View style={styles.buttonContent}>
+                <Text
+                  style={[
+                    styles.timeText,
+                    { color: endTime ? '#000' : '#9F9F9F' },
+                  ]}
+                >
+                  {endTime
+                    ? endTime.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'End Time'}
+                </Text>
                 <Icon
                   source='chevron-down'
                   size={20}
                   color={endTime ? '#000' : '#9F9F9F'}
                 />
-              </Text>
+              </View>
             </Button>
           </View>
         </View>
       </View>
 
+      {/* Date Picker Modal */}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode='date'
@@ -162,6 +175,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
         display='calendar'
       />
 
+      {/* Start Time Picker */}
       <DateTimePickerModal
         isVisible={isStartTimePickerVisible}
         mode='time'
@@ -171,6 +185,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
         display='spinner'
       />
 
+      {/* End Time Picker */}
       <DateTimePickerModal
         isVisible={isEndTimePickerVisible}
         mode='time'
@@ -197,9 +212,19 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     marginBottom: 8,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: 'black',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+
+  fullWidth: {
+    width: '100%',
   },
   dateTimeButton: {
     justifyContent: 'flex-start',
@@ -217,16 +242,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'left',
   },
-  arrow: {
-    marginLeft: 4,
-  },
-  rowButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    height: 48,
-  },
+
   timeRow: {
     flexDirection: 'row',
     gap: 12,

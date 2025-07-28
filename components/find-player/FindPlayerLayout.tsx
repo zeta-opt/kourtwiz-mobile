@@ -1,3 +1,4 @@
+import UserAvatar from '@/assets/UserAvatar';
 import { useRequestPlayerFinder } from '@/hooks/apis/player-finder/useRequestPlayerFinder';
 import { AppDispatch, RootState } from '@/store';
 import {
@@ -13,6 +14,7 @@ import {
   openPreferredPlaceModal,
   openPreferredPlayersModal,
 } from '@/store/uiSlice';
+import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import * as Contacts from 'expo-contacts';
 import * as Location from 'expo-location';
@@ -24,6 +26,7 @@ import {
   LayoutChangeEvent,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import {
@@ -52,6 +55,7 @@ const FindPlayerLayout = () => {
 
   // State management
   const [clubName, setClubName] = useState('');
+  const [eventName, setEventName] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
@@ -202,9 +206,13 @@ const FindPlayerLayout = () => {
     );
   };
 
+  const handleEventNameClick = () => {
+    // Placeholder function for event name click
+    // You can implement functionality here when needed
+  };
+
   // Add the handleSubmit function
   const handleSubmit = async () => {
-    // Validate required fields
     if (!placeToPlay) {
       Alert.alert('Missing Information', 'Please select a place to play.');
       return;
@@ -215,13 +223,11 @@ const FindPlayerLayout = () => {
       return;
     }
 
-    // Create play time from selected date and start time
     const playTime = new Date(selectedDate);
     playTime.setHours(startTime.getHours());
     playTime.setMinutes(startTime.getMinutes());
     playTime.setSeconds(0);
 
-    // Calculate end time - use provided end time or default to 2 hours after start
     let finalEndTime: Date;
     if (endTime) {
       finalEndTime = new Date(selectedDate);
@@ -306,25 +312,26 @@ const FindPlayerLayout = () => {
     <View style={styles.container}>
       {/* Main Header */}
       <View style={styles.mainHeader}>
-        <View style={styles.headerContent}>
-          <IconButton
-            icon='arrow-left'
-            size={24}
-            iconColor='white'
+        <View style={styles.header}>
+          <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backButton}
-          />
-          <Text variant='headlineLarge' style={styles.headerTitle}>
-            Find Player
-          </Text>
+          >
+            <Ionicons name='arrow-back' size={24} color='#cce5e3' />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.MainTitle}>Find Player</Text>
+            <Text style={styles.subtitle}>
+              Fill out details to find a player
+            </Text>
+          </View>
+          <UserAvatar size={30} />
         </View>
       </View>
 
       <ScrollView style={styles.formScrollView}>
         {/* Club Name Section */}
-        <Text variant='titleMedium' style={styles.sectionTitle}>
-          Club Name
-        </Text>
+        <Text style={styles.sectionTitle}>Club Name</Text>
         <View style={styles.dropdownRow}>
           <Button
             mode='outlined'
@@ -364,6 +371,24 @@ const FindPlayerLayout = () => {
           </Text>
         )}
 
+        {/* Event Name Section */}
+        <Text style={styles.sectionTitle}>Event Name</Text>
+        <View style={styles.dropdownRow}>
+          <Button
+            mode='outlined'
+            onPress={handleEventNameClick}
+            style={styles.dropdownButton}
+            contentStyle={styles.dropdownContent}
+            textColor='#2C7E88'
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonText} numberOfLines={1}>
+                {eventName || 'Enter Event Name'}
+              </Text>
+            </View>
+          </Button>
+        </View>
+
         {/* Game Schedule Section - Using the new component */}
         <GameSchedulePicker
           selectedDate={selectedDate}
@@ -376,9 +401,7 @@ const FindPlayerLayout = () => {
 
         <View style={styles.formSection}>
           <View style={styles.sliderSection}>
-            <Text variant='titleMedium' style={styles.skillLevelTitle}>
-              Skill Level
-            </Text>
+            <Text style={styles.sectionTitle}>Minimum Skill Level</Text>
             <View onLayout={handleLayout} style={styles.sliderWrapper}>
               {/* Floating Label */}
               <Animated.View
@@ -393,9 +416,9 @@ const FindPlayerLayout = () => {
                 maximumValue={5}
                 step={0.1}
                 value={skillLevel}
-                minimumTrackTintColor='#007AFF'
+                minimumTrackTintColor='#2C7E88'
                 maximumTrackTintColor='#E5E7EB'
-                thumbTintColor='#007AFF'
+                thumbTintColor='#2C7E88'
                 onValueChange={handleValueChange}
               />
             </View>
@@ -481,27 +504,37 @@ const styles = StyleSheet.create({
   },
   mainHeader: {
     backgroundColor: '#2C7E88',
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingVertical: 16,
     paddingHorizontal: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    borderBottomLeftRadius: 15,
+    borderBottomRightRadius: 15,
   },
-  headerContent: {
+  header: {
     flexDirection: 'row',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
     alignItems: 'center',
   },
+  headerTextContainer: {
+    flex: 1,
+  },
+  MainTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    alignSelf: 'flex-start',
+    color: '#fff',
+  },
+  subtitle: {
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 12,
+    marginTop: 4,
+  },
+
   backButton: {
     marginRight: 8,
     marginLeft: -8,
   },
-  headerTitle: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
+
   dropdownRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -560,6 +593,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   sectionTitle: {
+    fontSize: 16,
     fontWeight: '600',
   },
   inputGroup: {
@@ -576,16 +610,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   sliderSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
+    marginBottom: -48,
   },
-  skillLevelTitle: {
-    marginBottom: 8,
-    fontWeight: '500',
-  },
+
   sliderWrapper: {
     position: 'relative',
     height: 60,
     justifyContent: 'center',
+    marginLeft: -8,
   },
   slider: {
     width: '100%',
@@ -594,7 +627,7 @@ const styles = StyleSheet.create({
   floatingLabel: {
     position: 'absolute',
     top: 0,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#2C7E88',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
