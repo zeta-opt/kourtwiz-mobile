@@ -17,7 +17,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
 import { useDeleteUserById } from '@/hooks/apis/user/useDeleteUserById';
-import { useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '@/store';
+import { Avatar } from 'react-native-paper';
 
 type PlayerDetails = {
   preferPlacesToPlay: { id: string }[];
@@ -74,6 +76,7 @@ const UserProfile = () => {
   const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
   const dispatch = useDispatch();
   const router = useRouter();
+  const profileImage = useSelector((state: RootState) => state.auth.profileImage);
 
   const handleLogout = () => {
     Alert.alert('Confirm Logout', 'Are you sure you want to log out?', [
@@ -184,7 +187,11 @@ const handleDelete = async () => {
 
       <View style={styles.header}>
         <View style={styles.profilePicContainer}>
-          <UserAvatar size={70} onPress={() => console.log('Clicked Avatar')} />
+          {profileImage ? (
+            <Avatar.Image size={70} source={{ uri: profileImage }} />
+          ) : (
+            <UserAvatar size={70} />
+          )}
         </View>
         <View style={styles.profileInfo}>
           <Text style={styles.nameText}>{userData.name || 'User Name'}</Text>

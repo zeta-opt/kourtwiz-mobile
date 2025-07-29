@@ -33,11 +33,11 @@ export default function BottomTabs() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => console.log('message icon pressed')}
+        onPress={() => console.log('group icon pressed')}
         style={styles.tabItem}
       >
-        <MaterialIcons name="chat-bubble-outline" size={24} color="#000" />
-        <Text style={styles.label}>Message</Text>
+        <MaterialIcons name="groups" size={24} color="#000" />
+        <Text style={styles.label}>Groups</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
