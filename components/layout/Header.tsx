@@ -71,13 +71,26 @@ const Header = () => {
 
       {/* Removed backgroundColor: theme.colors.primary */}
       <View style={styles.header}>
-        <Text style={styles.text}>
-          {greeting}
-          {user?.username ? ` ${user.username.split(' ')[0]}` : ''}
-        </Text>
+        <View>
+          <Text style={styles.text}>
+            {greeting}
+            {user?.username ? ` ${user.username.split(' ')[0]}` : ''}
+          </Text>
+          <Text style={{ marginTop: 4 }}>Ready To Play Today?</Text>
+        </View>
 
         <View style={styles.profileWrapper}>
           <View style={styles.iconRow}>
+            {/* Messages Icon */}
+            <TouchableOpacity onPress={() => Alert.alert('Messages')}>
+              <Ionicons
+                name='chatbox-outline'
+                size={24}
+                color='black'
+                style={{ marginRight: 12 }}
+              />
+            </TouchableOpacity>
+
             {/* Bell Icon */}
             <TouchableOpacity onPress={() => Alert.alert('Notifications')}>
               <Ionicons
@@ -131,6 +144,7 @@ const Header = () => {
 const styles = StyleSheet.create({
   header: {
     marginTop: '10%',
+    marginBottom: '2%',
     marginHorizontal: 1.5,
     height: 45,
     paddingHorizontal: 16,

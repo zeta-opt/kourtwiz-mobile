@@ -32,6 +32,9 @@ const PreferredPlayersScreen = () => {
     const [searchText, setSearchText] = useState('');
     const [filteredPreferredPlayers, setFilteredPreferredPlayers] = useState<Contact[]>([]);
 
+    useEffect(() => {
+        dispatch(setPreferredContacts([]));
+      }, []);
 
     const preferredContacts = useSelector((state: RootState) => state.playerFinder.preferredContacts);
         useEffect(() => setPreferredPlayersLocal(preferredContacts), [preferredContacts]);

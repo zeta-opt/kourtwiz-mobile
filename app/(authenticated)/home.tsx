@@ -1,5 +1,6 @@
 import FindplayerCard from '@/components/home-page/FindplayerCard';
 import InvitationCard from '@/components/home-page/myInvitationsCard';
+import NewMessages from '@/components/home-page/NewMessages';
 import OpenPlayCard from '@/components/home-page/openPlayCard';
 import OutgoingInviteCardItem from '@/components/home-page/outgoingInvitationsCard';
 import PlayCalendarCard from '@/components/home-page/PlayCalendarCard';
@@ -341,29 +342,25 @@ const Dashboard = () => {
             </LinearGradient>
           </View>
         <View style={styles.playCalendarHeaderRow}>
-  <Text style={styles.playCalendarHeader}>Play Calendar</Text>
-  <TouchableOpacity onPress={() => router.push('/(authenticated)/full-calendar')}>
-    <Text style={styles.viewAllText}>View All</Text>
-  </TouchableOpacity>
-</View>
+          <Text style={styles.playCalendarHeader}>Play Calendar</Text>
+          <TouchableOpacity onPress={() => router.push('/(authenticated)/full-calendar')}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
 
-<View style={styles.calendarContainer}>
+        <View style={styles.calendarContainer}>
+          {playCalendarData.length === 0 ? (
+            <Text style={styles.noInvitesText}>No upcoming events</Text>
+          ) : (
+            <ScrollView
+          nestedScrollEnabled
+          contentContainerStyle={styles.calendarContent}
+          >
+              <PlayCalendarCard invites={playCalendarData} />
+              </ScrollView>
 
-  {playCalendarData.length === 0 ? (
-    <Text style={styles.noInvitesText}>No upcoming events</Text>
-  ) : (
-    <ScrollView
-  nestedScrollEnabled
-  contentContainerStyle={styles.calendarContent}
->
-    <PlayCalendarCard invites={playCalendarData} />
-    </ScrollView>
-
-  )}
-</View>
-
-
-
+            )}
+          </View>
 
           <FindplayerCard />
 
@@ -405,6 +402,8 @@ const Dashboard = () => {
           <Text style={styles.playersNearBy}>Players Nearby</Text>
           <Text style={styles.playersNearByDesc}>See users playing near by</Text>
           <PlayersNearbyMap />
+
+          <NewMessages userId={user?.userId} />
 
         </ScrollView>
       </LinearGradient>

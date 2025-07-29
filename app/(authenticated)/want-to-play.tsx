@@ -6,22 +6,88 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import UserAvatar from '@/assets/UserAvatar';
+import { useCreateIWantToPlay } from '@/hooks/apis/iwanttoplay/useCreateIWantToPlay';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+
 
 const IWantToPlayScreen = () => {
+  const { user } = useSelector((state: RootState) => state.auth);
   const [location, setLocation] = useState('');
   const [message, setMessage] = useState('');
+  const [locationError, setLocationError] = useState('');
+  const { createIWantToPlay } = useCreateIWantToPlay();
 
-  const onBroadcastPress = () => {
-    // Handle broadcast to all
-  };
+  const isValidLocation = (text: string) => {
+    return /^[a-zA-Z0-9]/.test(text);
+  };  
 
-  const onPreferredPlayerPress = () => {
-    // Handle preferred player action
+  const onBroadcastPress = async () => {
+    if (!location.trim() || !message.trim() || locationError) {
+      Alert.alert('Invalid Input', 'Please fix all fields before submitting.');
+      return;
+    }
+  
+    try {
+      const response = await createIWantToPlay({
+        userId: user?.userId,
+        currentLocation: location,
+        message,
+        preferredPlayers: null,
+      });
+  
+      console.log('Broadcast successful', response);
+      Alert.alert('Success', 'Broadcast sent to all players.');
+      setMessage('');
+      setLocation('');
+    } catch (error) {
+      console.error('Broadcast failed', error);
+      Alert.alert('Error', 'Failed to send broadcast.');
+    }
   };
+  
+  const onPreferredPlayerPress = async () => {
+    if (!location.trim() || !message.trim() || locationError) {
+      Alert.alert('Invalid Input', 'Please fix all fields before submitting.');
+      return;
+    }
+  
+    const preferredPlayers = user?.playerDetails?.preferToPlayWith;
+  
+    if (!preferredPlayers || preferredPlayers.length === 0) {
+      router.push('/preferred-players');
+      return;
+    }
+  
+    try {
+      const response = await createIWantToPlay({
+        userId: user?.userId,
+        currentLocation: location,
+        message,
+        preferredPlayers: preferredPlayers,
+      });
+
+      console.log('Message Sent to preferred players successful', response);
+      Alert.alert('Message sent to preferred players Successfully');
+      setMessage('');
+      setLocation('');
+    } catch (error) {
+      console.error('Error sending message to preferred players:', error);
+      Alert.alert('Error', 'Failed to send message.');
+    }
+  };  
+  
+  console.log('Sending to API:', {
+    userId: user?.userId,
+    currentLocation: location,
+    message,
+    preferredPlayers: user?.playerDetails?.preferToPlayWith || null,
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,47 +112,74 @@ const IWantToPlayScreen = () => {
             placeholder="Enter Location"
             placeholderTextColor="#999"
             value={location}
-            onChangeText={setLocation}
-            style={styles.input}
+            onChangeText={(text) => {
+              setLocation(text);
+          
+              if (!isValidLocation(text)) {
+                setLocationError('invalid location entered');
+              } else {
+                setLocationError('');
+              }
+            }}
+            style={[styles.input, {flex:1,}]}
           />
           <Ionicons name="location-outline" size={20} color="#000" style={{marginLeft: 8,}}/>
         </View>
+        {locationError !== '' && (
+            <Text style={{ color: 'red', margin: 4 }}>{locationError}</Text>
+          )}
 
         <Text style={[styles.label, { marginTop: 20 }]}>Enter Message</Text>
-        <TextInput
-          placeholder="Enter Message"
-          placeholderTextColor="#999"
-          value={message}
-          onChangeText={setMessage}
-          multiline
-          numberOfLines={4}
-          style={[styles.input, styles.messageInput]}
-          textAlignVertical="top"
-        />
-        <TouchableOpacity
-          onPress={onBroadcastPress}
-          style={[styles.button, {marginTop:20, backgroundColor: 'transparent',}]}
-        >
-          <Text style={[ styles.outlinedButtonText]}>
-            Broadcast to All
-          </Text>
-        </TouchableOpacity>
+          <TextInput
+            placeholder="Enter Message"
+            placeholderTextColor="#999"
+            value={message}
+            onChangeText={(text) => {
+              if (text.length <= 500) {
+                setMessage(text);
+              }
+            }}            
+            multiline
+            numberOfLines={4}
+            style={styles.messageInput}
+            textAlignVertical="top"
+            scrollEnabled={true}
+          />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+            {message.length >= 500 && (
+              <Text style={{ color: 'red' }}>
+                Message limit reached (500 characters)
+              </Text>
+            )}
+            <Text style={{ color: '#999' }}>{message.length} / 500</Text>
+          </View>
 
-        <TouchableOpacity
-          onPress={onPreferredPlayerPress}
-          style={[styles.button, {backgroundColor: '#2F7C83',}]}
-        >
-          <Text style={[styles.filledButtonText]}>
-            Preferred Player
-          </Text>
-        </TouchableOpacity>
+        <View style= {styles.buttonsContainer}>
+          <TouchableOpacity
+            onPress={onBroadcastPress}
+            style={[styles.button, {marginTop:20, backgroundColor: 'transparent',}]}
+          >
+            <Text style={[ styles.outlinedButtonText]}>
+              Broadcast to All
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={onPreferredPlayerPress}
+            style={[styles.button, {backgroundColor: '#2F7C83',}]}
+          >
+            <Text style={[styles.filledButtonText]}>
+              Preferred Player
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
 };
 
 // Colors from the design
-const primaryColor = '#50A4AF';
+const primaryColor = '#2F7C83';
 const white = '#fff';
 
 const styles = StyleSheet.create({
@@ -160,7 +253,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   messageInput: {
-    height: 100,
+    height: 300,
     borderColor: '#bbb',
     borderWidth: 1,
     borderRadius: 8,
@@ -168,10 +261,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 10,
     fontSize: 14,
+    color: '#000',
   },
-  buttonsContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  buttonsContainer: { 
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12, 
+    paddingBottom: 4, 
+    paddingTop: 5, 
+    borderTopWidth: 1,
+    borderColor: '#eee',
   },
   button: {
     height: 45,
