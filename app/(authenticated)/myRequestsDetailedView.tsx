@@ -1,39 +1,83 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  ScrollView,
+  Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useGetPlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
+import { Dialog, Portal, Button, TextInput } from 'react-native-paper';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 function arrayToDate(arr: number[]): Date {
-  if (!arr || arr.length < 6) return new Date(); // fallback
-  return new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], arr[5]); // JS months are 0-indexed
+  if (!arr || arr.length < 6) return new Date();
+  return new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], arr[5]);
 }
 
 export default function MyRequestsDetailedView() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
   const { data, loading, error } = useGetPlayerFinderRequest(requestId);
 
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [comment, setComment] = useState('');
+  const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const loggedInUserId = useSelector((state: RootState) => state.auth.user.userId);
   if (loading) return <ActivityIndicator size="large" style={styles.loader} />;
   if (error || !data) return <Text style={styles.error}>Error loading data</Text>;
 
-  const playTime = arrayToDate(data[0]?.playTime);
+  const myInvite = data?.find((invite: any) => invite.userId === loggedInUserId);
+
+  const invite = data[0];
+  const playTime = arrayToDate(invite?.playTime);
   const dateString = playTime.toLocaleDateString();
   const timeString = playTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const accepted = data.filter((p: any) => p.status === 'ACCEPTED').length;
-  const total = data[0]?.playersNeeded || 0;
-  const location = data[0]?.placeToPlay || 'Not specified';
-  const requesterName = data[0]?.inviteeName || 'Someone';
+  const total = invite?.playersNeeded || 0;
+  const location = invite?.placeToPlay || 'Not specified';
+  const requesterName = invite?.inviteeName || 'Someone';
+
+  const handleAction = (action: 'accept' | 'reject') => {
+    setSelectedAction(action);
+    setComment('');
+    setDialogVisible(true);
+  };
+
+  const handleDialogSubmit = async () => {
+    if (!selectedAction || !invite) return;
+
+    try {
+      setIsSubmitting(true);
+      const baseUrl =
+        selectedAction === 'accept' ? invite.acceptUrl : invite.declineUrl;
+      const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
+
+      const res = await fetch(url);
+      if (res.status === 200) {
+        Alert.alert('Success', `Invitation ${selectedAction}ed`);
+        router.replace('/(authenticated)/home');
+      } else {
+        const msg = await res.text();
+        Alert.alert('Error', `Failed to ${selectedAction} invitation. ${msg}`);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Something went wrong');
+    } finally {
+      setIsSubmitting(false);
+      setDialogVisible(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#000" />
@@ -44,54 +88,94 @@ export default function MyRequestsDetailedView() {
         </TouchableOpacity>
       </View>
 
-      {/* Subheading */}
-      <Text style={styles.subheading}>{requesterName} Invited To Play</Text>
+      <View style={{ flex: 1 }}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.subheading}>{requesterName} Invited To Play</Text>
 
-      {/* Card */}
-      <View style={styles.card}>
-        <View style={styles.row}>
-          <View style={styles.column}>
-            <View style={styles.infoCard}>
-              <FontAwesome5 name="calendar-alt" size={20} color="#2CA6A4" />
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <View style={styles.column}>
+                <View style={styles.infoCard}>
+                  <FontAwesome5 name="calendar-alt" size={20} color="#2CA6A4" />
+                </View>
+                <Text style={styles.infoText}>{dateString}</Text>
+              </View>
+              <View style={styles.column}>
+                <View style={styles.infoCard}>
+                  <FontAwesome5 name="clock" size={20} color="#2CA6A4" />
+                </View>
+                <Text style={styles.infoText}>{timeString}</Text>
+              </View>
+              <View style={styles.column}>
+                <View style={styles.infoCard}>
+                  <FontAwesome5 name="users" size={20} color="#2CA6A4" />
+                </View>
+                <Text style={styles.infoText}>{accepted}/{total} Accepted</Text>
+              </View>
             </View>
-            <Text style={styles.infoText}>{dateString}</Text>
-          </View>
-          <View style={styles.column}>
-            <View style={styles.infoCard}>
-              <FontAwesome5 name="clock" size={20} color="#2CA6A4" />
-            </View>
-            <Text style={styles.infoText}>{timeString}</Text>
-          </View>
-          <View style={styles.column}>
-            <View style={styles.infoCard}>
-              <FontAwesome5 name="users" size={20} color="#2CA6A4" />
-            </View>
-            <Text style={styles.infoText}>{accepted}/{total} Accepted</Text>
-          </View>
-        </View>
 
-        {/* Location */}
-        <View style={styles.locationRow}>
-          <View style={styles.locationIconWrapper}>
-            <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" />
+            <View style={styles.locationRow}>
+              <View style={styles.locationIconWrapper}>
+                <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" />
+              </View>
+              <Text style={styles.locationText}>Event Place: {location}</Text>
+            </View>
           </View>
-          <Text style={styles.locationText}>Event Place: {location}</Text>
-        </View>
+
+          <View style={styles.chatPreviewContainer}>
+            <Text style={styles.chatPreviewText}>Chat with players here...</Text>
+            <TouchableOpacity
+              style={styles.joinButton}
+              onPress={() =>
+                router.push({ pathname: '/(authenticated)/incoming-summarty', params: { requestId } })
+              }
+            >
+              <Text style={styles.joinButtonText}>Join Chat</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </View>
 
-      {/* Chat Preview + Join Button */}
-      <View style={styles.chatPreviewContainer}>
-        {/* <Text style={styles.chatPreviewTitle}>Recent Messages</Text> */}
-        <Text style={styles.chatPreviewText}>Chat with players here...</Text>
-        <TouchableOpacity
-          style={styles.joinButton}
-          onPress={() =>
-            router.push({ pathname: '/(authenticated)/incoming-summarty', params: { requestId } })
-          }
-        >
-          <Text style={styles.joinButtonText}>Join Chat</Text>
-        </TouchableOpacity>
-      </View>
+      {myInvite?.status === 'PENDING' && (
+        <View style={styles.bottomButtonContainer}>
+          <Button
+            icon="check"
+            mode="contained"
+            onPress={() => handleAction('accept')}
+            loading={isSubmitting && selectedAction === 'accept'}
+            style={styles.acceptBtn}
+          >
+            Accept
+          </Button>
+          <Button
+            icon="close"
+            mode="outlined"
+            onPress={() => handleAction('reject')}
+            loading={isSubmitting && selectedAction === 'reject'}
+            style={styles.rejectBtn}
+          >
+            Reject
+          </Button>
+        </View>
+      )}
+
+      <Portal>
+        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+          <Dialog.Title>Add a message</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Comment (optional)"
+              value={comment}
+              onChangeText={setComment}
+              mode="outlined"
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
+            <Button onPress={handleDialogSubmit}>Submit</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
@@ -193,12 +277,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  chatPreviewTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#222',
-  },
   chatPreviewText: {
     fontSize: 14,
     color: '#666',
@@ -214,5 +292,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+  },
+  bottomButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderColor: '#eee',
+  },
+  acceptBtn: {
+    flex: 1,
+    marginRight: 8,
+    backgroundColor: '#007A7A',
+  },
+  rejectBtn: {
+    flex: 1,
+    borderColor: '#007A7A',
+    borderWidth: 1,
+    color: '#007A7A',
   },
 });

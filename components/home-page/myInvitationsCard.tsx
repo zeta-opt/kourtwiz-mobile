@@ -170,7 +170,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
           <Text style={styles.acceptedText}>✅ Accepted</Text>
         ) : invite.status === 'DECLINED' ? (
           <Text style={styles.rejectedText}>❌ Declined</Text>
-        ) : invite.status === 'CANCELLED' ? (
+        ) : invite.status === 'WITHDRAWN' ? (
           <Text style={styles.cancelledText}>🚫 Cancelled</Text>
         ) : null}
       </View>

@@ -1,7 +1,10 @@
+// OpenPlayCard.tsx
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
+import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
+import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import { RootState } from '@/store';
 import React, { useEffect, useState } from 'react';
@@ -36,16 +39,83 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
+
   const { data: playsData, status, refetch } = useGetPlays(clubId, userId);
   const { data: courtsData, status: courtsStatus } = useGetClubCourt({ clubId });
   const { joinPlaySession } = useMutateJoinPlay();
+  const { withdraw } = useWithdrawFromPlay();
+  const { withdrawFromWaitlist } = useWithdrawFromWaitlist();
 
   const [rows, setRows] = useState<PlayRow[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [waitlistedSet, setWaitlistedSet] = useState<Set<string>>(new Set());
 
-  const handleJoinPlay = async (id: string, isFull: boolean) => {
+  const handleJoinPlay = async (
+    id: string,
+    isFull: boolean,
+    isRegistered: boolean,
+    isWaitlisted: boolean
+  ) => {
     setLoadingId(id);
+
+    // Withdraw from waitlist
+    if (isWaitlisted) {
+      try {
+        await withdrawFromWaitlist({ sessionId: id, userId });
+
+        Toast.show({
+          type: 'success',
+          text1: 'Withdrawn from waitlist',
+          topOffset: 100,
+        });
+
+        setRows((prevRows) =>
+          prevRows.map((row) =>
+            row.id === id ? { ...row, isWaitlisted: false } : row
+          )
+        );
+      } catch (err) {
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to withdraw from waitlist',
+          topOffset: 100,
+        });
+      } finally {
+        setLoadingId(null);
+        refetch();
+      }
+      return;
+    }
+
+    // Withdraw from registered play
+    if (isRegistered) {
+      try {
+        await withdraw({ sessionId: id, userId });
+
+        Toast.show({
+          type: 'success',
+          text1: 'Withdrawn from play',
+          topOffset: 100,
+        });
+
+        setRows((prevRows) =>
+          prevRows.map((row) =>
+            row.id === id ? { ...row, isRegistered: false } : row
+          )
+        );
+      } catch (err) {
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to withdraw',
+          topOffset: 100,
+        });
+      } finally {
+        setLoadingId(null);
+        refetch();
+      }
+      return;
+    }
+
+    // Register or join waitlist
     await joinPlaySession({
       userId,
       sessionId: id,
@@ -57,21 +127,16 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
             topOffset: 100,
           });
 
-          if (isFull) {
-            setWaitlistedSet((prev) => new Set(prev).add(id));
-          }
-
           setRows((prevRows) =>
-            prevRows.map((row) => {
-              if (row.id === id) {
-                return {
-                  ...row,
-                  isRegistered: !isFull,
-                  isWaitlisted: isFull,
-                };
-              }
-              return row;
-            })
+            prevRows.map((row) =>
+              row.id === id
+                ? {
+                    ...row,
+                    isRegistered: !isFull,
+                    isWaitlisted: isFull,
+                  }
+                : row
+            )
           );
 
           setLoadingId(null);
@@ -94,8 +159,8 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
     isWaitlisted: boolean,
     isFull: boolean
   ): string => {
-    if (isWaitlisted) return 'Waitlisted';
-    if (isRegistered) return 'Joined';
+    if (isWaitlisted) return 'Withdraw from waitlist';
+    if (isRegistered) return 'Withdraw';
     if (!isRegistered && isFull && !isWaitlisted) return 'Join Waitlist';
     return 'Register';
   };
@@ -133,11 +198,13 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
           : play.allCourts?.Name || 'N/A';
 
       const registeredPlayers = play.registeredPlayers || [];
-      const isRegistered = registeredPlayers.includes(userId);
-      const filledSlots = registeredPlayers.length-1;
-      const isFull = filledSlots >= play.maxPlayers;
+      const waitlistedPlayers = play.waitlistedPlayers || [];
 
-      const isWaitlisted = waitlistedSet.has(play.id);
+      const isRegistered = registeredPlayers.includes(userId);
+      const isWaitlisted = waitlistedPlayers.includes(userId);
+
+      const filledSlots = registeredPlayers.length - 1;
+      const isFull = filledSlots >= play.maxPlayers;
 
       return {
         id: play.id,
@@ -162,7 +229,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
     });
 
     setRows(dataRows);
-  }, [clubId, playsData, courtsData, userId, status, courtsStatus, waitlistedSet]);
+  }, [clubId, playsData, courtsData, userId, status, courtsStatus]);
 
   if (!clubId) {
     return <Text style={styles.noDataText}>No open play sessions available</Text>;
@@ -191,9 +258,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
             <Text style={styles.peopleText}>{row.court}</Text>
           </View>
           <View style={styles.rowBetween}>
-            <View
-              style={[styles.statusBadge, { flexDirection: 'row', alignItems: 'center' }]}
-            >
+            <View style={[styles.statusBadge, { flexDirection: 'row', alignItems: 'center' }]}>
               <MaterialIcons
                 name="person"
                 size={16}
@@ -215,12 +280,27 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
             </View>
             <Button
               mode="contained"
-              onPress={() => handleJoinPlay(row.id, row.isFull)}
-              style={styles.button}
-              disabled={row.isRegistered || row.isWaitlisted}
+              onPress={() =>
+                handleJoinPlay(row.id, row.isFull, row.isRegistered, row.isWaitlisted)
+              }
+              style={[
+                styles.button,
+                row.isWaitlisted && styles.waitlistWithdrawButton,
+                row.isRegistered && styles.withdrawButton,
+                !row.isRegistered &&
+                  row.isFull &&
+                  !row.isWaitlisted &&
+                  styles.joinWaitlistButton,
+              ]}
               loading={row.id === loadingId}
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonLabel}
+              contentStyle={[
+                styles.buttonContent,
+                row.isWaitlisted && styles.longTextContent,
+              ]}
+              labelStyle={[
+                styles.buttonLabel,
+                row.isWaitlisted && styles.longTextLabel,
+              ]}
             >
               {buttonMessage(row.isRegistered, row.isWaitlisted, row.isFull)}
             </Button>
@@ -272,7 +352,7 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
   },
-  buttonContent: { height: 36, paddingHorizontal: 12,color: '#FFFFFF' },
+  buttonContent: { height: 36, paddingHorizontal: 12, color: '#FFFFFF' },
   buttonLabel: { fontSize: 12, fontWeight: 'bold', color: '#FFFFFF' },
   noDataText: {
     textAlign: 'center',
@@ -284,6 +364,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#000000',
+  },
+  withdrawButton: {
+    backgroundColor: '#D32F2F',
+  },
+  waitlistWithdrawButton: {
+    backgroundColor: '#D32F2F',
+  },
+  joinWaitlistButton: {
+    backgroundColor: '#F6C90E',
+  },
+  longTextContent: {
+    height: 36,
+    paddingHorizontal: 2,
+  },
+  longTextLabel: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });
 

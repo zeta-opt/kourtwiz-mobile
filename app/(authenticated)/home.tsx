@@ -2,6 +2,7 @@ import FindplayerCard from '@/components/home-page/FindplayerCard';
 import InvitationCard from '@/components/home-page/myInvitationsCard';
 import OpenPlayCard from '@/components/home-page/openPlayCard';
 import OutgoingInviteCardItem from '@/components/home-page/outgoingInvitationsCard';
+import PlayCalendarCard from '@/components/home-page/PlayCalendarCard';
 import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
 import PlayersNearbyMap from '@/components/players-nearby/PlayersNearbyMap';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
@@ -91,10 +92,43 @@ const Dashboard = () => {
     outgoingInvitesRaw?.filter((invite) => invite.status !== 'WITHDRAWN') || []
   );
   const outgoingInvites = Object.values(groupedOutgoing);
+  // console.log('Outgoing Invites:', outgoingInvites);
   const pendingOutCount = outgoingInvites.length;
   const playCount = openPlayInvites?.length || 0;
 
   const allInvites = invites ?? [];
+  // console.log('All Invites:', allInvites);
+  const playCalendarData = [
+  ...(allInvites || []).map(invite => ({
+    ...invite,
+    type: 'incoming' as const,
+  })),
+  ...outgoingInvites.map(invite => ({
+    ...invite,
+    type: 'outgoing' as const,
+  })),
+    ...(openPlayInvites || []).map(play => {
+    const startDate = new Date(
+      play.startTime[0],
+      play.startTime[1] - 1,
+      play.startTime[2],
+      play.startTime[3] || 0,
+      play.startTime[4] || 0
+    );
+    return {
+      type: 'openplay' as const,
+      playTime: play.startTime,
+      placeToPlay: play.allCourts?.Name || 'Unknown Court',
+      dateTimeMs: startDate.getTime(),
+      eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
+      isWaitlisted: play.waitlistedPlayers?.includes(userId),
+      accepted: play.registeredPlayers?.length ?? 0,
+      playersNeeded: play.maxPlayers ?? 1,
+      id: play.id,
+    };
+  }),
+];
+
 
   useEffect(() => {
     const loadUser = async () => {
@@ -306,6 +340,30 @@ const Dashboard = () => {
               </ScrollView>
             </LinearGradient>
           </View>
+        <View style={styles.playCalendarHeaderRow}>
+  <Text style={styles.playCalendarHeader}>Play Calendar</Text>
+  <TouchableOpacity onPress={() => router.push('/(authenticated)/full-calendar')}>
+    <Text style={styles.viewAllText}>View All</Text>
+  </TouchableOpacity>
+</View>
+
+<View style={styles.calendarContainer}>
+
+  {playCalendarData.length === 0 ? (
+    <Text style={styles.noInvitesText}>No upcoming events</Text>
+  ) : (
+    <ScrollView
+  nestedScrollEnabled
+  contentContainerStyle={styles.calendarContent}
+>
+    <PlayCalendarCard invites={playCalendarData} />
+    </ScrollView>
+
+  )}
+</View>
+
+
+
 
           <FindplayerCard />
 
@@ -461,4 +519,39 @@ dialogContent: {
     fontWeight: '400',
     marginBottom: 20,
   },
+  playCalendarHeader: {
+  fontSize: 18,
+  fontWeight: '700',
+  marginBottom: 12,
+},
+calendarContainer: {
+  borderRadius: 16,
+  padding: 5,
+  maxHeight: 240,
+  marginBottom: 20,
+  overflow: 'hidden',
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 4,
+  backgroundColor: '#fff',
+},
+playCalendarHeaderRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 12,
+},
+
+
+
+calendarScroll: {
+  borderRadius: 12,
+},
+
+calendarContent: {
+  gap: 10,
+  paddingBottom: 10,
+},
+
+
 });
