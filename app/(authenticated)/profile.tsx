@@ -14,15 +14,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
 import { useDeleteUserById } from '@/hooks/apis/user/useDeleteUserById';
-
-type Place = {
-  id: string;
-  name: string;
-};
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '@/store';
+import { Avatar } from 'react-native-paper';
 
 type PlayerDetails = {
   preferPlacesToPlay: { id: string }[];
@@ -52,9 +49,6 @@ type UserData = {
 };
 
 const UserProfile = () => {
-  type Place = { id: string; name: string };
-  const [preferredPlaces, setPreferredPlaces] = useState<Place[]>([]);
-  const [selectedPlaces, setSelectedPlaces] = useState<string[]>([]);
   const [userData, setUserData] = useState<UserData>({
     name: '',
     email: '',
@@ -75,17 +69,14 @@ const UserProfile = () => {
       personalRating: 0,
     },
   });  
-
-  const [showPlaceModal, setShowPlaceModal] = useState(false);
-  const [suggestedPlaces, setSuggestedPlaces] = useState<Place[]>([]);
-  const [showPreferredTimeModal, setShowPreferredTimeModal] = useState(false);
-  const [selectedTime, setSelectedTime] = useState(userData.preferredTime || '');
+  
   const [modalVisible, setModalVisible] = useState(false);
   const { deleteUserById, status, error } = useDeleteUserById();
   const isLoading = status === 'loading';
   const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
   const dispatch = useDispatch();
   const router = useRouter();
+  const profileImage = useSelector((state: RootState) => state.auth.profileImage);
 
   const handleLogout = () => {
     Alert.alert('Confirm Logout', 'Are you sure you want to log out?', [
@@ -107,11 +98,8 @@ const handleDelete = async () => {
       console.error('User ID not found.');
       return;
     }
-
     await deleteUserById(userData.userId);
     setModalVisible(false);
-
-    // Redirect to login/signup after deletion
     router.replace('/');
   } catch (err) {
     console.error('Failed to delete user:', err);
@@ -172,39 +160,6 @@ const handleDelete = async () => {
           skillLevel,
         }));
 
-        const placesRes = await fetch(
-          `${BASE_URL}/users/preferredPlacesToPlay?id=${meData.userId}`
-        );
-        const raw = await placesRes.text();
-
-        let places = [];
-        try {
-          places = JSON.parse(raw);
-        } catch (e) {
-          console.warn('Failed to parse preferred places JSON:', e);
-        }
-
-        if (!places || !places.length) {
-          const addressParams = new URLSearchParams({
-            address: profileDetails.address || '6 Parkwood Lane',
-            city: profileDetails.city || 'Mendham',
-            state: profileDetails.state || 'New Jersey',
-            zipCode: profileDetails.zipCode || '07945',
-            country: profileDetails.country || 'United States',
-            maxDistanceInKm: '5',
-            page: '0',
-            limit: '10',
-          }).toString();
-
-          const nearbyRes = await fetch(
-            `${BASE_URL}/api/import/nearbyaddress?${addressParams}`
-          );
-          if (!nearbyRes.ok) throw new Error('Nearby places fetch failed');
-          const nearby = await nearbyRes.json();
-          setSuggestedPlaces(nearby);
-        } else {
-          setPreferredPlaces(places);
-        }
       } catch (err) {
         console.error('Error fetching profile:', err);
         Alert.alert('Error', 'Failed to load profile. Please try again.');
@@ -213,90 +168,6 @@ const handleDelete = async () => {
 
     fetchProfile();
   }, [BASE_URL]);
-
-  const handleSelectPlace = (placeId: string) => {
-    setSelectedPlaces((prev) =>
-      prev.includes(placeId)
-        ? prev.filter((id) => id !== placeId)
-        : [...prev, placeId]
-    );
-  };
-
-  const handleSavePlaces = async () => {
-    try {
-      const token = await getToken();
-      const payload = {
-        name: userData.name,
-        email: userData.email,
-        phoneNumber: userData.phoneNumber,
-        playerDetails: {
-          preferPlacesToPlay: selectedPlaces.map((id) => ({ id })),
-          isAppDownloaded: true,
-        },
-      };
-
-      console.log('📤 Preferred Places Payload:', payload);
-      const response = await fetch(`${BASE_URL}/users/${userData.userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error('Failed to update preferred place');
-      setUserData((prev) => ({
-        ...prev,
-        playerDetails: {
-          ...prev.playerDetails,
-          preferPlacesToPlay: selectedPlaces.map((id) => ({ id })),
-        },      
-      }));
-
-      Alert.alert('Success', 'Preferred places saved');
-      setShowPlaceModal(false);
-    } catch (err) {
-      console.error('Failed to update preferred place:', err);
-      Alert.alert('Error', 'Could not save preferred place');
-    }
-  };
-
-  const handleSavePreferredTime = async () => {
-    if (!selectedTime) return;
-  
-    try {
-      const token = await getToken();
-  
-      const payload = {
-        name: userData.name,
-        email: userData.email,
-        phoneNumber: userData.phoneNumber,
-        preferredTime: selectedTime,
-      };
-  
-      console.log('📤 Sending preferredTime payload:', payload);
-  
-      const response = await fetch(`${BASE_URL}/users/${userData.userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-  
-      if (!response.ok) throw new Error('Failed to update preferred time');
-  
-      setUserData((prev) => ({ ...prev, preferredTime: selectedTime }));
-      setShowPreferredTimeModal(false);
-  
-      Alert.alert('Success', 'Preferred time updated');
-    } catch (err) {
-      console.error('❌ Error updating preferred time:', err);
-      Alert.alert('Error', 'Failed to update preferred time');
-    }
-  };  
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -316,7 +187,11 @@ const handleDelete = async () => {
 
       <View style={styles.header}>
         <View style={styles.profilePicContainer}>
-          <UserAvatar size={70} onPress={() => console.log('Clicked Avatar')} />
+          {profileImage ? (
+            <Avatar.Image size={70} source={{ uri: profileImage }} />
+          ) : (
+            <UserAvatar size={70} />
+          )}
         </View>
         <View style={styles.profileInfo}>
           <Text style={styles.nameText}>{userData.name || 'User Name'}</Text>
@@ -360,7 +235,7 @@ const handleDelete = async () => {
       <View style={styles.DetailsCard}>
         <Text style={styles.sectionTitle}>PLAY PREFERENCES</Text>
         <View style={styles.sectionCard}>
-          <TouchableOpacity style={styles.optionRow} onPress={() => {setShowPlaceModal(true); router.replace('/(authenticated)/preferred-places')}}>
+          <TouchableOpacity style={styles.optionRow} onPress={() => router.replace('/(authenticated)/preferred-places')}>
             <Text style={styles.optionText}>Preferred places</Text>
             <Text style={styles.optionArrow}>{'>'}</Text>
           </TouchableOpacity>
@@ -370,8 +245,6 @@ const handleDelete = async () => {
             <TouchableOpacity
             style={styles.optionRow}
             onPress={() => {
-              setSelectedTime(userData.preferredTime || '');
-              //setShowPreferredTimeModal(true);
               router.replace('/(authenticated)/preferred-time');
             }}
             >
@@ -383,10 +256,15 @@ const handleDelete = async () => {
         {/* PREFERRED PLAYERS */}
         <Text style={styles.sectionTitle}>PREFFERED PLAYERS</Text>
         <View style={styles.sectionCard}>
-          <TouchableOpacity style={styles.optionRow}>
-            <Text style={styles.optionText}>Players</Text>
-            <Text style={styles.optionArrow}>{'>'}</Text>
-          </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.optionRow} 
+          onPress={() => {
+            router.replace('/(authenticated)/preferred-players');
+          }}
+          >
+          <Text style={styles.optionText}>Preferred Players</Text>
+          <Text style={styles.optionArrow}>{'>'}</Text>
+        </TouchableOpacity>
         </View>
         <Text style={styles.sectionHelperText}>
             Import contacts and invite friend to play KourtWiz with you.
@@ -395,10 +273,10 @@ const handleDelete = async () => {
         {/* AVOIDED PLAYERS */}
         <Text style={styles.sectionTitle}>AVOIDED PLAYERS</Text>
         <View style={styles.sectionCard}>
-          <TouchableOpacity style={styles.optionRow}>
-            <Text style={styles.optionText}>Players</Text>
-            <Text style={styles.optionArrow}>{'>'}</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.optionRow} onPress={() => {console.log('players avoideed')}}>
+          <Text style={styles.optionText}>Avoided Players</Text>
+          <Text style={styles.optionArrow}>{'>'}</Text>
+        </TouchableOpacity>
         </View>
         <Text style={styles.sectionHelperText}>
             Avoid players you don’t enjoy playing with.
@@ -417,6 +295,7 @@ const handleDelete = async () => {
           <Text style={styles.actionArrow}>{'>'}</Text>
         </TouchableOpacity>
       </View>
+      
       {/* DELETE CONFIRMATION MODAL */}
       <Modal
         animationType="fade"
@@ -430,7 +309,7 @@ const handleDelete = async () => {
             <Text style={{ color: 'red', marginTop: 8 }}>{error}</Text>
           )}
             <View style={styles.iconWrapper}>
-              <Ionicons name="delete" size={28} color="#FF3B30" />
+              <Ionicons name="trash" size={28} color="#FF3B30" />
             </View>
             <Text style={styles.modalTitle}>Delete Account</Text>
             <Text style={styles.modalDescription}>
@@ -470,143 +349,6 @@ const handleDelete = async () => {
           </TouchableOpacity>
         </View>
       </View>
-      
-       {/* Preferred Places */}
-       {/* <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Preferred Places</Text>
-        {preferredPlaces.length > 0 ? (
-          preferredPlaces.map((place) => (
-            <Text key={place.id} style={styles.infoText}>• {place.name}</Text>
-          ))
-        ) : (
-          <View>
-            <Text style={styles.infoText}>No preferred places found.</Text>
-            {suggestedPlaces.length > 0 && (
-              <TouchableOpacity onPress={() => setShowPlaceModal(true)} style={styles.modalButtons}>
-                <Text style={styles.buttonText}>Add Preferred Places</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View> */}
-      
-
-      {/* Place Selection Modal */}
-      <Modal
-        visible={showPlaceModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowPlaceModal(false)}
-      >
-        <View style={styles.modal_Overlay}>
-          <View style={styles.modal_Container}>
-            <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-              <Text style={styles.modal_Title}>Select Preferred Places</Text>
-
-              {preferredPlaces.length > 0 && (
-                <>
-                  <Text style={styles.label}>Your Preferred Places</Text>
-                  {preferredPlaces.map((place) => (
-                    <Text key={place.id} style={styles.infoText}>• {place.name}</Text>
-                  ))}
-                  <View style={{ marginVertical: 10 }} />
-                </>
-              )}
-
-              <Text style={styles.label}>Suggested Places</Text>
-              {suggestedPlaces.length > 0 ? (
-                suggestedPlaces.map((place) => (
-                  <TouchableOpacity
-                    key={place.id}
-                    style={[
-                      styles.timeOption,
-                      selectedPlaces.includes(place.id) && styles.timeOptionSelected,
-                    ]}
-                    onPress={() => handleSelectPlace(place.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.timeOptionText,
-                        selectedPlaces.includes(place.id) && styles.timeOptionTextSelected,
-                      ]}
-                    >
-                      {place.name || 'Unnamed Place'}
-                    </Text>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <Text style={{ color: '#888', textAlign: 'center' }}>No suggestions found</Text>
-              )}
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={styles.saveButton}
-                  onPress={handleSavePlaces}
-                >
-                  <Text style={styles.saveButtonText}>Update Preferences</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => setShowPlaceModal(false)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-        {/* Preferred Time Modal */}
-        <Modal
-        visible={showPreferredTimeModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowPreferredTimeModal(false)}
-      >
-        <View style={styles.modal_Overlay}>
-          <View style={styles.modal_Container}>
-            <Text style={styles.modal_Title}>Preferred Time</Text>
-
-            {['Morning', 'Afternoon', 'Evening', 'Night'].map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.timeOption,
-                  selectedTime === option && styles.timeOptionSelected,
-                ]}
-                onPress={() => setSelectedTime(option)}
-              >
-                <Text
-                  style={[
-                    styles.timeOptionText,
-                    selectedTime === option && styles.timeOptionTextSelected,
-                  ]}
-                >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            <View style={styles.modalActions}>
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSavePreferredTime}
-            >
-              <Text style={styles.saveButtonText}>Update Preferences</Text>
-            </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowPreferredTimeModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 };

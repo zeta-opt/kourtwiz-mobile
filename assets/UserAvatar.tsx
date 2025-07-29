@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity, TextStyle } from 'react-native';
 import { Avatar } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useRouter } from 'expo-router';
+import { getToken } from '@/shared/helpers/storeToken';
+import Constants from 'expo-constants';
 
 type UserAvatarProps = {
   size?: number;
@@ -18,10 +20,11 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   onPress,
   labelStyle,
 }) => {
-  const profileImage = useSelector(
-    (state: RootState) => state.auth.profileImage
-  );
+  const profileImage = useSelector((state: RootState) => state.auth.profileImage);
+  const [remoteProfileImage, setRemoteProfileImage] = useState<string | null>(null);  
+  const finalImage = profileImage || remoteProfileImage;
   const user = useSelector((state: RootState) => state.auth.user);
+  const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
   const router = useRouter();
 
   const initials =
@@ -31,10 +34,26 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       .join('')
       .toUpperCase() || 'U';
 
-  const handlePress = () => {
-    if (onPress) onPress();
-    else router.push('/(authenticated)/profile');
-  };
+  
+    useEffect(() => {
+      const fetchProfileImage = async () => {
+        if (!profileImage) {
+          const token = await getToken();
+          const res = await fetch(`${BASE_URL}/users/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+          setRemoteProfileImage(data.profilePicture);
+        }
+      };
+    
+      fetchProfileImage();
+    }, [profileImage]);
+    
+    const handlePress = () => {
+      if (onPress) onPress();
+      else router.push('/(authenticated)/profile');
+    };
 
   // Default font size based on avatar size (optional fallback logic)
   const getDefaultFontSize = () => {
@@ -43,10 +62,13 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     return 14;
   };
 
+  if (profileImage) {
+    return <Avatar.Image size={size} source={{ uri: profileImage }} />;
+  }
   return (
     <TouchableOpacity onPress={handlePress}>
-      {profileImage ? (
-        <Avatar.Image size={size} source={{ uri: profileImage }} />
+      {finalImage ? (
+        <Avatar.Image size={size} source={{ uri: finalImage }} />
       ) : showInitials ? (
         <Avatar.Text
           size={size}
@@ -56,7 +78,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         />
       ) : null}
     </TouchableOpacity>
-  );
+  );  
 };
 
 const styles = StyleSheet.create({

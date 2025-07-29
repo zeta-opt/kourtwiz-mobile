@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Button, Divider, Icon, Portal, Text } from 'react-native-paper';
+import { Button, Icon, Portal, Text } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 
 type Props = {
@@ -25,6 +25,14 @@ type Props = {
 };
 
 type Coordinates = { lat: number; lng: number } | null;
+
+type CombinedPlace = {
+  id: string;
+  name: string;
+  isPreferred: boolean;
+  courtType?: string;
+  distance?: number;
+};
 
 const PreferredPlacesModal = ({
   visible,
@@ -94,18 +102,52 @@ const PreferredPlacesModal = ({
     handleClose();
   };
 
-  // Filter all places based on search query
-  const filteredPreferredPlaces =
-    preferredPlaces?.filter((place) =>
-      place.name.toLowerCase().includes(query.toLowerCase())
-    ) ?? [];
+  // Combine all places into a single list
+  const combinedPlaces: CombinedPlace[] = [];
 
-  const filteredNearbyCourts =
-    nearbyPlaces?.filter(
-      (place) =>
-        typeof place.Name === 'string' &&
-        place.Name.toLowerCase().includes(query.toLowerCase())
-    ) ?? [];
+  // Add preferred places
+  preferredPlaces?.forEach((place) => {
+    combinedPlaces.push({
+      id: place.id,
+      name: place.name,
+      isPreferred: true,
+    });
+  });
+
+  // Add nearby places (excluding duplicates)
+  const preferredPlaceNames = new Set(
+    preferredPlaces?.map((p) => p.name.toLowerCase()) ?? []
+  );
+
+  nearbyPlaces?.forEach((court) => {
+    if (
+      typeof court.Name === 'string' &&
+      !preferredPlaceNames.has(court.Name.toLowerCase())
+    ) {
+      combinedPlaces.push({
+        id: court.id || court.Name,
+        name: court.Name,
+        isPreferred: false,
+        courtType: court['Court Type'],
+        distance: court.distance,
+      });
+    }
+  });
+
+  // Sort combined places: preferred first, then by distance
+  combinedPlaces.sort((a, b) => {
+    if (a.isPreferred && !b.isPreferred) return -1;
+    if (!a.isPreferred && b.isPreferred) return 1;
+    if (!a.isPreferred && !b.isPreferred && a.distance && b.distance) {
+      return a.distance - b.distance;
+    }
+    return 0;
+  });
+
+  // Filter based on search query
+  const filteredPlaces = combinedPlaces.filter((place) =>
+    place.name.toLowerCase().includes(query.toLowerCase())
+  );
 
   const isLoading =
     preferredStatus === 'loading' ||
@@ -125,13 +167,11 @@ const PreferredPlacesModal = ({
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.contentArea}>
-              <Text style={styles.heading}>Select Court</Text>
-
               {/* Search Input */}
               <View style={styles.searchContainer}>
                 <Icon source='magnify' size={20} color='#666' />
                 <TextInput
-                  placeholder='Search places...'
+                  placeholder='Select Court'
                   style={styles.searchInput}
                   value={query}
                   onChangeText={setQuery}
@@ -155,11 +195,10 @@ const PreferredPlacesModal = ({
                   keyboardShouldPersistTaps='handled'
                   onScrollBeginDrag={Keyboard.dismiss}
                 >
-                  {/* Preferred Places Section */}
-                  {filteredPreferredPlaces.length > 0 && (
+                  {/* All Places in Single List */}
+                  {filteredPlaces.length > 0 ? (
                     <>
-                      <Text style={styles.sectionTitle}>Preferred Places</Text>
-                      {filteredPreferredPlaces.map((place) => (
+                      {filteredPlaces.slice(0, 30).map((place) => (
                         <TouchableOpacity
                           key={place.id}
                           style={[
@@ -172,116 +211,88 @@ const PreferredPlacesModal = ({
                           }}
                           activeOpacity={0.7}
                         >
-                          <Text
-                            style={[
-                              styles.placeText,
-                              selectedPlace === place.name &&
-                                styles.selectedText,
-                            ]}
-                          >
-                            {place.name}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </>
-                  )}
+                          <View style={styles.placeContent}>
+                            {/* Preferred place indicator */}
 
-                  {/* Divider between sections */}
-                  {filteredPreferredPlaces.length > 0 &&
-                    locationPermissionGranted &&
-                    filteredNearbyCourts.length > 0 && (
-                      <Divider style={styles.divider} />
-                    )}
+                            <View style={styles.courtTextContainer}>
+                              <Text
+                                style={[
+                                  styles.placeText,
+                                  selectedPlace === place.name &&
+                                    styles.selectedText,
+                                ]}
+                              >
+                                {place.name}
+                                {place.isPreferred && (
+                                  <Icon
+                                    source='check'
+                                    size={20}
+                                    color='#2C7E88'
+                                    style={styles.preferredIcon}
+                                  />
+                                )}
+                              </Text>
 
-                  {/* Nearby Courts Section */}
-                  {locationPermissionGranted && (
-                    <>
-                      {filteredNearbyCourts.length > 0 && (
-                        <>
-                          <Text style={styles.sectionTitle}>
-                            <Icon source='map-marker' size={16} /> Nearby Courts
-                          </Text>
-                          {filteredNearbyCourts.slice(0, 30).map((court) => (
-                            <TouchableOpacity
-                              key={court.id || court.Name}
-                              style={[
-                                styles.placeItem,
-                                selectedPlace === court.Name &&
-                                  styles.selectedPlaceItem,
-                              ]}
-                              onPress={() => {
-                                setSelectedPlace(court.Name);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <View style={styles.courtTextContainer}>
-                                <Text
-                                  style={[
-                                    styles.placeText,
-                                    selectedPlace === court.Name &&
-                                      styles.selectedText,
-                                  ]}
-                                >
-                                  {court.Name}
-                                </Text>
+                              {!place.isPreferred && (
                                 <View style={styles.courtSubInfo}>
-                                  <Text style={styles.courtTypeText}>
-                                    {court['Court Type']}
-                                  </Text>
-                                  {court.distance && (
+                                  {place.courtType && (
+                                    <Text style={styles.courtTypeText}>
+                                      {place.courtType}
+                                    </Text>
+                                  )}
+                                  {place.distance && (
                                     <Text style={styles.distanceText}>
-                                      {court.distance < 1
+                                      {place.distance < 1
                                         ? `${Math.round(
-                                            court.distance * 1000
+                                            place.distance * 1000
                                           )}m`
-                                        : `${court.distance.toFixed(1)}km`}
+                                        : `${place.distance.toFixed(1)}km`}
                                     </Text>
                                   )}
                                 </View>
-                              </View>
-                              {selectedPlace === court.Name && (
-                                <Icon
-                                  source='check-circle'
-                                  size={20}
-                                  color='#2C7E88'
-                                />
                               )}
-                            </TouchableOpacity>
-                          ))}
-                          {filteredNearbyCourts.length > 30 && (
-                            <Text style={styles.moreResultsText}>
-                              +{filteredNearbyCourts.length - 30} more courts
-                              nearby
-                            </Text>
+                            </View>
+                          </View>
+
+                          {selectedPlace === place.name && (
+                            <Icon
+                              source='check-circle'
+                              size={20}
+                              color='#2C7E88'
+                            />
                           )}
-                        </>
+                        </TouchableOpacity>
+                      ))}
+                      {filteredPlaces.length > 30 && (
+                        <Text style={styles.moreResultsText}>
+                          +{filteredPlaces.length - 30} more courts available
+                        </Text>
                       )}
+                    </>
+                  ) : (
+                    <>
                       {/* Loading state for nearby courts */}
-                      {!coords && (
+                      {locationPermissionGranted && !coords ? (
                         <View style={styles.nearbyLoadingContainer}>
                           <ActivityIndicator size='small' />
                           <Text style={styles.nearbyLoadingText}>
                             Finding nearby courts...
                           </Text>
                         </View>
+                      ) : (
+                        /* Empty state */
+                        <View style={styles.emptyStateContainer}>
+                          <Text style={styles.emptyStateText}>
+                            {query
+                              ? 'No places found matching your search'
+                              : locationPermissionGranted
+                              ? 'No places available. Add preferred places or search nearby.'
+                              : 'No preferred places yet. Add some to get started!'}
+                          </Text>
+                        </View>
                       )}
                     </>
                   )}
-
-                  {/* Empty state */}
-                  {filteredPreferredPlaces.length === 0 &&
-                    (!locationPermissionGranted ||
-                      filteredNearbyCourts.length === 0) && (
-                      <View style={styles.emptyStateContainer}>
-                        <Text style={styles.emptyStateText}>
-                          {query
-                            ? 'No places found matching your search'
-                            : locationPermissionGranted
-                            ? 'No places available. Add preferred places or search nearby.'
-                            : 'No preferred places yet. Add some to get started!'}
-                        </Text>
-                      </View>
-                    )}
                 </ScrollView>
               )}
             </View>
@@ -332,12 +343,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  heading: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -360,15 +365,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-    marginTop: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   placeItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -384,56 +380,35 @@ const styles = StyleSheet.create({
     borderColor: '#2C7E88',
     elevation: 2,
   },
+  placeContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  preferredIcon: {
+    marginRight: 8,
+  },
+  courtTextContainer: {
+    flex: 1,
+  },
   placeText: {
     fontSize: 16,
     color: '#000',
-    flex: 1,
   },
   selectedText: {
     color: '#2C7E88',
     fontWeight: '600',
   },
-  divider: {
-    marginVertical: 16,
-    backgroundColor: '#E0E0E0',
-  },
-  card: {
-    marginBottom: 10,
-    elevation: 1,
-    borderRadius: 8,
-    backgroundColor: '#F8F8F8',
-  },
-  selectedCard: {
-    backgroundColor: '#E9FCFE',
-    borderWidth: 1.5,
-    borderColor: '#2C7E88',
-    elevation: 3,
-  },
-  cardContent: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+  courtSubInfo: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
   },
-  courtInfo: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  courtType: {
+  courtTypeText: {
     fontSize: 13,
     color: '#666',
   },
-  courtDetailsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  courtDistance: {
+  distanceText: {
     fontSize: 12,
     color: '#2C7E88',
     fontWeight: '500',
@@ -456,6 +431,8 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   buttonContainer: {
     paddingVertical: 12,

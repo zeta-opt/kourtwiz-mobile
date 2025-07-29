@@ -17,16 +17,23 @@ import Constants from 'expo-constants';
 import { getToken } from '@/shared/helpers/storeToken';
 import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
 import UserAvatar from '@/assets/UserAvatar';
+import * as ImagePicker from 'expo-image-picker';
+import { Avatar } from 'react-native-paper';
+import { useDispatch } from 'react-redux';
+import { setProfileImage as setProfileImageAction } from '@/store/authSlice';
+
 
 const GENDER_OPTIONS = ['Male', 'Female', 'NIL'];
 
 const EditProfile = () => {
+  const dispatch = useDispatch();
   const router = useRouter();
   const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
   const [userId, setUserId] = useState('');
   const [userData, setUserData] = useState({
     name: '',
     email: '',
+    profilePicture: '',
     address: '',
     city: '',
     state: '',
@@ -39,7 +46,38 @@ const EditProfile = () => {
   });
 
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const { updateUserById, status } = useUpdateUserById();
+  const { updateUserById} = useUpdateUserById();
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'We need camera roll permissions to update your profile picture.');
+      return;
+    }
+  
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      base64: true,
+    });
+  
+    if (!result.canceled && result.assets.length > 0) {
+      const uri = result.assets[0].uri;
+      const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+  
+      // Update preview + update in payload later
+      setProfileImage(uri);
+      dispatch(setProfileImageAction(uri));
+      setUserData((prev) => ({ ...prev, profilePicture: base64Image }));
+    }
+  };
+  const handleRemoveProfileImage = () => {
+    setProfileImage(null);
+    setUserData((prev) => ({ ...prev, profilePicture: '' }));
+    dispatch(setProfileImageAction(''));
+  }; 
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -63,11 +101,11 @@ const EditProfile = () => {
         const dobISO = Array.isArray(dobArray)
           ? new Date(dobArray[0], dobArray[1] - 1, dobArray[2]).toISOString().split('T')[0]
           : profileData.dateOfBirth;
-        //console.log('Parsed DOB:', dobISO);
 
         setUserData({
           name: profileData.name || '',
           email: profileData.email || '',
+          profilePicture: profileData.profilePicture || '',
           address: profileData.address || '',
           city: profileData.city || '',
           state: profileData.state || '',
@@ -78,6 +116,9 @@ const EditProfile = () => {
           phoneNumber: profileData.phoneNumber || '',
           skillLevel: profileData.playerDetails?.personalRating ?? 0,
         });
+
+        dispatch(setProfileImageAction(profileData.profilePicture));
+        setProfileImage(profileData.profilePicture);
 
       } catch (err) {
         console.error('Error loading user profile:', err);
@@ -121,6 +162,7 @@ const EditProfile = () => {
       const payload = {
         name: userData.name,
         email: userData.email,
+        profilePicture: userData.profilePicture, 
         phoneNumber: userData.phoneNumber,
         dateOfBirth: formattedDOB,
         gender: userData.gender,
@@ -135,9 +177,6 @@ const EditProfile = () => {
         },
       };
 
-      // console.log("📤 Payload being sent:", JSON.stringify(payload));
-      // console.log("📤 DOB typeof:", typeof payload.dateOfBirth);
-
       // Step 3: PUT request to update user profile
       await updateUserById(userId, payload);
   
@@ -147,7 +186,7 @@ const EditProfile = () => {
       console.error('Error updating profile:', err);
       Alert.alert('Error', 'Failed to update profile. Please try again.');
     }
-  };  
+  }; 
 
   return (
     <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
@@ -167,11 +206,29 @@ const EditProfile = () => {
       {/* Avatar */}
       <View style={styles.avatarContainer}>
         <View style={styles.avatarCircle}>
-          <UserAvatar size={70} onPress={() => console.log('Clicked Avatar')} />
-          <TouchableOpacity style={styles.editAvatarIcon}>
+          <TouchableOpacity onPress={pickImage}>
+            {profileImage ? (
+              <Avatar.Image size={70} source={{ uri: profileImage }} />
+            ) : (
+              <UserAvatar size={70} />
+            )}
+          </TouchableOpacity>
+
+          {/* Pencil Icon */}
+          <TouchableOpacity style={styles.editAvatarIcon} onPress={pickImage}>
             <Ionicons name="pencil" size={18} color="#2F7C83" />
           </TouchableOpacity>
         </View>
+
+        {/* Remove Image Button - Show only when image exists */}
+        {profileImage ? (
+          <TouchableOpacity
+            onPress={handleRemoveProfileImage}
+            style={styles.removeButton}
+          >
+            <Text style={styles.removeButtonText}>Remove Image</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* Form Fields */}
@@ -364,6 +421,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 5,
   },
+  removeButton: {
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  removeButtonText: {
+    color: 'white',
+    fontWeight: '500',
+    fontSize: 14,
+  },  
   formContainer: {
     backgroundColor: '#f3f2f7',
     borderRadius: 12,
