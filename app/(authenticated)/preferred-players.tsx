@@ -8,8 +8,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Checkbox } from 'react-native-paper';
-import { useSelector, useDispatch } from 'react-redux';
-import {setPreferredContacts,} from '@/store/playerFinderSlice';
+import { useSelector} from 'react-redux';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 import PreferredPlayersModal, {Contact} from '@/components/preferred-players-modal/PreferredPlayersModal';
 import ContactsModal from '@/components/find-player/contacts-modal/ContactsModal';
@@ -20,56 +19,46 @@ import { Ionicons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
   
 const PreferredPlayersScreen = () => {
-    const dispatch = useDispatch();
     const router = useRouter();
     const user = useSelector((state: any) => state.auth.user);
     const userId = user?.userId;
-    const { data: userData, preferredPlayers: fetchedPreferredPlayers } = useGetUserDetails(userId);
-    const [preferredPlayers, setPreferredPlayersLocal] = useState<Contact[]>([]);
-    const [showOptionModal, setShowOptionModal] = useState(false);
-    const [showContactsModal, setShowContactsModal] = useState(false);
-    const [showRegisteredModal, setShowRegisteredModal] = useState(false);
-    const [searchText, setSearchText] = useState('');
-    const [filteredPreferredPlayers, setFilteredPreferredPlayers] = useState<Contact[]>([]);
+    const { data: userData } = useGetUserDetails({ userId });
+    const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
-    useEffect(() => {
-        if (fetchedPreferredPlayers) {
-          const normalized = fetchedPreferredPlayers.map(normalizeContact);
-          setPreferredPlayersLocal(normalized);
-          dispatch(setPreferredContacts(normalized));
-        }
-      }, [fetchedPreferredPlayers]);      
+  const [preferredPlayers, setPreferredPlayers] = useState<Contact[]>([]);
+  const [showOptionModal, setShowOptionModal] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const [showRegisteredModal, setShowRegisteredModal] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [filteredPreferredPlayers, setFilteredPreferredPlayers] = useState<Contact[]>([]);
+
+  useEffect(() => {
+    const fetched = userData?.playerDetails?.preferToPlayWith ?? [];
+    const normalized = fetched.map(normalizeContact);
+    setPreferredPlayers(normalized);
+  }, [userData]);
 
     const normalizeContact = (c: any): Contact => ({
         contactName: c.contactName ?? c.name ?? '',
         contactPhoneNumber: c.contactPhoneNumber ?? c.phoneNumber ?? '',
     });
-    const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
-
-    useEffect(() => {
-        if (fetchedPreferredPlayers) {
-            dispatch(setPreferredContacts(fetchedPreferredPlayers.map(normalizeContact)));
-        }
-    }, [fetchedPreferredPlayers]);
 
     const isSelected = (phoneNumber: string) =>
         preferredPlayers.some(p => p.contactPhoneNumber === phoneNumber);
 
     const toggleSelect = (item: Contact) => {
-        if (isSelected(item.contactPhoneNumber)) {
-        setPreferredPlayersLocal(prev =>
-            prev.filter(p => p.contactPhoneNumber !== item.contactPhoneNumber));
-        } else {
-        setPreferredPlayersLocal(prev => [...prev, item]);
-        }
+        setPreferredPlayers(prev =>
+          isSelected(item.contactPhoneNumber)
+            ? prev.filter(p => p.contactPhoneNumber !== item.contactPhoneNumber)
+            : [...prev, item]
+        );
     }; 
 
     const handleSavePreferredPlayers = async () => {
         const token = await getToken();
-    
         const updatedPlayerDetails = {
         ...userData?.playerDetails,
-        preferToPlayWith: preferredPlayers, // <--- use local state
+        preferToPlayWith: preferredPlayers,
         };
     
         try {
@@ -87,7 +76,6 @@ const PreferredPlayersScreen = () => {
   
         if (!res.ok) throw new Error('Failed to update preferred players.');
     
-        dispatch(setPreferredContacts(preferredPlayers));
         setShowContactsModal(false);
         setShowRegisteredModal(false);
         setShowOptionModal(false);
@@ -224,7 +212,7 @@ const PreferredPlayersScreen = () => {
                 visible={showRegisteredModal}
                 onClose={() => setShowRegisteredModal(false)}
                 onSelectPlayers={(selected) => {
-                    setPreferredPlayersLocal(selected.map(normalizeContact));
+                    setPreferredPlayers(selected.map(normalizeContact));
                 }}
                 selectedPlayers={preferredPlayers}
             />
@@ -233,7 +221,7 @@ const PreferredPlayersScreen = () => {
                 visible={showContactsModal}
                 onClose={() => setShowContactsModal(false)}
                 onSelectContacts={(selected) => {
-                    setPreferredPlayersLocal(selected.map(normalizeContact));
+                    setPreferredPlayers(selected.map(normalizeContact));
                 }}
                 selectedContacts={preferredPlayers}
             />
