@@ -401,7 +401,7 @@ const Dashboard = () => {
 
           <Text style={styles.playersNearBy}>Players Nearby</Text>
           <Text style={styles.playersNearByDesc}>See users playing near by</Text>
-          <PlayersNearbyMap />
+          {/* <PlayersNearbyMap /> */}
 
           <NewMessages userId={user?.userId} />
 
