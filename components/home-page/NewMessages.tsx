@@ -41,7 +41,6 @@ export default function NewMessages({ userId }: NewMessagesProps) {
   const sortedSessions = filteredSessions.sort((a, b) => {
     const dateA = convertDateArrayToDate(a.createdAt);
     const dateB = convertDateArrayToDate(b.createdAt);
-    console.log(dateA ,dateB)
     return dateB.getTime() - dateA.getTime();
   });
 
