@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
 import {setPreferredContacts,} from '@/store/playerFinderSlice';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 import PreferredPlayersModal, {Contact} from '@/components/preferred-players-modal/PreferredPlayersModal';
@@ -23,8 +22,9 @@ import UserAvatar from '@/assets/UserAvatar';
 const PreferredPlayersScreen = () => {
     const dispatch = useDispatch();
     const router = useRouter();
-    const userId = useSelector((state: RootState) => state.auth.user?.userId);
-    const { data: userData } = useGetUserDetails(userId);
+    const user = useSelector((state: any) => state.auth.user);
+    const userId = user?.userId;
+    const { data: userData, preferredPlayers: fetchedPreferredPlayers } = useGetUserDetails(userId);
     const [preferredPlayers, setPreferredPlayersLocal] = useState<Contact[]>([]);
     const [showOptionModal, setShowOptionModal] = useState(false);
     const [showContactsModal, setShowContactsModal] = useState(false);
@@ -33,11 +33,12 @@ const PreferredPlayersScreen = () => {
     const [filteredPreferredPlayers, setFilteredPreferredPlayers] = useState<Contact[]>([]);
 
     useEffect(() => {
-        dispatch(setPreferredContacts([]));
-      }, []);
-
-    const preferredContacts = useSelector((state: RootState) => state.playerFinder.preferredContacts);
-        useEffect(() => setPreferredPlayersLocal(preferredContacts), [preferredContacts]);
+        if (fetchedPreferredPlayers) {
+          const normalized = fetchedPreferredPlayers.map(normalizeContact);
+          setPreferredPlayersLocal(normalized);
+          dispatch(setPreferredContacts(normalized));
+        }
+      }, [fetchedPreferredPlayers]);      
 
     const normalizeContact = (c: any): Contact => ({
         contactName: c.contactName ?? c.name ?? '',
@@ -46,11 +47,10 @@ const PreferredPlayersScreen = () => {
     const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
     useEffect(() => {
-        if (userData?.playerDetails?.preferToPlayWith) {
-            const players = userData.playerDetails.preferToPlayWith.map(normalizeContact);
-            dispatch(setPreferredContacts(players));
+        if (fetchedPreferredPlayers) {
+            dispatch(setPreferredContacts(fetchedPreferredPlayers.map(normalizeContact)));
         }
-    }, [userData]);  
+    }, [fetchedPreferredPlayers]);
 
     const isSelected = (phoneNumber: string) =>
         preferredPlayers.some(p => p.contactPhoneNumber === phoneNumber);
