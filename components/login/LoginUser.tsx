@@ -20,9 +20,7 @@ import ForgotPasswordModal from "@/components/login/ForgotPasswordModal";
 // 📄 Zod validation schema
 const loginSchema = z.object({
   username: z.string().email({ message: "Invalid email address" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -39,8 +37,10 @@ export default function LoginUser() {
 
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleSuccess = async (resData: any) => {
+    setLoginError(null); // Clear old error if any
     console.log("✅ Login Success. Token:", resData.token);
     await storeToken(resData.token);
     console.log("✅ Token stored");
@@ -54,8 +54,14 @@ export default function LoginUser() {
     }
   };
 
-  const handleError = () => {
-    console.log("❌ Login failed");
+  const handleError = (error: Error) => {
+    console.log("❌ Login failed", error);
+
+    if (error.message.includes("401")) {
+      setLoginError("Invalid email or password.");
+    } else {
+      setLoginError(error.message || "Something went wrong. Please try again.");
+    }
   };
 
   const onSubmit = async (data: LoginFormData) => {
@@ -121,6 +127,13 @@ export default function LoginUser() {
           />
           {errors.password && (
             <Text style={styles.error}>{errors.password.message}</Text>
+          )}
+
+          {/* Login error message */}
+          {loginError && (
+            <Text style={[styles.error, { textAlign: "center" }]}>
+              {loginError}
+            </Text>
           )}
 
           <TouchableOpacity onPress={() => setShowForgotPassword(true)}>

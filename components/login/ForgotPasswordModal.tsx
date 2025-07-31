@@ -7,7 +7,7 @@ import {
   Text,
   TextInput,
   Dialog,
-  Paragraph
+  Paragraph,
 } from 'react-native-paper';
 import { useForgotPassword } from '@/hooks/apis/authentication/useForgotPassword';
 import { useResetPassword } from '@/hooks/apis/authentication/useResetPassword';
@@ -25,6 +25,7 @@ const ForgotPasswordModal = ({ visible, onDismiss }: Props) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [showOtpSentDialog, setShowOtpSentDialog] = useState(false); // ✅ new
 
   const { forgotPassword, status: forgotStatus } = useForgotPassword();
   const { resetPassword, status: resetStatus } = useResetPassword();
@@ -42,9 +43,18 @@ const ForgotPasswordModal = ({ visible, onDismiss }: Props) => {
     if (!email) return showError('Email is required');
 
     await forgotPassword(email, {
-      onSuccess: () => setStep(2),
-      onError: (err) =>
-        showError(err?.response?.data?.message || 'Failed to send OTP'),
+      onSuccess: () => {
+        setStep(2);
+        setShowOtpSentDialog(true); // ✅ show success dialog
+        setTimeout(() => setShowOtpSentDialog(false), 2000); // auto-hide
+      },
+      onError: (err) => {
+        if (err?.response?.status === 400) {
+          showError('Please enter a registered email address.');
+        } else {
+          showError(err?.response?.data?.message || 'Failed to send OTP');
+        }
+      },
     });
   };
 
@@ -64,7 +74,9 @@ const ForgotPasswordModal = ({ visible, onDismiss }: Props) => {
           }, 2000);
         },
         onError: (err) =>
-          showError(err?.response?.data?.message || 'Invalid OTP or reset failed'),
+          showError(
+            err?.response?.data?.message || 'Invalid OTP or reset failed'
+          ),
       }
     );
   };
@@ -76,6 +88,7 @@ const ForgotPasswordModal = ({ visible, onDismiss }: Props) => {
     setNewPassword('');
     setErrorMsg(null);
     setShowErrorDialog(false);
+    setShowOtpSentDialog(false);
   };
 
   return (
@@ -139,7 +152,16 @@ const ForgotPasswordModal = ({ visible, onDismiss }: Props) => {
         )}
       </Modal>
 
-      {/* ✅ Success Dialog */}
+      {/* ✅ OTP Sent Dialog */}
+      <Dialog visible={showOtpSentDialog} dismissable={false}>
+        <Dialog.Icon icon="email-check" />
+        <Dialog.Title>OTP Sent</Dialog.Title>
+        <Dialog.Content>
+          <Paragraph>An OTP has been sent to your email address.</Paragraph>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* ✅ Password Reset Success Dialog */}
       <Dialog visible={showSuccessDialog} dismissable={false}>
         <Dialog.Icon icon="check-circle" />
         <Dialog.Title>Password Reset</Dialog.Title>
@@ -149,7 +171,10 @@ const ForgotPasswordModal = ({ visible, onDismiss }: Props) => {
       </Dialog>
 
       {/* ❌ Error Dialog */}
-      <Dialog visible={showErrorDialog} onDismiss={() => setShowErrorDialog(false)}>
+      <Dialog
+        visible={showErrorDialog}
+        onDismiss={() => setShowErrorDialog(false)}
+      >
         <Dialog.Icon icon="alert-circle" />
         <Dialog.Title>Error</Dialog.Title>
         <Dialog.Content>

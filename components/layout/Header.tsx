@@ -76,7 +76,7 @@ const Header = () => {
             {greeting}
             {user?.username ? ` ${user.username.split(' ')[0]}` : ''}
           </Text>
-          <Text style={{ marginTop: 4 }}>Ready To Play Today?</Text>
+          <Text style={styles.text2}>Ready To Play Today?</Text>
         </View>
 
         <View style={styles.profileWrapper}>
@@ -142,6 +142,12 @@ const Header = () => {
 };
 
 const styles = StyleSheet.create({
+  text2: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#000',
+    marginTop: 4,
+  },
   header: {
     marginTop: '10%',
     marginBottom: '2%',

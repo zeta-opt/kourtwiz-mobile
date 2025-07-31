@@ -29,7 +29,7 @@ export const useForgotPassword = () => {
     } catch (err: any) {
       setStatus('error');
       setError(err.message);
-      console.error('Forgot password failed:', err);
+       console.log('Forgot password failed:', err);
       onError?.(err);
     }
   };
