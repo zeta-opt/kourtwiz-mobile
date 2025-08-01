@@ -24,27 +24,24 @@ export const useCreateOpenPlaySession = () => {
   const [error, setError] = useState<string | null>(null);
 
   const createSession = async (sessionData: OpenPlaySessionData): Promise<void> => {
-    try {
-      setStatus('loading');
-      const BASE_URL = Constants.expoConfig?.extra?.apiUrl || '';
-      const token = await getToken();
-      if (!token) throw new Error('No token found');
-      await axios.post(`${BASE_URL}/api/play-type/sessions`, sessionData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Accept: '*/*',
-        },
-      });
+  setStatus('loading');
 
-      setStatus('success');
-      setError(null);
-    } catch (err: any) {
-      console.error('Create session error:', err);
-      setStatus('error');
-      setError(err.message || 'Error creating session');
-    }
-  };
+  const BASE_URL = Constants.expoConfig?.extra?.apiUrl || '';
+  const token = await getToken();
+  if (!token) throw new Error('No token found');
+
+  await axios.post(`${BASE_URL}/api/play-type/sessions`, sessionData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: '*/*',
+    },
+  });
+
+  setStatus('success');
+  setError(null);
+};
+
 
   return {
     createSession,

@@ -1,5 +1,6 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay';
+import { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 import { AppDispatch, RootState } from '@/store';
 import {
   Contact,
@@ -23,6 +24,7 @@ import {
   Animated,
   LayoutChangeEvent,
   Modal,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -38,6 +40,11 @@ import PreferredPlacesModal from '../find-player/preferred-places-modal/Preferre
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
+import StatusModal from './components/StatusModal';
+import success_image from '../../assets/images/success_image.png';
+import error_image from '../../assets/images/error_image.png';
+
+
 
 const CreateEventForm = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -74,6 +81,8 @@ const CreateEventForm = () => {
   const [repeatEndDate, setRepeatEndDate] = useState<Date | null>(null);
   const [showRepeatEndDatePicker, setShowRepeatEndDatePicker] = useState(false);
   const [contactsModalVisible, setContactsModalVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
 
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customRepeat, setCustomRepeat] = useState<
@@ -113,61 +122,91 @@ const CreateEventForm = () => {
   const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
   const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
   useEffect(() => {
-    const requestPermission = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocationPermissionGranted(status === 'granted');
-    };
-    requestPermission();
-  }, []);
+  const checkPermission = async () => {
+    const permission = getLocationPermissionType();
+    if (!permission) return;
 
+    const status = await check(permission);
+
+    if (status === RESULTS.GRANTED) {
+      setLocationPermissionGranted(true);
+    } else if (status === RESULTS.DENIED) {
+      const result = await request(permission);
+      setLocationPermissionGranted(result === RESULTS.GRANTED);
+    } else {
+      setLocationPermissionGranted(false);
+    }
+  };
+
+  checkPermission();
+}, []);
+  const getLocationPermissionType = () =>
+  Platform.select({
+    ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+    android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+  });
+
+const getContactsPermissionType = () =>
+  Platform.select({
+    ios: PERMISSIONS.IOS.CONTACTS,
+    android: PERMISSIONS.ANDROID.READ_CONTACTS,
+  });
     const showPreferredPlayers = () => {
       dispatch(openPreferredPlayersModal());
     };
   
     const handleAddContact = async () => {
-      const { status } = await Contacts.getPermissionsAsync();
-  
-      if (status === 'granted') {
-        setContactsModalVisible(true);
-      } else {
-        const { status: newStatus } = await Contacts.requestPermissionsAsync();
-  
-        if (newStatus === 'granted') {
-          setContactsModalVisible(true);
-        } else {
-          Alert.alert(
-            'Contacts Permission Required',
-            'To select contacts from your device, we need access to your contacts.',
-            [
-              {
-                text: "Don't Allow",
-              },
-              {
-                text: 'Allow',
-                onPress: async () => {
-                  const { status: finalStatus } =
-                    await Contacts.requestPermissionsAsync();
-                  if (finalStatus === 'granted') {
-                    setContactsModalVisible(true);
-                  } else {
-                    Alert.alert(
-                      'Permission Denied',
-                      'You can still select players from your preferred contacts.'
-                    );
-                  }
-                },
-              },
-            ]
-          );
-        }
-      }
-    };
-    const handleModalClose = (selectedPlace?: string) => {
-  if (selectedPlace) {
-    setPlaceToPlay(selectedPlace);
+  const permission = getContactsPermissionType();
+  if (!permission) return;
+
+  const status = await check(permission);
+
+  if (status === RESULTS.GRANTED) {
+    setContactsModalVisible(true);
+  } else if (status === RESULTS.DENIED || status === RESULTS.LIMITED) {
+    const newStatus = await request(permission);
+
+    if (newStatus === RESULTS.GRANTED) {
+      setContactsModalVisible(true);
+    } else {
+      Alert.alert(
+        'Contacts Permission Required',
+        'To select contacts from your device, we need access to your contacts.',
+        [
+          {
+            text: "Don't Allow",
+          },
+          {
+            text: 'Allow',
+            onPress: async () => {
+              const finalStatus = await request(permission);
+              if (finalStatus === RESULTS.GRANTED) {
+                setContactsModalVisible(true);
+              } else {
+                Alert.alert(
+                  'Permission Denied',
+                  'You can still select players from your preferred contacts.'
+                );
+              }
+            },
+          },
+        ]
+      );
+    }
+  } else if (status === RESULTS.BLOCKED) {
+    Alert.alert(
+      'Permission Blocked',
+      'Please enable contacts access from Settings to use this feature.'
+    );
   }
-  setModalVisible(false);
 };
+
+    const handleModalClose = (selectedPlace?: string) => {
+      if (selectedPlace) {
+        setPlaceToPlay(selectedPlace);
+      }
+      setModalVisible(false);
+    };
   
     const handleRemovePlayer = (index: number) => {
       dispatch(
@@ -265,7 +304,7 @@ const handleSubmit = async () => {
       startTime.getHours(),
       startTime.getMinutes()
     );
- 
+
     const payload: any = {
       eventName,
       ...(court?.trim() && { courtId: court.trim() }),
@@ -283,7 +322,6 @@ const handleSubmit = async () => {
         preferredPlayers: preferredContacts,
       }),
     };
-
 
     if (repeat && repeat.toUpperCase() !== 'NONE') {
       let eventRepeatType = '';
@@ -303,9 +341,8 @@ const handleSubmit = async () => {
           repeatOnDates = formatDatesArray(customRepeatDates);
         }
       } else {
-        // Standard repeat: daily, weekly, monthly
         eventRepeatType = repeat.toUpperCase();
-        console.log(repeat)
+
         if (repeat === 'WEEKLY') {
           repeatOnDays = [
             selectedDate.toLocaleDateString('en-US', {
@@ -313,6 +350,7 @@ const handleSubmit = async () => {
             }).toUpperCase(),
           ];
         }
+
         if (repeat === 'MONTHLY') {
           const date = new Date(
             selectedDate.getFullYear(),
@@ -323,10 +361,12 @@ const handleSubmit = async () => {
           );
           repeatOnDates = [formatDateToLocalISOString(date)];
         }
+
         if (repeat === 'custom' && customRepeat === 'monthly') {
           repeatOnDates = formatDatesArray(customRepeatDates);
         }
       }
+
       payload.eventRepeatType = eventRepeatType;
       payload.repeatInterval = interval;
 
@@ -342,13 +382,16 @@ const handleSubmit = async () => {
     }
 
     await createSession(payload);
-    Alert.alert('Success', 'Session created successfully');
-    console.log(payload);
+    setSuccessVisible(true);
+    console.log('Payload:', payload);
+
   } catch (err: any) {
     console.error('Error creating session:', err);
-    Alert.alert('Error', err.message || 'Failed to create session');
+    setErrorMessage(err.message || 'Failed to create session');
+    setErrorVisible(true);
   }
 };
+
 
   return (
     <>
@@ -654,6 +697,25 @@ const handleSubmit = async () => {
             </View>
           </View>
         </Modal>
+        <StatusModal
+        visible={successVisible}
+        onClose={() => setSuccessVisible(false)}
+        imageSource={success_image}
+        title="Event Created Successfully!"
+        description="You can now share the event, view details, or make changes anytime."
+        buttonText="Got It"
+        buttonColor="#00796B"
+      />
+
+      <StatusModal
+        visible={errorVisible}
+        onClose={() => setErrorVisible(false)}
+        imageSource={error_image}
+        title="Event Not Created."
+        description="Please review your details and try again. If the issue continues, contact support."
+        buttonText="Try Again"
+        buttonColor="#E53935"
+      />
       </SafeAreaView>
     </>
   );
@@ -683,13 +745,18 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   modalWrapper: {
-    marginVertical: 40,
-    width: '100%',
-    minHeight: '90%',
-  },
+  width: '100%',
+  maxHeight: '100%',
+  backgroundColor: 'white',
+  borderRadius: 16,
+  padding: 16,
+  alignSelf: 'center',
+},
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   mainHeader: {
     paddingVertical: 16,
@@ -821,18 +888,20 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   subText: {
-    fontSize: 13,
-    color: '#666',
-    textAlign: 'center',
-    marginVertical: 8,
-  },
+  fontSize: 13,
+  color: '#666',
+  textAlign: 'center',
+  marginTop: 20,
+  marginBottom: 10,
+},
   pickerWrapper1: {
     backgroundColor: '#f8f8f8',
     borderRadius: 10,
     marginVertical: 10,
   },
   picker: {
-    height: 70,
+  height: Platform.OS === 'ios' ? 200 : 70,
+  width: '100%',
   },
   dayList: {
     marginTop: 10,
@@ -860,6 +929,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginTop: 12,
+    marginBottom:12,
     alignItems: 'center',
   },
   cancelText: {

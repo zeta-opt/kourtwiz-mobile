@@ -1,6 +1,7 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { useRequestPlayerFinder } from '@/hooks/apis/player-finder/useRequestPlayerFinder';
 import { AppDispatch, RootState } from '@/store';
+import { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 import {
   Contact,
   loadContacts,
@@ -24,6 +25,7 @@ import {
   Alert,
   Animated,
   LayoutChangeEvent,
+  Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -63,7 +65,6 @@ const FindPlayerLayout = () => {
     user?.playerDetails?.personalRating ?? 3
   );
   const [playerCount, setPlayerCount] = useState(1);
-  const [contactsModalVisible, setContactsModalVisible] = useState(false);
   const [conflictDialogVisible, setConflictDialogVisible] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -75,13 +76,10 @@ const FindPlayerLayout = () => {
     (state: RootState) => state.playerFinder.preferredContacts
   );
   console.log(preferredContacts);
-  const [locationPermissionGranted, setLocationPermissionGranted] = useState<
-    boolean | null
-  >(null);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean | null>(null);
+  const [contactsModalVisible, setContactsModalVisible] = useState(false);
 
-  const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
-  const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
-
+  const { preferredPlaceModal, preferredPlayersModal } = useSelector((state: RootState) => state.ui);
   const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
 
   // Check location permission status on mount
@@ -93,26 +91,46 @@ const FindPlayerLayout = () => {
     dispatch(loadContacts());
   }, [dispatch]);
 
-  const checkLocationPermission = async () => {
-    const { status } = await Location.getForegroundPermissionsAsync();
-    setLocationPermissionGranted(status === 'granted');
+  const getLocationPermissionType = () => {
+    return Platform.select({
+      ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+      android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+    });
   };
 
-  const handleClubDetailsClick = async () => {
-    // First check if we already have permission
-    const { status: currentStatus } =
-      await Location.getForegroundPermissionsAsync();
+  const getContactsPermissionType = () => {
+    return Platform.select({
+      ios: PERMISSIONS.IOS.CONTACTS,
+      android: PERMISSIONS.ANDROID.READ_CONTACTS,
+    });
+  };
 
-    if (currentStatus !== 'granted') {
-      // Request permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
+  const checkLocationPermission = async () => {
+    const permission = getLocationPermissionType();
+    if (!permission) return;
 
-      if (status === 'granted') {
+    const status = await check(permission);
+    setLocationPermissionGranted(status === RESULTS.GRANTED);
+  };
+
+    const handleClubDetailsClick = async () => {
+    const permission = getLocationPermissionType();
+    if (!permission) return;
+
+    const status = await check(permission);
+
+    if (status === RESULTS.GRANTED) {
+      setLocationPermissionGranted(true);
+      dispatch(openPreferredPlaceModal());
+      return;
+    }
+
+    if (status === RESULTS.DENIED || status === RESULTS.LIMITED) {
+      const result = await request(permission);
+
+      if (result === RESULTS.GRANTED) {
         setLocationPermissionGranted(true);
-        // Open modal after permission granted
         dispatch(openPreferredPlaceModal());
-
-        // Show info about nearby places
         Alert.alert(
           'Location Access Granted',
           'You can now search for nearby courts in addition to your preferred places!',
@@ -121,16 +139,17 @@ const FindPlayerLayout = () => {
       } else {
         setLocationPermissionGranted(false);
         dispatch(openPreferredPlaceModal());
-
         Alert.alert(
           'Location Access Denied',
           'You can still choose from your preferred places, but nearby court search will not be available.',
           [{ text: 'OK' }]
         );
       }
-    } else {
-      setLocationPermissionGranted(true);
-      dispatch(openPreferredPlaceModal());
+    } else if (status === RESULTS.BLOCKED) {
+      Alert.alert(
+        'Permission Blocked',
+        'Please enable location access from Settings to use nearby court search.'
+      );
     }
   };
 
@@ -139,29 +158,32 @@ const FindPlayerLayout = () => {
   };
 
   const handleAddContact = async () => {
-    const { status } = await Contacts.getPermissionsAsync();
+    const permission = getContactsPermissionType();
+    if (!permission) return;
 
-    if (status === 'granted') {
+    const status = await check(permission);
+
+    if (status === RESULTS.GRANTED) {
       setContactsModalVisible(true);
-    } else {
-      const { status: newStatus } = await Contacts.requestPermissionsAsync();
+      return;
+    }
 
-      if (newStatus === 'granted') {
+    if (status === RESULTS.DENIED || status === RESULTS.LIMITED) {
+      const result = await request(permission);
+
+      if (result === RESULTS.GRANTED) {
         setContactsModalVisible(true);
       } else {
         Alert.alert(
           'Contacts Permission Required',
           'To select contacts from your device, we need access to your contacts.',
           [
-            {
-              text: "Don't Allow",
-            },
+            { text: "Don't Allow" },
             {
               text: 'Allow',
               onPress: async () => {
-                const { status: finalStatus } =
-                  await Contacts.requestPermissionsAsync();
-                if (finalStatus === 'granted') {
+                const retryResult = await request(permission);
+                if (retryResult === RESULTS.GRANTED) {
                   setContactsModalVisible(true);
                 } else {
                   Alert.alert(
@@ -174,8 +196,14 @@ const FindPlayerLayout = () => {
           ]
         );
       }
+    } else if (status === RESULTS.BLOCKED) {
+      Alert.alert(
+        'Permission Blocked',
+        'Please enable contacts access from Settings to use this feature.'
+      );
     }
   };
+
 
   const handleRemovePlayer = (index: number) => {
     dispatch(

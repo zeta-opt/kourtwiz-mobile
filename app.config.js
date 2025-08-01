@@ -1,10 +1,12 @@
 import 'dotenv/config';
+import { runtimeVersion } from 'expo-updates';
 
 export default {
   expo: {
     name: 'kourtwiz-mobile',
     slug: 'kourtwiz-mobile',
-    version: '1.0.1', // User-facing version
+    version: '1.0.1',
+    runtimeVersion:'1.0.1', // User-facing version
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'kourtwizmobile',
@@ -14,20 +16,24 @@ export default {
       url: 'https://u.expo.dev/0c917ae5-4e2b-4c2b-bef1-928702cf4737',
     },
 
-    runtimeVersion: {
-      policy: 'appVersion', // Uses version field for runtime versioning (EAS Update compatible)
-    },
+    // runtimeVersion: {
+    //   policy: 'appVersion', // Uses version field for runtime versioning (EAS Update compatible)
+    // },
 
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.kourtwiz.mobile',
       buildNumber: '1.0.0', // Bump on each new iOS build
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription: 'We need your location to show nearby courts.',
+        NSContactsUsageDescription: 'We need your contacts to help you invite players.',
+      },
     },
 
     android: {
       package: 'com.kourtwiz.mobile',
       versionCode: 1,
-      permissions: ['READ_CONTACTS'],
+      permissions: ['READ_CONTACTS', 'ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION'],
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#ffffff',
