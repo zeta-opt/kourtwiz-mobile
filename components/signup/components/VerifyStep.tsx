@@ -21,25 +21,26 @@ import {
 } from "../api/api";
 import { useSignup } from "../SignupContext";
 
-const schema = z.object({
-  phone: z.string().min(10, "Phone number is required"),
-  phoneOtp: z.string().length(6, "OTP must be 6 digits"),
-  email: z.string().email("Invalid email address"),
-  emailOtp: z.string().length(6, "OTP must be 6 digits"),
-});
+const phoneOnlySchema = z
+  .string()
+  .min(8, "Phone number must be at least 8 digits")
+  .max(15, "Phone number must be at most 13 digits")
 
 const ContactDetails = ({ onNext }: { onNext: () => void }) => {
-  const { updateData } = useSignup();
+  const { data, updateData } = useSignup();
   const phoneInputRef = useRef<PhoneInput>(null);
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(data.phone || "");
+  const [email, setEmail] = useState(data.email || "");
   const [phoneOtp, setPhoneOtp] = useState("");
-  const [email, setEmail] = useState("");
   const [emailOtp, setEmailOtp] = useState("");
 
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(!!data.phone);
+  const [emailVerified, setEmailVerified] = useState(!!data.email);
+
+  const [isPhoneEditable, setIsPhoneEditable] = useState(false);
+  const [isEmailEditable, setIsEmailEditable] = useState(false);
 
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState({});
@@ -54,6 +55,18 @@ const ContactDetails = ({ onNext }: { onNext: () => void }) => {
     onError: () => Alert.alert("Error", "Failed to send phone OTP"),
   });
 
+  const handleSendPhoneOtp = () => {
+    const result = phoneOnlySchema.safeParse(phone);
+  
+    if (!result.success) {
+      setErrors((prev) => ({ ...prev, phone: result.error.errors[0].message }));
+      return;
+    }
+  
+    setErrors((prev) => ({ ...prev, phone: "" }));
+    sendPhoneOtpMutation.mutate();
+  };  
+
   const validatePhoneOtpMutation = useMutation({
     mutationFn: () => validatePhoneOtp(phone, phoneOtp),
     onSuccess: () => {
@@ -67,7 +80,7 @@ const ContactDetails = ({ onNext }: { onNext: () => void }) => {
     onError: () => {
       setFailMsg((prev) => ({
         ...prev,
-        phone: "Invalid OTP. Please contact support.",
+        phone: "Invalid OTP",
       }));
       setSuccessMsg((prev) => ({ ...prev, phone: "" }));
     },
@@ -95,7 +108,7 @@ const ContactDetails = ({ onNext }: { onNext: () => void }) => {
     onError: () => {
       setFailMsg((prev) => ({
         ...prev,
-        email: "Invalid OTP. Please contact support.",
+        email: "Invalid OTP",
       }));
       setSuccessMsg((prev) => ({ ...prev, email: "" }));
     },
@@ -130,22 +143,48 @@ const ContactDetails = ({ onNext }: { onNext: () => void }) => {
       >
         <Text style={styles.title}>Contact Details</Text>
         <View style={styles.card}>
-          <Text style={styles.label}>Phone Number</Text>
-          <PhoneInput
-            ref={phoneInputRef}
-            defaultCode="US"
-            layout="first"
-            onChangeFormattedText={setPhone}
-            containerStyle={styles.phoneContainer}
-            textContainerStyle={styles.textInput}
-            textInputStyle={styles.phoneTextInput}
-          />
+          <Text style={styles.label}>Phone Number <Text style={{color: 'red'}}>*</Text></Text>
+          <View style={{ position: 'relative' }}>
+          {phoneVerified && !isPhoneEditable ? (
+            // Show formatted number as plain styled Text
+            <View style={styles.phoneContainer}>
+              <View style={styles.verifiedInput}>
+                <Text style={styles.verifiedPhoneText}>{phone}</Text>
+              </View>
+            </View>
+          ) : (
+            // Show PhoneInput if not verified or editable
+            <PhoneInput
+              ref={phoneInputRef}
+              defaultCode="US" // You can safely default this for new numbers
+              layout="first"
+              onChangeFormattedText={setPhone}
+              containerStyle={styles.phoneContainer}
+              textContainerStyle={styles.textInput}
+              textInputStyle={styles.phoneTextInput}
+              disableArrowIcon={phoneVerified && !isPhoneEditable}
+            />
+          )}
+            {(phoneVerified && !isPhoneEditable) && (
+                <View style={styles.disabledOverlay} pointerEvents="auto" />
+            )}
+          </View>
           {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
           {failMsg.phone && (
             <Text style={styles.failText}>{failMsg.phone}</Text>
           )}
           {successMsg.phone && (
             <Text style={styles.successText}>{successMsg.phone}</Text>
+          )}
+          {phoneVerified && !isPhoneEditable && (
+            <TouchableOpacity onPress={() => {
+              setIsPhoneEditable(true);
+              setPhoneVerified(false);
+              setPhoneOtpSent(false);
+              setPhoneOtp("");
+            }}>
+              <Text style={styles.otpLink}>Change</Text>
+            </TouchableOpacity>
           )}
 
           {!phoneVerified && phoneOtpSent && (
@@ -162,26 +201,34 @@ const ContactDetails = ({ onNext }: { onNext: () => void }) => {
               {errors.phoneOtp && (
                 <Text style={styles.errorText}>{errors.phoneOtp}</Text>
               )}
-              <TouchableOpacity onPress={handlePhoneOtpVerify}>
-                <Text style={styles.otpLink}>Verify Phone</Text>
-              </TouchableOpacity>
+              
+              <View style={styles.otpButtonsContainer}>
+                <TouchableOpacity onPress={handleSendPhoneOtp}>
+                  <Text style={styles.otpLink}>Resend OTP</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={handlePhoneOtpVerify}>
+                  <Text style={styles.otpLink}>Verify Phone</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
 
-          {!phoneOtpSent && !phoneVerified && (
-            <TouchableOpacity onPress={() => sendPhoneOtpMutation.mutate()}>
+          {!phoneVerified && !phoneOtpSent && (
+            <TouchableOpacity onPress={handleSendPhoneOtp}>
               <Text style={styles.otpLink}>Send OTP</Text>
             </TouchableOpacity>
           )}
 
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>Email <Text style={{color: 'red'}}>*</Text></Text>
           <TextInput
-            style={[styles.input, errors.email && styles.errorInput]}
+            style={[styles.input, errors.email && styles.errorInput, emailVerified && styles.disabledInput,]}
             placeholder="Email"
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
-          />
+            editable={!emailVerified || isEmailEditable}
+            />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           {failMsg.email && (
             <Text style={styles.failText}>{failMsg.email}</Text>
@@ -189,6 +236,16 @@ const ContactDetails = ({ onNext }: { onNext: () => void }) => {
           {successMsg.email && (
             <Text style={styles.successText}>{successMsg.email}</Text>
           )}
+          {emailVerified && !isEmailEditable && (
+              <TouchableOpacity onPress={() => {
+                setIsEmailEditable(true);
+                setEmailVerified(false);
+                setEmailOtpSent(false);
+                setEmailOtp("");
+              }}>
+                <Text style={styles.otpLink}>Change</Text>
+              </TouchableOpacity>
+            )}
 
           {!emailVerified && emailOtpSent && (
             <>
@@ -204,17 +261,22 @@ const ContactDetails = ({ onNext }: { onNext: () => void }) => {
               {errors.emailOtp && (
                 <Text style={styles.errorText}>{errors.emailOtp}</Text>
               )}
-              <TouchableOpacity onPress={handleEmailOtpVerify}>
-                <Text style={styles.otpLink}>Verify Email</Text>
-              </TouchableOpacity>
+
+              <View style={styles.otpButtonsContainer}>
+                <TouchableOpacity onPress={() => sendEmailOtpMutation.mutate()}>
+                  <Text style={styles.otpLink}>Resend OTP</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={handleEmailOtpVerify}>
+                  <Text style={styles.otpLink}>Verify Email</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
 
-          {!emailVerified && (
+          {!emailVerified && !emailOtpSent && (
             <TouchableOpacity onPress={() => sendEmailOtpMutation.mutate()}>
-              <Text style={styles.otpLink}>
-                {emailOtpSent ? "Resend OTP" : "Send OTP"}
-              </Text>
+              <Text style={styles.otpLink}>Send OTP</Text>
             </TouchableOpacity>
           )}
 
@@ -226,7 +288,7 @@ const ContactDetails = ({ onNext }: { onNext: () => void }) => {
                 onNext();
               }}
             >
-              <Text style={styles.nextText}>Next</Text>
+              <Text style={styles.nextText}>Save & Next</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -253,6 +315,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 24,
     padding: 20,
+    overflow: "hidden",
   },
   label: {
     fontSize: 16,
@@ -279,7 +342,7 @@ const styles = StyleSheet.create({
     borderColor: "#eee",
     backgroundColor: "#f9f9f9",
     height: 56,
-    overflow: "hidden",
+    width: '100%',
   },
   textInput: {
     borderRadius: 12,
@@ -294,15 +357,39 @@ const styles = StyleSheet.create({
     color: "#000",
     height: 56,
   },
+  verifiedInput: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  verifiedPhoneText: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#000',
+  },  
+  otpButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
   otpLink: {
     color: "#3F7CFF",
     fontWeight: "600",
-    marginTop: 6,
-  },
+    marginTop: 10,
+  },  
   errorText: {
     color: "red",
     fontSize: 13,
     marginTop: 4,
+  },
+  disabledInput: {
+    backgroundColor: "#ddd",
+    color: "#888",
+  },  
+  disabledOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    zIndex: 10,
   },
   successText: {
     color: "green",

@@ -7,15 +7,16 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import { useSignup } from '../SignupContext';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 
 const PictureStep = ({ onNext, onBack }) => {
-  const { updateData } = useSignup();
+  const { data, updateData } = useSignup();
   const [imageUri, setImageUri] = useState(null);
-  const [selectedTime, setSelectedTime] = useState('');
-  const [rating, setRating] = useState(0);
+  const [selectedTime, setSelectedTime] = useState(data.preferredTime || "");
+  const [rating, setRating] = useState(data.rating);
 
   const handleImagePick = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -68,18 +69,28 @@ const PictureStep = ({ onNext, onBack }) => {
           ))}
         </View>
 
-        <Text style={styles.label}>Player Rating</Text>
-        <View style={styles.ratingRow}>
-          {[1, 2, 3, 4, 5].map((star) => (
-            <TouchableOpacity key={star} onPress={() => setRating(star)}>
-              <Ionicons
-                name={star <= rating ? 'star' : 'star-outline'}
-                size={32}
-                color={star <= rating ? '#FFD700' : '#ccc'}
-              />
-            </TouchableOpacity>
+        <Text style={styles.label}>Player Rating: {rating.toFixed(1)}</Text>
+        {/* <View style={styles.ratingRow}>
+          {[1, 2, 3, 4, 5, 6].map((star) => (
+            <Ionicons
+              key={star}
+              name={star <= Math.floor(rating) ? 'star' : 'star-outline'}
+              size={32}
+              color={star <= Math.floor(rating) ? '#FFD700' : '#ccc'}
+            />
           ))}
-        </View>
+        </View> */}
+
+        <Slider
+          style={{ width: '100%', height: 40 }}
+          minimumValue={1}
+          maximumValue={6}
+          step={0.1}
+          value={rating}
+          onValueChange={setRating}
+          minimumTrackTintColor="#FFD700"
+          maximumTrackTintColor="#ccc"
+        />
 
         <View style={styles.navigationRow}>
           <Button title="Back" onPress={onBack} />

@@ -65,7 +65,9 @@ const SecurityStep = ({ onNext, onBack }) => {
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Security</Text>
         <View style={styles.card}>
-          <Text style={styles.label}>Password</Text>
+          <Text style={styles.label}>
+            Password <Text style={{color: 'red'}}>*</Text>
+            </Text>
           <View style={styles.passwordInputWrapper}>
             <TextInput
               style={styles.input}
@@ -80,7 +82,9 @@ const SecurityStep = ({ onNext, onBack }) => {
           </View>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
-          <Text style={styles.label}>Confirm Password</Text>
+          <Text style={styles.label}>
+            Confirm Password <Text style={{color: 'red'}}>*</Text>
+            </Text>
           <View style={styles.passwordInputWrapper}>
             <TextInput
               style={styles.input}

@@ -10,8 +10,6 @@ import Stepper from "./components/Stepper";
 import VerifyStep from "./components/VerifyStep";
 import styles from "./SignupFlow.styles";
 
-const steps = ["Info", "Verify", "Security", "Address", "Picture", "Done"];
-
 const SignupFlow = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const queryClient = new QueryClient();
@@ -31,7 +29,7 @@ const SignupFlow = () => {
       case 4:
         return <PictureStep onNext={goToNext} onBack={goToPrev} />;
       case 5:
-        return <DoneStep />;
+        return <DoneStep onRetry={(step: number) => setCurrentStep(step)} />;
       default:
         return null;
     }

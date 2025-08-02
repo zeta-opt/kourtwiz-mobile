@@ -92,19 +92,28 @@ const UserProfile = () => {
     ]);
   };
 
-const handleDelete = async () => {
-  try {
-    if (!userData.userId) {
-      console.error('User ID not found.');
+  const handleDelete = async () => {
+    if (!userData?.userId) {
+      console.error("User ID not found.");
       return;
     }
-    await deleteUserById(userData.userId);
-    setModalVisible(false);
-    router.replace('/');
-  } catch (err) {
-    console.error('Failed to delete user:', err);
-  }
-};
+  
+    try {
+      await deleteUserById(userData.userId);
+  
+      // Clear Redux user/auth state
+      dispatch(logout());
+  
+      // Close modal and redirect
+      setModalVisible(false);
+      router.replace("/");
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+  
+      // Optional: Show user-friendly error message
+      Alert.alert("Error", "Something went wrong while deleting your account.");
+    }
+  };  
 
   useEffect(() => {
     const loginAndGetToken = async () => {
@@ -226,9 +235,9 @@ const handleDelete = async () => {
         <Text style={styles.inputReadonly}>{userData.phoneNumber}</Text>
 
         <Text style={styles.sectionTitle}>SKILL RATING</Text>
-          <Text style={[styles.inputReadonly, {backgroundColor: '#fffadc',}]}>
-            {userData.skillLevel ?? 0}
-          </Text>
+        <Text style={[styles.inputReadonly, {backgroundColor: '#fffadc',}]}>
+          {Number(userData.skillLevel ?? 1).toFixed(1)}
+        </Text>
       </View>
 
       {/* PLAY PREFERENCES */}

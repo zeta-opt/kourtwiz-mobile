@@ -11,20 +11,27 @@ import {
 } from 'react-native';
 import { useSignup } from '../SignupContext';
 
-const DoneStep = () => {
+interface DoneStepProps {
+  onRetry: (stepIndex: number) => void;
+}
+
+const DoneStep = ({ onRetry }: DoneStepProps) => {
   const { data } = useSignup();
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryStep, setRetryStep] = useState<number | null>(null);
   const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
   useEffect(() => {
     if (!data.email || !data.phone) {
       console.error('Missing required fields: email or phone');
-      setError(true);
+      setError('Missing required fields. Please go back and try again.');
+      setRetryStep(0);
       setLoading(false);
       return;
     }
+
     const payload = {
       email: data.email,
       name: data.fullName,
@@ -54,9 +61,17 @@ const DoneStep = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-      .then((res) => {
+      .then(async (res) => {
         console.log('Signup API response status:', res.status);
-        if (!res.ok) throw new Error('Signup failed');
+
+        if (res.status === 409) {
+          throw new Error('EMAIL_ALREADY_EXISTS');
+        }
+
+        if (!res.ok) {
+          throw new Error('SIGNUP_FAILED');
+        }
+
         return res.json();
       })
       .then((responseJson) => {
@@ -66,10 +81,24 @@ const DoneStep = () => {
       })
       .catch((err) => {
         console.error('Signup API error:', err);
+
+        if (err.message === 'EMAIL_ALREADY_EXISTS') {
+          setError('An account already exists with this email address.');
+          setRetryStep(1);
+        } else {
+          setError('Signup failed. Please check if all the required fields are filled, or call support.');
+          setRetryStep(0);
+        }
+
         setLoading(false);
-        setError(true);
       });
   }, [data, BASE_URL]);
+
+  const handleGoBack = () => {
+    if (retryStep !== null) {
+      onRetry(retryStep);
+    }
+  };
 
   const handleDone = () => {
     if (success) {
@@ -83,7 +112,7 @@ const DoneStep = () => {
       <View style={styles.card}>
         {loading ? (
           <>
-            <ActivityIndicator size='large' color='#116AAD' />
+            <ActivityIndicator size="large" color="#116AAD" />
             <Text style={styles.infoText}>Creating Profile...</Text>
             <View style={[styles.doneBtn, { backgroundColor: '#ccc' }]}>
               <Text style={styles.doneText}>Done</Text>
@@ -102,13 +131,13 @@ const DoneStep = () => {
           </>
         ) : (
           <>
-            <Text style={styles.errorText}>
-              ❌ Error during signup. Please contact the administrator or call
-              support.
-            </Text>
-            <View style={[styles.doneBtn, { backgroundColor: '#ccc' }]}>
-              <Text style={styles.doneText}>Done</Text>
-            </View>
+            <Text style={styles.errorText}>❌ {error}</Text>
+            <TouchableOpacity
+              style={[styles.doneBtn, { backgroundColor: '#FF5252' }]}
+              onPress={handleGoBack}
+            >
+              <Text style={styles.doneText}>Go Back</Text>
+            </TouchableOpacity>
           </>
         )}
       </View>

@@ -136,7 +136,9 @@ const AddressStep = ({
         <View style={styles.card}>
           {!showPlaces ? (
             <>
-              <Text style={styles.label}>ZIP Code</Text>
+              <Text style={styles.label}>
+                ZIP Code <Text style={{color: 'red'}}>*</Text>
+              </Text>
               <TextInput
                 style={styles.input}
                 value={zip}
@@ -147,7 +149,9 @@ const AddressStep = ({
               />
               {errors.zip && <Text style={styles.errorText}>{errors.zip}</Text>}
 
-              <Text style={styles.label}>Address</Text>
+              <Text style={styles.label}>
+                Address <Text style={{color: 'red'}}>*</Text>
+              </Text>
               <TextInput
                 style={styles.input}
                 value={address}
@@ -193,7 +197,7 @@ const AddressStep = ({
           <View style={styles.buttonRow}>
             {!showPlaces && <Button title='Back' onPress={onBack} />}
             <Button
-              title={showPlaces ? 'Confirm and Continue' : 'Next'}
+              title={selectedPlaces.length === 0 ? 'Next' : 'Confirm and Continue'}
               onPress={handleNext}
             />
           </View>

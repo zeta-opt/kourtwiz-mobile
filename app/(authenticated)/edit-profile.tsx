@@ -345,8 +345,8 @@ const EditProfile = () => {
         <View style={styles.sliderContainer}>
           <Slider
             style={{ flex: 1 }}
-            minimumValue={0}
-            maximumValue={5}
+            minimumValue={1}
+            maximumValue={6}
             step={0.1}
             value={userData.skillLevel}
             minimumTrackTintColor='#3E6370'

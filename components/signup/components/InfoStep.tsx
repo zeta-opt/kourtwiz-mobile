@@ -12,11 +12,17 @@ import {
 } from "react-native";
 import { z } from "zod";
 import { useSignup } from "../SignupContext";
-import { Card } from "react-native-paper";
 import { Picker } from "@react-native-picker/picker";
 
 const schema = z.object({
-  fullName: z.string().min(1, "Full name is required"),
+  fullName: z
+    .string()
+    .refine((val) => val.trim() !== "", {
+      message: "Full name is required",
+    })
+    .refine((val) => /^[A-Za-z\s]+$/.test(val), {
+      message: "Only letters and spaces allowed",
+    }),
   gender: z.enum(["Male", "Female", "Other"], {
     errorMap: () => ({ message: "Please select your gender" }),
   }),
@@ -75,7 +81,7 @@ const InfoStep = ({ onNext }: { onNext: () => void }) => {
       >
         <Text style={styles.title}>Personal Info</Text>
         <View style={styles.card}>
-          <Text style={styles.label}>Full Name</Text>
+          <Text style={styles.label}>Full Name <Text style={{color: 'red'}}>*</Text></Text>
           <TextInput
             style={styles.input}
             placeholder="Full Name"
@@ -85,7 +91,7 @@ const InfoStep = ({ onNext }: { onNext: () => void }) => {
           />
           {errors.fullName && <Text style={styles.error}>{errors.fullName}</Text>}
 
-          <Text style={styles.label}>Date of Birth</Text>
+          <Text style={styles.label}>Date of Birth <Text style={{color: 'red'}}>*</Text></Text>
           <View style={styles.dobRow}>
             <View style={styles.pickerWrapper}>
               <Picker
@@ -124,7 +130,7 @@ const InfoStep = ({ onNext }: { onNext: () => void }) => {
           </View>
           {errors.dob && <Text style={styles.error}>{errors.dob}</Text>}
 
-          <Text style={styles.label}>Gender</Text>
+          <Text style={styles.label}>Gender <Text style={{color: 'red'}}>*</Text></Text>
           <View style={styles.genderRow}>
             {["Male", "Female", "Other"].map((g) => (
               <TouchableOpacity
