@@ -152,6 +152,9 @@ const FindPlayerLayout = () => {
       );
     }
   };
+  const handleAddPlace = () => {
+    router.push('/(authenticated)/add-place');
+  };
 
   const showPreferredPlayers = () => {
     dispatch(openPreferredPlayersModal());
@@ -381,6 +384,7 @@ const FindPlayerLayout = () => {
             icon='plus'
             size={24}
             iconColor='white'
+            onPress={handleAddPlace}
             style={styles.disabledPlus}
           />
           <PreferredPlacesModal
