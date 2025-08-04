@@ -3,9 +3,6 @@ import { AppDispatch, RootState } from '@/store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as Contacts from 'expo-contacts';
-import { Platform } from 'react-native';
-import { check, PERMISSIONS, request, RESULTS } from 'react-native-permissions';
-
 
 const CONTACT_LIST_KEY = 'cachedContactList';
 
@@ -40,16 +37,6 @@ const initialState: PlayerFinderState = {
   contactList: [],
   isContactLoading: false,
 };
-
-const getContactPermissionType = () => {
-  if (Platform.OS === 'android') {
-    return PERMISSIONS.ANDROID.READ_CONTACTS;
-  } else if (Platform.OS === 'ios') {
-    return PERMISSIONS.IOS.CONTACTS;
-  }
-  return null;
-};
-
 
 const playerFinderDataSlice = createSlice({
   name: 'playerFinderData',
@@ -149,15 +136,16 @@ export const loadContacts =
   (forceRefresh = false) =>
   async (dispatch: AppDispatch, getState: () => RootState) => {
     dispatch(setContactLoading(true));
-
     try {
       const currentList = getState().playerFinder.contactList;
 
+      // If contacts already loaded and not forcing refresh, use existing
       if (!forceRefresh && currentList.length > 0) {
         dispatch(setContactLoading(false));
         return;
       }
 
+      // Try loading from cache first
       const cachedJson = await AsyncStorage.getItem(CONTACT_LIST_KEY);
       if (cachedJson && !forceRefresh) {
         const cachedContacts = JSON.parse(cachedJson);
@@ -165,21 +153,12 @@ export const loadContacts =
         return;
       }
 
-      // Check and request permissions using react-native-permissions
-      const permission = getContactPermissionType();
-      if (!permission) throw new Error('Unsupported platform for contacts');
-
-      let status = await check(permission);
-
-      if (status === RESULTS.DENIED || status === RESULTS.LIMITED) {
-        status = await request(permission);
-      }
-
-      if (status !== RESULTS.GRANTED) {
+      // Request permission to access device contacts
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
         throw new Error('Permission to access contacts was denied');
       }
 
-      // Permission granted – load contacts
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.PhoneNumbers],
       });
@@ -190,7 +169,6 @@ export const loadContacts =
           .toLowerCase()
           .localeCompare((b.contactName || '').toLowerCase())
       );
-
       dispatch(setContactList(simplified));
     } catch (error) {
       console.error('Failed to load contacts from storage', error);

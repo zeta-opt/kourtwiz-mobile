@@ -1,7 +1,5 @@
 import { useGetSearchPlaces } from '@/hooks/apis/player-finder/useGetSearchPlaces';
 import { setPlaceToPlay } from '@/store/playerFinderSlice';
-import { Platform } from 'react-native';
-import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
 import {
@@ -23,54 +21,28 @@ const SearchPlacesModal = ({ visible, handleClose }: Props) => {
   const [query, setQuery] = useState('');
   type Coordinates = { lat: number; lng: number } | null;
   const [coords, setCoords] = useState<Coordinates>(null);
-  const getLocationPermissionType = () => {
-  if (Platform.OS === 'android') {
-    return PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
-  } else if (Platform.OS === 'ios') {
-    return PERMISSIONS.IOS.LOCATION_WHEN_IN_USE;
-  }
-  return null;
-};
 
   // Fetch user location on mount
   useEffect(() => {
     if (!visible) return;
 
     const getLocation = async () => {
-      const permission = getLocationPermissionType();
-      if (!permission) return;
-
-      const status = await check(permission);
-
-      if (status === RESULTS.GRANTED) {
-        await fetchLocation();
-      } else if (status === RESULTS.DENIED || status === RESULTS.LIMITED) {
-        const result = await request(permission);
-        if (result === RESULTS.GRANTED) {
-          await fetchLocation();
-        } else {
-          console.warn('Location permission denied');
-        }
-      } else if (status === RESULTS.BLOCKED) {
-        console.warn('Location permission blocked. Prompt user to enable it in settings.');
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('Location Permission Status:', status);
+      if (status !== 'granted') {
+        console.warn('Permission to access location was denied');
+        return;
       }
-    };
 
-    const fetchLocation = async () => {
-      try {
-        const location = await Location.getCurrentPositionAsync({});
-        setCoords({
-          lat: location.coords.latitude,
-          lng: location.coords.longitude,
-        });
-      } catch (err) {
-        console.error('Failed to get location:', err);
-      }
+      const location = await Location.getCurrentPositionAsync({});
+      setCoords({
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      });
     };
 
     getLocation();
   }, [visible]);
-
 
   useEffect(() => {
     if (coords?.lat && coords?.lng) {

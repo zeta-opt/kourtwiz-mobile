@@ -1,7 +1,5 @@
 import * as Contacts from 'expo-contacts';
 import React, { useEffect, useState } from 'react';
-import { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
-import { Platform } from 'react-native';
 import {
   ActivityIndicator,
   Alert,
@@ -54,11 +52,6 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   const [tempSelectedContacts, setTempSelectedContacts] =
     useState<Contact[]>(selectedContacts);
   const [loading, setLoading] = useState(false);
-  const getContactsPermissionType = () =>
-  Platform.select({
-    ios: PERMISSIONS.IOS.CONTACTS,
-    android: PERMISSIONS.ANDROID.READ_CONTACTS,
-  });
 
   useEffect(() => {
     if (visible) {
@@ -66,64 +59,56 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
       setTempSelectedContacts(selectedContacts);
     }
   }, [visible, selectedContacts]);
-  const fetchContacts = async () => {
-  const { data } = await Contacts.getContactsAsync({
-    fields: [Contacts.Fields.PhoneNumbers],
-  });
 
-  if (data.length > 0) {
-    const formatted = data.map((c) => ({
-      id: c.id,
-      name: c.name,
-      phoneNumbers: c.phoneNumbers,
-    }));
-    setDeviceContacts(formatted);
-  }
-};
   const loadContacts = async () => {
     setLoading(true);
     try {
-      const permission = getContactsPermissionType();
-      if (!permission) return;
-
-      const status = await check(permission);
-
-      if (status === RESULTS.GRANTED) {
-        await fetchContacts();
-      } else if (status === RESULTS.DENIED || status === RESULTS.LIMITED) {
-        const result = await request(permission);
-        if (result === RESULTS.GRANTED) {
-          await fetchContacts();
-        } else {
-          Alert.alert(
-            'Permission Denied',
-            'Contact permission is required to load your contacts.',
-            [{ text: 'OK', onPress: () => onClose() }]
-          );
-        }
-      } else if (status === RESULTS.BLOCKED) {
+      // Double-check permission before loading
+      const { status } = await Contacts.getPermissionsAsync();
+      if (status !== 'granted') {
         Alert.alert(
-          'Permission Blocked',
-          'Contact access is blocked. Please enable it in Settings.',
+          'Permission Required',
+          'Contact permission is required to load your contacts.',
+          [{ text: 'OK', onPress: () => onClose() }]
+        );
+        return;
+      }
+
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+        sort: Contacts.SortTypes.FirstName,
+      });
+
+      // Transform expo contacts to our format
+      const transformedContacts: DeviceContact[] = data
+        .filter((contact) => contact.name) // Only contacts with names
+        .map((contact) => ({
+          id: contact.id || `contact-${Math.random()}`,
+          name: contact.name || 'Unknown',
+          phoneNumbers: contact.phoneNumbers,
+        }));
+
+      setDeviceContacts(transformedContacts);
+    } catch (error: any) {
+      console.error('Error loading contacts:', error);
+
+      // Check if it's a permission error
+      if (error.message && error.message.includes('permission')) {
+        Alert.alert(
+          'Permission Error',
+          'Unable to access contacts. Please ensure you have granted contact permissions in your device settings.',
           [
-            { text: 'Cancel', style: 'cancel', onPress: () => onClose() },
-            {
-              text: 'Open Settings',
-              onPress: () => Linking.openSettings(),
-            },
+            { text: 'Cancel', onPress: () => onClose() },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
           ]
         );
+      } else {
+        Alert.alert('Error', 'Failed to load contacts. Please try again.');
       }
-    } catch (error) {
-      console.error('Error loading contacts:', error);
-      Alert.alert('Error', 'Failed to load contacts.', [
-        { text: 'OK', onPress: () => onClose() },
-      ]);
     } finally {
       setLoading(false);
     }
   };
-
 
   const getContactDisplayNumber = (contact: DeviceContact): string => {
     if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {

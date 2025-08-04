@@ -1,7 +1,6 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { useRequestPlayerFinder } from '@/hooks/apis/player-finder/useRequestPlayerFinder';
 import { AppDispatch, RootState } from '@/store';
-import { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 import {
   Contact,
   loadContacts,
@@ -59,6 +58,7 @@ const FindPlayerLayout = () => {
   const [clubName, setClubName] = useState('');
   const [eventName, setEventName] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [contactsModalVisible, setContactsModalVisible] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [skillLevel, setSkillLevel] = useState(
@@ -76,11 +76,13 @@ const FindPlayerLayout = () => {
     (state: RootState) => state.playerFinder.preferredContacts
   );
   console.log(preferredContacts);
-  const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean | null>(null);
-  const [contactsModalVisible, setContactsModalVisible] = useState(false);
-
-  const { preferredPlaceModal, preferredPlayersModal } = useSelector((state: RootState) => state.ui);
-  const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState<
+     boolean | null
+   >(null);
+ 
+   const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
+   const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
+   const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
 
   // Check location permission status on mount
   useEffect(() => {
@@ -91,46 +93,23 @@ const FindPlayerLayout = () => {
     dispatch(loadContacts());
   }, [dispatch]);
 
-  const getLocationPermissionType = () => {
-    return Platform.select({
-      ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
-      android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-    });
-  };
-
-  const getContactsPermissionType = () => {
-    return Platform.select({
-      ios: PERMISSIONS.IOS.CONTACTS,
-      android: PERMISSIONS.ANDROID.READ_CONTACTS,
-    });
-  };
 
   const checkLocationPermission = async () => {
-    const permission = getLocationPermissionType();
-    if (!permission) return;
-
-    const status = await check(permission);
-    setLocationPermissionGranted(status === RESULTS.GRANTED);
+     const { status } = await Location.getForegroundPermissionsAsync();
+     setLocationPermissionGranted(status === 'granted');
   };
 
     const handleClubDetailsClick = async () => {
-    const permission = getLocationPermissionType();
-    if (!permission) return;
-
-    const status = await check(permission);
-
-    if (status === RESULTS.GRANTED) {
+    // First check if we already have permission
+     const { status: currentStatus } =
+       await Location.getForegroundPermissionsAsync();
+ 
+     if (currentStatus !== 'granted') {
+       // Request permission
+	       const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
       setLocationPermissionGranted(true);
       dispatch(openPreferredPlaceModal());
-      return;
-    }
-
-    if (status === RESULTS.DENIED || status === RESULTS.LIMITED) {
-      const result = await request(permission);
-
-      if (result === RESULTS.GRANTED) {
-        setLocationPermissionGranted(true);
-        dispatch(openPreferredPlaceModal());
         Alert.alert(
           'Location Access Granted',
           'You can now search for nearby courts in addition to your preferred places!',
@@ -145,11 +124,9 @@ const FindPlayerLayout = () => {
           [{ text: 'OK' }]
         );
       }
-    } else if (status === RESULTS.BLOCKED) {
-      Alert.alert(
-        'Permission Blocked',
-        'Please enable location access from Settings to use nearby court search.'
-      );
+    } else {
+       setLocationPermissionGranted(true);
+	       dispatch(openPreferredPlaceModal());
     }
   };
   const handleAddPlace = () => {
@@ -161,32 +138,29 @@ const FindPlayerLayout = () => {
   };
 
   const handleAddContact = async () => {
-    const permission = getContactsPermissionType();
-    if (!permission) return;
+    const { status } = await Contacts.getPermissionsAsync();
 
-    const status = await check(permission);
+    if (status === 'granted') {
+      setContactsModalVisible(true);}
+      else {
+	       const { status: newStatus } = await Contacts.requestPermissionsAsync();
 
-    if (status === RESULTS.GRANTED) {
-      setContactsModalVisible(true);
-      return;
-    }
-
-    if (status === RESULTS.DENIED || status === RESULTS.LIMITED) {
-      const result = await request(permission);
-
-      if (result === RESULTS.GRANTED) {
+      if (newStatus === 'granted') {
         setContactsModalVisible(true);
       } else {
         Alert.alert(
           'Contacts Permission Required',
           'To select contacts from your device, we need access to your contacts.',
           [
-            { text: "Don't Allow" },
+            {
+               text: "Don't Allow",
+	             },
             {
               text: 'Allow',
               onPress: async () => {
-                const retryResult = await request(permission);
-                if (retryResult === RESULTS.GRANTED) {
+                const { status: finalStatus } =
+                   await Contacts.requestPermissionsAsync();
+	                 if (finalStatus === 'granted') {
                   setContactsModalVisible(true);
                 } else {
                   Alert.alert(
@@ -199,11 +173,6 @@ const FindPlayerLayout = () => {
           ]
         );
       }
-    } else if (status === RESULTS.BLOCKED) {
-      Alert.alert(
-        'Permission Blocked',
-        'Please enable contacts access from Settings to use this feature.'
-      );
     }
   };
 

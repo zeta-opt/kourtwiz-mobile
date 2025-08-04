@@ -1,6 +1,5 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay';
-import { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 import { AppDispatch, RootState } from '@/store';
 import {
   Contact,
@@ -122,51 +121,25 @@ const CreateEventForm = () => {
   const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
   const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
   useEffect(() => {
-  const checkPermission = async () => {
-    const permission = getLocationPermissionType();
-    if (!permission) return;
+    const requestPermission = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setLocationPermissionGranted(status === 'granted');
+    };
+    requestPermission();
+  }, []);
 
-    const status = await check(permission);
-
-    if (status === RESULTS.GRANTED) {
-      setLocationPermissionGranted(true);
-    } else if (status === RESULTS.DENIED) {
-      const result = await request(permission);
-      setLocationPermissionGranted(result === RESULTS.GRANTED);
-    } else {
-      setLocationPermissionGranted(false);
-    }
-  };
-
-  checkPermission();
-}, []);
-  const getLocationPermissionType = () =>
-  Platform.select({
-    ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
-    android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-  });
-
-const getContactsPermissionType = () =>
-  Platform.select({
-    ios: PERMISSIONS.IOS.CONTACTS,
-    android: PERMISSIONS.ANDROID.READ_CONTACTS,
-  });
-    const showPreferredPlayers = () => {
+  const showPreferredPlayers = () => {
       dispatch(openPreferredPlayersModal());
     };
   
     const handleAddContact = async () => {
-  const permission = getContactsPermissionType();
-  if (!permission) return;
-
-  const status = await check(permission);
-
-  if (status === RESULTS.GRANTED) {
+      const { status } = await Contacts.getPermissionsAsync();
+      if (status === 'granted') {
     setContactsModalVisible(true);
-  } else if (status === RESULTS.DENIED || status === RESULTS.LIMITED) {
-    const newStatus = await request(permission);
+  }  else {
+	         const { status: newStatus } = await Contacts.requestPermissionsAsync();
 
-    if (newStatus === RESULTS.GRANTED) {
+    if (newStatus === 'granted') {
       setContactsModalVisible(true);
     } else {
       Alert.alert(
@@ -179,8 +152,9 @@ const getContactsPermissionType = () =>
           {
             text: 'Allow',
             onPress: async () => {
-              const finalStatus = await request(permission);
-              if (finalStatus === RESULTS.GRANTED) {
+              const { status: finalStatus } =
+                     await Contacts.requestPermissionsAsync();
+	                   if (finalStatus === 'granted') {
                 setContactsModalVisible(true);
               } else {
                 Alert.alert(
@@ -193,11 +167,6 @@ const getContactsPermissionType = () =>
         ]
       );
     }
-  } else if (status === RESULTS.BLOCKED) {
-    Alert.alert(
-      'Permission Blocked',
-      'Please enable contacts access from Settings to use this feature.'
-    );
   }
 };
 

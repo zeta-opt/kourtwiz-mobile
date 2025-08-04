@@ -1,35 +1,36 @@
 import 'dotenv/config';
 import { runtimeVersion } from 'expo-updates';
-
+ 
 export default {
   expo: {
     name: 'kourtwiz-mobile',
     slug: 'kourtwiz-mobile',
-    version: '1.0.1',
-    runtimeVersion:'1.0.1', // User-facing version
+    version: '1.0.2',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'kourtwizmobile',
     userInterfaceStyle: 'automatic',
-
+ 
     updates: {
       url: 'https://u.expo.dev/0c917ae5-4e2b-4c2b-bef1-928702cf4737',
     },
-
-    // runtimeVersion: {
-    //   policy: 'appVersion', // Uses version field for runtime versioning (EAS Update compatible)
-    // },
-
-    ios: {
-      supportsTablet: true,
-      bundleIdentifier: 'com.kourtwiz.mobile',
-      buildNumber: '1.0.0', // Bump on each new iOS build
-      infoPlist: {
-        NSLocationWhenInUseUsageDescription: 'We need your location to show nearby courts.',
-        NSContactsUsageDescription: 'We need your contacts to help you invite players.',
-      },
+ 
+    runtimeVersion: {
+      policy: 'appVersion', // Uses version field for runtime versioning (EAS Update compatible)
     },
-
+ 
+    ios: {
+    supportsTablet: true,
+    bundleIdentifier: 'com.kourtwiz.mobile',
+    buildNumber: '1.0.2',
+    infoPlist: {
+      NSContactsUsageDescription:
+        'This app needs access to your contacts to let you invite or select players.',
+      NSLocationWhenInUseUsageDescription:
+        'This app needs your location to help you find nearby courts.',
+    },
+  },
+ 
     android: {
       package: 'com.kourtwiz.mobile',
       versionCode: 1,
@@ -40,13 +41,13 @@ export default {
       },
       edgeToEdgeEnabled: true,
     },
-
+ 
     web: {
       bundler: 'metro',
       output: 'static',
       favicon: './assets/images/favicon.png',
     },
-
+ 
     plugins: [
       'expo-router',
       [
@@ -59,11 +60,11 @@ export default {
         },
       ],
     ],
-
+ 
     experiments: {
       typedRoutes: true,
     },
-
+ 
     extra: {
       apiUrl: process.env.API_URL,
       router: {},
@@ -71,9 +72,9 @@ export default {
         projectId: '0c917ae5-4e2b-4c2b-bef1-928702cf4737',
       },
     },
-
+ 
     owner: 'ankitexponative',
-
+ 
     // ✅ Recommended for future EAS compatibility
     cli: {
       appVersionSource: 'local', // or 'remote' if managing from EAS dashboard
