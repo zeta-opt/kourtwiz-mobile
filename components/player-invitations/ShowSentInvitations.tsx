@@ -12,9 +12,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Dialog, Menu, Portal, Text } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { clearAllFilters, filterInvitations } from '../home-page/filters';
+import { clearAllFilters, filterInvitations } from '@/components/home-page/filters';
 import PlayerDetailsModal from '../home-page/PlayerDetailsModal';
-import TopBarWithChips from '../home-page/topBarWithChips';
+import TopBarWithChips from '@/components/home-page/topBarWithChips';
 
 const API_URL = 'https://api.vddette.com';
 

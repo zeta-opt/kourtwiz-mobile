@@ -56,7 +56,8 @@ const InvitationTopBar = ({
           onPress={() => router.replace('/(authenticated)/player-invitations?type=incoming')}
         >
           <Text style={[styles.chipText, active === 'incoming' && styles.activeChipText]}>
-            Incoming PF ({inviteCount ? `(${inviteCount})` : 0})
+            Incoming PF
+             {/* ({inviteCount ? `(${inviteCount})` : 0}) */}
           </Text>
         </TouchableOpacity>
 
@@ -65,7 +66,8 @@ const InvitationTopBar = ({
           onPress={() => router.replace('/(authenticated)/player-invitations?type=outgoing')}
         >
           <Text style={[styles.chipText, active === 'sent' && styles.activeChipText]}>
-            Sent Request ({pendingOutCount})
+            Sent Request 
+            {/* ({pendingOutCount}) */}
           </Text>
         </TouchableOpacity>
 

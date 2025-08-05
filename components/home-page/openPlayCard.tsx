@@ -1,7 +1,5 @@
-// OpenPlayCard.tsx
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
-import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
@@ -33,14 +31,14 @@ type PlayRow = {
 
 type OpenPlayCardProps = {
   cardStyle?: ViewStyle;
+  data: any[];
 };
 
-const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
+const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
 
-  const { data: playsData, status, refetch } = useGetPlays(clubId, userId);
   const { data: courtsData, status: courtsStatus } = useGetClubCourt({ clubId });
   const { joinPlaySession } = useMutateJoinPlay();
   const { withdraw } = useWithdrawFromPlay();
@@ -57,65 +55,33 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
   ) => {
     setLoadingId(id);
 
-    // Withdraw from waitlist
     if (isWaitlisted) {
       try {
         await withdrawFromWaitlist({ sessionId: id, userId });
-
-        Toast.show({
-          type: 'success',
-          text1: 'Withdrawn from waitlist',
-          topOffset: 100,
-        });
-
-        setRows((prevRows) =>
-          prevRows.map((row) =>
-            row.id === id ? { ...row, isWaitlisted: false } : row
-          )
-        );
-      } catch (err) {
-        Toast.show({
-          type: 'error',
-          text1: 'Failed to withdraw from waitlist',
-          topOffset: 100,
-        });
+        Toast.show({ type: 'success', text1: 'Withdrawn from waitlist', topOffset: 100 });
+        setRows(prev => prev.map(r => r.id === id ? { ...r, isWaitlisted: false } : r));
+      } catch {
+        Toast.show({ type: 'error', text1: 'Failed to withdraw from waitlist', topOffset: 100 });
       } finally {
         setLoadingId(null);
-        refetch();
       }
       return;
     }
 
-    // Withdraw from registered play
     if (isRegistered) {
       try {
         await withdraw({ sessionId: id, userId });
-
-        Toast.show({
-          type: 'success',
-          text1: 'Withdrawn from play',
-          topOffset: 100,
-        });
-
-        setRows((prevRows) =>
-          prevRows.map((row) =>
-            row.id === id ? { ...row, isRegistered: false } : row
-          )
-        );
-      } catch (err) {
-        Toast.show({
-          type: 'error',
-          text1: 'Failed to withdraw',
-          topOffset: 100,
-        });
+        Toast.show({ type: 'success', text1: 'Withdrawn from play', topOffset: 100 });
+        setRows(prev => prev.map(r => r.id === id ? { ...r, isRegistered: false } : r));
+      } catch {
+        Toast.show({ type: 'error', text1: 'Failed to withdraw', topOffset: 100 });
       } finally {
         setLoadingId(null);
-        refetch();
+        
       }
       return;
     }
 
-    // Register or join waitlist
     await joinPlaySession({
       userId,
       sessionId: id,
@@ -126,28 +92,17 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
             text1: isFull ? 'Joined waitlist' : 'Joined play',
             topOffset: 100,
           });
-
-          setRows((prevRows) =>
-            prevRows.map((row) =>
-              row.id === id
-                ? {
-                    ...row,
-                    isRegistered: !isFull,
-                    isWaitlisted: isFull,
-                  }
-                : row
+          setRows(prev =>
+            prev.map(r =>
+              r.id === id
+                ? { ...r, isRegistered: !isFull, isWaitlisted: isFull }
+                : r
             )
           );
-
           setLoadingId(null);
-          refetch();
         },
         onError: () => {
-          Toast.show({
-            type: 'error',
-            text1: 'Unable to join',
-            topOffset: 100,
-          });
+          Toast.show({ type: 'error', text1: 'Unable to join', topOffset: 100 });
           setLoadingId(null);
         },
       },
@@ -166,28 +121,24 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
   };
 
   useEffect(() => {
-    if (
-      !playsData ||
-      playsData.length === 0 ||
-      (clubId !== 'GLOBAL' && (!courtsData || courtsData.length === 0))
-    ) {
+    if (!data || (clubId !== 'GLOBAL' && (!courtsData || courtsData.length === 0))) {
       return;
     }
 
     const courtMap: Record<string, string> = {};
-    if (clubId !== 'GLOBAL' && courtsData?.length) {
-      courtsData.forEach((data: any) => {
-        courtMap[data.id] = data.name;
+    if (clubId !== 'GLOBAL') {
+      courtsData?.forEach((court: any) => {
+        courtMap[court.id] = court.name;
       });
     }
 
-    const dataRows = playsData.map((play: any) => {
+    const mappedRows = data.map((play: any) => {
       const startDate = new Date(
         play.startTime[0],
         play.startTime[1] - 1,
         play.startTime[2],
-        play.startTime[3],
-        play.startTime[4]
+        play.startTime[3] || 0,
+        play.startTime[4] || 0
       );
 
       const courtName =
@@ -208,13 +159,9 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
 
       return {
         id: play.id,
-        'event name':
-          play.eventName?.split('_').join(' ').toLowerCase() || 'Unknown Event',
+        'event name': play.eventName?.split('_').join(' ').toLowerCase() || 'Unknown Event',
         date: startDate.toLocaleDateString(),
-        time: startDate.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         duration: play.durationMinutes,
         'skill level': play.skillLevel,
         court: courtName,
@@ -228,14 +175,14 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
       };
     });
 
-    setRows(dataRows);
-  }, [clubId, playsData, courtsData, userId, status, courtsStatus]);
+    setRows(mappedRows);
+  }, [data, courtsData, userId, clubId]);
 
   if (!clubId) {
     return <Text style={styles.noDataText}>No open play sessions available</Text>;
   }
 
-  if (status === 'loading' || courtsStatus === 'loading') {
+  if (courtsStatus === 'loading') {
     return <LoaderScreen />;
   }
 
@@ -259,12 +206,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
           </View>
           <View style={styles.rowBetween}>
             <View style={[styles.statusBadge, { flexDirection: 'row', alignItems: 'center' }]}>
-              <MaterialIcons
-                name="person"
-                size={16}
-                color="#2F7C83"
-                style={{ marginRight: 4 }}
-              />
+              <MaterialIcons name="person" size={16} color="#2F7C83" style={{ marginRight: 4 }} />
               <Text style={styles.statusBadgeText}>
                 {row['filled slots']}/{row['max slots']} Accepted
               </Text>
@@ -287,10 +229,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle }) => {
                 styles.button,
                 row.isWaitlisted && styles.waitlistWithdrawButton,
                 row.isRegistered && styles.withdrawButton,
-                !row.isRegistered &&
-                  row.isFull &&
-                  !row.isWaitlisted &&
-                  styles.joinWaitlistButton,
+                !row.isRegistered && row.isFull && !row.isWaitlisted && styles.joinWaitlistButton,
               ]}
               loading={row.id === loadingId}
               contentStyle={[
@@ -352,7 +291,7 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
   },
-  buttonContent: { height: 36, paddingHorizontal: 12, color: '#FFFFFF' },
+  buttonContent: { height: 36, paddingHorizontal: 12 },
   buttonLabel: { fontSize: 12, fontWeight: 'bold', color: '#FFFFFF' },
   noDataText: {
     textAlign: 'center',
