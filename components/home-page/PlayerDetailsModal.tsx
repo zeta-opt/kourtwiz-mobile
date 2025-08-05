@@ -20,9 +20,9 @@ const PlayerDetailsModal: React.FC<Props> = ({ players }) => {
   const getIcon = (status: string) => {
     switch (status.toUpperCase()) {
       case 'ACCEPTED': return 'check-circle';
-      case 'PENDING': return 'clock-outline';
+      case 'PENDING': return 'clock';
       case 'DECLINED': return 'close-circle';
-      default: return 'help-circle';
+      default: return 'minus-circle';
     }
   };
 
