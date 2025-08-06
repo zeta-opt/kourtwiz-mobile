@@ -8,6 +8,7 @@ import {
 } from '@/store/playerFinderSlice';
 import {
   closePreferredPlayersModal,
+  openPreferredPlaceModal,
   openPreferredPlayersModal,
 } from '@/store/uiSlice';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,8 +41,10 @@ import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
 import StatusModal from './components/StatusModal';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import success_image from '../../assets/images/success_image.png';
 import error_image from '../../assets/images/error_image.png';
+import { Icon,Button, IconButton } from 'react-native-paper';
 
 
 
@@ -102,6 +105,14 @@ const CreateEventForm = () => {
   const sliderWidth = useRef(0);
   const animatedValue = useRef(new Animated.Value(skillLevel)).current;
   const [sliderPos, setSliderPos] = useState(0);
+  const [errors, setErrors] = useState({
+  eventName: false,
+  placeToPlay: false,
+  date: false,
+  startTime: false,
+  endTime: false,
+  repeatEndDate: false,
+});
 
   const handleLayout = (e: LayoutChangeEvent) => {
     sliderWidth.current = e.nativeEvent.layout.width;
@@ -216,7 +227,39 @@ const handleRepeatChange = (value: string) => {
 }
   }
 };
-
+const handleClubDetailsClick = async () => {
+    // First check if we already have permission
+     const { status: currentStatus } =
+       await Location.getForegroundPermissionsAsync();
+ 
+     if (currentStatus !== 'granted') {
+       // Request permission
+         const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
+      setLocationPermissionGranted(true);
+      dispatch(openPreferredPlaceModal());
+        Alert.alert(
+          'Location Access Granted',
+          'You can now search for nearby courts in addition to your preferred places!',
+          [{ text: 'OK' }]
+        );
+      } else {
+        setLocationPermissionGranted(false);
+        dispatch(openPreferredPlaceModal());
+        Alert.alert(
+          'Location Access Denied',
+          'You can still choose from your preferred places, but nearby court search will not be available.',
+          [{ text: 'OK' }]
+        );
+      }
+    } else {
+       setLocationPermissionGranted(true);
+         dispatch(openPreferredPlaceModal());
+    }
+  };
+  const handleAddPlace = () => {
+    router.push('/(authenticated)/add-place');
+  };
 const handleCustomApply = () => {
   setRepeat('custom');
   setRepeatInterval(String(customInterval));
@@ -256,7 +299,19 @@ const formatDatesArray = (dates: Date[]) =>
   dates.map(formatDateToLocalISOString);
 
 const handleSubmit = async () => {
-  if (!eventName || !placeToPlay || !date || !startTime || !endTime) {
+ const newErrors = {
+    eventName: !eventName,
+    placeToPlay: !placeToPlay,
+    date: !selectedDate,
+    startTime: !startTime,
+    endTime: !endTime,
+    repeatEndDate: repeat !== 'NONE' && !repeatEndDate,
+  };
+
+  setErrors(newErrors);
+
+  const hasErrors = Object.values(newErrors).some(Boolean);
+  if (hasErrors) {
     Alert.alert('Missing Fields', 'Please fill in all required fields.');
     return;
   }
@@ -352,6 +407,20 @@ const handleSubmit = async () => {
 
     await createSession(payload);
     setSuccessVisible(true);
+
+    setEventName('');
+    setPlaceToPlay('');
+    setCourt('');
+    setSelectedDate(new Date());
+    setStartTime(new Date());
+    setEndTime(new Date());
+    setRepeat('NONE');
+    setRepeatEndDate(null);
+    setSkillLevel(0);
+    setPrice('');
+    setMaxPlayers('');
+    setDescription('');
+
     console.log('Payload:', payload);
 
   } catch (err: any) {
@@ -391,18 +460,28 @@ const handleSubmit = async () => {
               value={eventName}
               onChangeText={setEventName}
             />
-
+            <Text style={styles.label}>Club Name</Text>
             <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
-            <TouchableOpacity onPress={() => setModalVisible(true)}>
-              <TextInput
-                style={styles.input}
-                placeholder='Enter Place Name'
-                value={placeToPlay} // will show the selected place
-                editable={false}
-                pointerEvents='none'
-              />
-            </TouchableOpacity>
 
+            <View style={styles.inputRow}>
+              <TouchableOpacity onPress={() => setModalVisible(true)} style={{ flex: 1 }}>
+                <TextInput
+                  style={styles.input}
+                  placeholder='Enter Place Name'
+                  value={placeToPlay}
+                  editable={false}
+                  pointerEvents='none'
+                />
+              </TouchableOpacity>
+
+              <IconButton
+                icon='plus'
+                size={24}
+                iconColor='white'
+                onPress={handleAddPlace}
+                style={styles.disabledPlus}
+              />
+            </View>
             <PreferredPlacesModal
               visible={modalVisible}
               handleClose={handleModalClose}
@@ -424,6 +503,7 @@ const handleSubmit = async () => {
               onStartTimeChange={setStartTime}
               onEndTimeChange={setEndTime}
             />
+            
             <Text style={styles.label}>Repeat Event</Text>
             <Picker selectedValue={repeat} onValueChange={handleRepeatChange}>
               <Picker.Item label='None' value='NONE' />
@@ -442,14 +522,18 @@ const handleSubmit = async () => {
             </TouchableOpacity>
 
             {showRepeatEndDatePicker && (
-              <DateTimePicker
-                value={repeatEndDate || new Date()}
+              <DateTimePickerModal
+                isVisible={showRepeatEndDatePicker}
                 mode='date'
-                display='default'
-                onChange={(event, selectedDate) => {
+                onConfirm={(date) => {
                   setShowRepeatEndDatePicker(false);
-                  if (selectedDate) setRepeatEndDate(selectedDate);
+                  setRepeatEndDate(date);
                 }}
+                onCancel={() => setShowRepeatEndDatePicker(false)}
+                date={repeatEndDate || new Date()}
+                display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+                minimumDate={new Date(2000, 0, 1)}
+                maximumDate={new Date(2100, 11, 31)}
               />
             )}
 
@@ -543,7 +627,7 @@ const handleSubmit = async () => {
       </ScrollView>
       </View>
       
-
+            
         <Modal visible={showCustomModal} animationType='slide' transparent>
           <View style={styles.overlay}>
             <View style={styles.modalWrapper}>
@@ -667,14 +751,18 @@ const handleSubmit = async () => {
           </View>
         </Modal>
         <StatusModal
-        visible={successVisible}
-        onClose={() => setSuccessVisible(false)}
-        imageSource={success_image}
-        title="Event Created Successfully!"
-        description="You can now share the event, view details, or make changes anytime."
-        buttonText="Got It"
-        buttonColor="#00796B"
-      />
+          visible={successVisible}
+          onClose={() => setSuccessVisible(false)}
+          onButtonPress={() => {
+            setSuccessVisible(false);
+            router.replace('/(authenticated)/home');
+          }}
+          imageSource={success_image}
+          title="Event Created Successfully!"
+          description="You can now share the event, view details, or make changes anytime."
+          buttonText="Got It"
+          buttonColor="#00796B"
+        />
 
       <StatusModal
         visible={errorVisible}
@@ -721,6 +809,12 @@ const styles = StyleSheet.create({
   padding: 16,
   alignSelf: 'center',
 },
+  disabledPlus: {
+    backgroundColor: '#2C7E88',
+    marginTop: 8,
+    borderRadius: 8,
+    opacity: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -781,18 +875,25 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   label: {
+    marginTop:10,
     fontSize: 14,
     marginBottom: 4,
     color: '#333',
   },
   input: {
+    flex: 1,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
+    marginRight: 8,
   },
+  inputRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
   halfInput: {
     flex: 1,
   },

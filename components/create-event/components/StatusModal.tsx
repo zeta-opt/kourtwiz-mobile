@@ -4,6 +4,7 @@ import { Modal, View, Text, Image, TouchableOpacity, StyleSheet } from 'react-na
 interface EventStatusModalProps {
   visible: boolean;
   onClose: () => void;
+  onButtonPress?: () => void;
   imageSource: any;
   title: string;
   description: string;
@@ -14,6 +15,7 @@ interface EventStatusModalProps {
 const StatusModal: React.FC<EventStatusModalProps> = ({
   visible,
   onClose,
+  onButtonPress,
   imageSource,
   title,
   description,
@@ -31,7 +33,7 @@ const StatusModal: React.FC<EventStatusModalProps> = ({
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>{description}</Text>
           <TouchableOpacity
-            onPress={onClose}
+            onPress={onButtonPress || onClose}
             style={[styles.button, { backgroundColor: buttonColor }]}
           >
             <Text style={styles.buttonText}>{buttonText}</Text>
