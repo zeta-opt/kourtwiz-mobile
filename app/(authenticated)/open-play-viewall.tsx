@@ -16,7 +16,7 @@ const OpenPlay = () => {
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
 
-  const { data: plays } = useGetPlays(clubId, userId);
+  const { data: plays, refetch } = useGetPlays(clubId, userId);
   const safePlays = plays ?? [];
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -148,7 +148,7 @@ console.log('Filtered Plays:', filteredPlays);
       <ScrollView style={styles.container}>
         <View style={styles.con}>
           {filteredPlays.length > 0 ? (
-            <OpenPlayCard cardStyle={styles.card} data={filteredPlays} />
+            <OpenPlayCard cardStyle={styles.card} data={filteredPlays} refetch={refetch} />
           ) : (
             <Text style={styles.noPlaysText}>No open play sessions match your filters.</Text>
           )}

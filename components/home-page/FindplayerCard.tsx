@@ -28,10 +28,11 @@ const FindplayerCard = () => {
           <View style={styles.featuredButtonColumn}>
             <TouchableOpacity
               style={styles.filledButton}
+              onPress={()=>router.push('/(authenticated)/create-event')}
             >
               <Text
-                style={styles.filledButton}
-                onPress={()=>router.replace('/(authenticated)/create-event')}
+                style={styles.filledButtonText}
+                
                 >Create Event</Text>
             </TouchableOpacity>
 
@@ -151,4 +152,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 12,
   },
+  filledButtonText: {
+  color: '#FFFFFF',
+  fontWeight: '600',
+  fontSize: 12,
+},
+
 });

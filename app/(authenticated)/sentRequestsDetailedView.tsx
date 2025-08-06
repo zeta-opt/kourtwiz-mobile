@@ -77,7 +77,7 @@ export default function SentRequestDetailedView() {
       await withdrawRequest(requestId, userId, withdrawComment);
       Toast.show({ type: 'success', text1: 'Game Invite Withdrawn' });
       setCommentModalVisible(false);
-      router.replace('/(authenticated)/find-players');
+       router.replace('/(authenticated)/home');
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Failed to Withdraw Game Invite' });
     }
@@ -179,15 +179,15 @@ export default function SentRequestDetailedView() {
         <Text style={styles.chatPreviewText}>Withdraw the game for all...</Text>
 
         <TouchableOpacity
-          style={[
-            styles.joinButton,
-          ]}
-          onPress={() => {
-            setCommentModalVisible(true);
-          }}
-        >
+  style={[
+    styles.joinButton,
+  ]}
+  onPress={() => {
+      setCommentModalVisible(true);
+  }}
+>
           <Text style={styles.joinButtonText}>Withdraw Request</Text>
-        </TouchableOpacity>
+</TouchableOpacity>
       </View>
 
       {/* Modal */}

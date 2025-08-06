@@ -336,7 +336,7 @@ const Dashboard = () => {
                     ))
                   )
                 ) : (
-                  <OpenPlayCard data={openPlayInvites || []} />
+                  <OpenPlayCard data={openPlayInvites || []} refetch={refetch} />
                 )}
               </ScrollView>
             </LinearGradient>

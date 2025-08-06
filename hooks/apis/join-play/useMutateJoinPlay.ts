@@ -52,7 +52,11 @@ export const useMutateJoinPlay = () => {
       setStatus('error');
       console.log('join play error:', JSON.stringify(err));
       const errorMessage =
-        err?.response?.data?.message || err.message || 'Unknown error';
+  err?.response?.data?.message ||
+  (typeof err?.response?.data === 'string' ? err.response.data : null) ||
+  err.message ||
+  'Unknown error';
+
       setError(errorMessage);
       callbacks?.onError?.(new Error(errorMessage));
     }
