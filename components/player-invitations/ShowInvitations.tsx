@@ -7,9 +7,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, TouchableWithoutFeedback, View as RNView, View, } from 'react-native';
 import {
   Button,
   Dialog,
@@ -26,7 +26,6 @@ const API_URL = 'https://api.vddette.com';
 
 const ShowInvitations = () => {
   const { user } = useSelector((state: RootState) => state.auth);
-  const router = useRouter();
 
   const { data: invites, refetch } = useGetInvitations({
     userId: user?.userId,
@@ -46,6 +45,8 @@ const ShowInvitations = () => {
 
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [tempDate, setTempDate] = useState<Date | null>(selectedDate ?? new Date());
+  const [tempTime, setTempTime] = useState<Date | null>(selectedTime ?? new Date());
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -268,7 +269,103 @@ const ShowInvitations = () => {
         )}
       </ScrollView>
 
-      {showDatePicker && (
+      {/* iOS Date Picker Modal */}
+      {Platform.OS === 'ios' && showDatePicker && (
+        <Modal
+          transparent
+          animationType="slide"
+          visible={showDatePicker}
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
+            <RNView style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <SafeAreaView style={styles.modalContent}>
+                  <DateTimePicker
+                    value={tempDate ?? new Date()}
+                    mode="date"
+                    display="spinner"
+                    onChange={(event, date) => {
+                      if (Platform.OS === 'ios' && date) {
+                        setTempDate(date); // update only temp state
+                      }
+                    }}
+                  />
+                  <RNView style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Button
+                      onPress={() => {
+                        setShowDatePicker(false);
+                        setTempDate(selectedDate); // discard changes
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onPress={() => {
+                        setShowDatePicker(false);
+                        if (tempDate) setSelectedDate(tempDate); // apply changes
+                      }}
+                    >
+                      Done
+                    </Button>
+                  </RNView>
+                </SafeAreaView>
+              </TouchableWithoutFeedback>
+            </RNView>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+
+      {/* iOS Time Picker Modal */}
+      {Platform.OS === 'ios' && showTimePicker && (
+        <Modal
+          transparent
+          animationType="slide"
+          visible={showTimePicker}
+          onRequestClose={() => setShowTimePicker(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowTimePicker(false)}>
+            <RNView style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <SafeAreaView style={styles.modalContent}>
+                  <DateTimePicker
+                    value={tempTime ?? new Date()}
+                    mode="time"
+                    display="spinner"
+                    onChange={(event, time) => {
+                      if (Platform.OS === 'ios' && time) {
+                        setTempTime(time);
+                      }
+                    }}
+                    style={{ backgroundColor: 'white' }}
+                  />
+                  <RNView style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Button
+                      onPress={() => {
+                        setShowTimePicker(false);
+                        setTempTime(selectedTime); // discard changes
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onPress={() => {
+                        setShowTimePicker(false);
+                        if (tempTime) setSelectedTime(tempTime); // apply changes
+                      }}
+                    >
+                      Done
+                    </Button>
+                  </RNView>
+                </SafeAreaView>
+              </TouchableWithoutFeedback>
+            </RNView>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+
+      {/* Android Date Picker Modal */}
+      {Platform.OS === 'android' && showDatePicker && (
         <DateTimePicker
           value={selectedDate || new Date()}
           mode='date'
@@ -280,7 +377,8 @@ const ShowInvitations = () => {
         />
       )}
 
-      {showTimePicker && (
+      {/* Android Time Picker Modal */}
+      {Platform.OS === 'android' && showTimePicker && (
         <DateTimePicker
           value={selectedTime || new Date()}
           mode='time'
@@ -424,5 +522,17 @@ const styles = StyleSheet.create({
   },
   dialogContent: {
     padding: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: 300,
   },
 });
