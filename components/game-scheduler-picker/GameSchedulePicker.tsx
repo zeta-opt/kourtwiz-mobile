@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Button, Icon, Text } from 'react-native-paper';
 
@@ -172,7 +172,9 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
         date={selectedDate || new Date()}
         onConfirm={handleDateConfirm}
         onCancel={hideDatePicker}
-        display='calendar'
+        display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+        minimumDate={new Date(2000, 0, 1)}
+        maximumDate={new Date(2100, 11, 31)}
       />
 
       {/* Start Time Picker */}
