@@ -32,9 +32,19 @@ type PlayRow = {
 type OpenPlayCardProps = {
   cardStyle?: ViewStyle;
   data: any[];
+  refetch: () => void;
 };
 
-const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data }) => {
+const extractErrorMessage = (err: any): string => {
+  return (
+    err?.response?.data?.message ||
+    (typeof err?.response?.data === 'string' ? err.response.data : null) ||
+    err?.message ||
+    'Unknown error occurred'
+  );
+};
+
+const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
@@ -59,9 +69,15 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data }) => {
       try {
         await withdrawFromWaitlist({ sessionId: id, userId });
         Toast.show({ type: 'success', text1: 'Withdrawn from waitlist', topOffset: 100 });
+        refetch();
         setRows(prev => prev.map(r => r.id === id ? { ...r, isWaitlisted: false } : r));
-      } catch {
-        Toast.show({ type: 'error', text1: 'Failed to withdraw from waitlist', topOffset: 100 });
+      } catch (err) {
+        Toast.show({ 
+          type: 'error', 
+          text1: 'Failed to withdraw from waitlist', 
+          text2: extractErrorMessage(err), 
+          topOffset: 100 
+        });
       } finally {
         setLoadingId(null);
       }
@@ -72,9 +88,15 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data }) => {
       try {
         await withdraw({ sessionId: id, userId });
         Toast.show({ type: 'success', text1: 'Withdrawn from play', topOffset: 100 });
+        refetch();
         setRows(prev => prev.map(r => r.id === id ? { ...r, isRegistered: false } : r));
-      } catch {
-        Toast.show({ type: 'error', text1: 'Failed to withdraw', topOffset: 100 });
+      }catch (err) {
+        Toast.show({ 
+          type: 'error', 
+          text1: 'Failed to withdraw', 
+          text2: extractErrorMessage(err), 
+          topOffset: 100 
+        });
       } finally {
         setLoadingId(null);
         
@@ -92,6 +114,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data }) => {
             text1: isFull ? 'Joined waitlist' : 'Joined play',
             topOffset: 100,
           });
+          refetch();
           setRows(prev =>
             prev.map(r =>
               r.id === id
@@ -99,10 +122,11 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data }) => {
                 : r
             )
           );
+          
           setLoadingId(null);
         },
-        onError: () => {
-          Toast.show({ type: 'error', text1: 'Unable to join', topOffset: 100 });
+        onError: (error) => {
+          Toast.show({ type: 'error', text1: 'Unable to join',text2: error.message, topOffset: 100 });
           setLoadingId(null);
         },
       },
