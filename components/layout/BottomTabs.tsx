@@ -57,7 +57,7 @@ export default function BottomTabs() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => console.log('history icon pressed')}
+        onPress={() => router.replace('/history')}
         style={styles.tabItem}
       >
         <MaterialIcons name="calendar-today" size={24} color="#000" />
