@@ -505,7 +505,7 @@ const handleSubmit = async () => {
             />
             
             <Text style={styles.label}>Repeat Event</Text>
-            <Picker selectedValue={repeat} onValueChange={handleRepeatChange}>
+            <Picker selectedValue={repeat} onValueChange={handleRepeatChange} itemStyle={{color: '#000'}}>
               <Picker.Item label='None' value='NONE' />
               <Picker.Item label='Daily' value='DAILY' />
               <Picker.Item label='Weekly' value='WEEKLY' />
@@ -643,6 +643,7 @@ const handleSubmit = async () => {
                       selectedValue={customRepeat}
                       onValueChange={setCustomRepeat}
                       style={styles.picker}
+                      itemStyle={{color: '#000'}}
                     >
                       <Picker.Item label='Daily' value='daily' />
                       <Picker.Item label='Weekly' value='weekly' />
@@ -658,6 +659,7 @@ const handleSubmit = async () => {
                         setCustomInterval(Number(value))
                       }
                       style={styles.picker}
+                      itemStyle={{color: '#000'}}
                     >
                       {Array.from({ length: 30 }, (_, i) => (
                         <Picker.Item
