@@ -14,6 +14,7 @@ import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPla
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
 import { resetInvitationsRefetch } from '@/store/refetchSlice';
+import { useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -54,6 +55,7 @@ const Dashboard = () => {
   const user = useSelector((state: RootState) => state.auth.user);
   const { fetchUser } = useFetchUser();
   const router = useRouter();
+  const isFocused = useIsFocused();
 
   const { data: invites, refetch } = useGetInvitations({
     userId: user?.userId,
@@ -64,7 +66,7 @@ const Dashboard = () => {
   const clubId = user?.currentActiveClubId;
   const userId = user?.userId;
   const openClubId = user?.currentActiveClubId || 'GLOBAL';
-  const { data: openPlayInvites, status , error } = useGetPlays(openClubId,userId);
+  const { data: openPlayInvites, status , error, refetch:refetchOpenPlay } = useGetPlays(openClubId,userId);
   
   // console.log('Open Play Invites:', openPlayInvites);
  
@@ -129,8 +131,11 @@ const Dashboard = () => {
     };
   }),
 ];
-
-
+  useEffect(() => {
+    if (isFocused) {
+      refetchOpenPlay(); 
+    }
+  }, [isFocused]);
   useEffect(() => {
     const loadUser = async () => {
       const token = await getToken();

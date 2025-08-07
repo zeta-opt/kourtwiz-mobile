@@ -38,7 +38,7 @@ const InvitationTopBar = ({
 
         <Text style={styles.headerTitle}>Request</Text>
 
-        <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
+        <TouchableOpacity onPress={() => router.replace('/(authenticated)/profile')}>
           <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
