@@ -114,7 +114,7 @@ const PlayCalendarCard = ({ invites }: { invites: any[] }) => {
           });
         } else if (type === 'openplay') {
           router.push({
-            pathname: '/(authenticated)/home',
+            pathname: '/(authenticated)/openPlayDetailedView',
             params: { sessionId: invite.id },
           });
         }

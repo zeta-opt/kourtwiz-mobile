@@ -199,7 +199,7 @@ const UserProfile = () => {
           {profileImage ? (
             <Avatar.Image size={70} source={{ uri: profileImage }} />
           ) : (
-            <UserAvatar size={70} />
+            <UserAvatar size={70} onPress={() => {}} />
           )}
         </View>
         <View style={styles.profileInfo}>

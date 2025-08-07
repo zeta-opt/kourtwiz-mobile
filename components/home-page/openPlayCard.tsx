@@ -6,10 +6,11 @@ import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromW
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import { RootState } from '@/store';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
+import { router } from 'expo-router';
 
 type PlayRow = {
   id: string;
@@ -217,7 +218,12 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
   return (
     <View>
       {rows.map((row) => (
-        <View key={row.id} style={[styles.card, cardStyle]}>
+        <TouchableOpacity key={row.id} style={[styles.card, cardStyle]}  onPress={() => {
+      router.push({
+        pathname: '/(authenticated)/openPlayDetailedView',
+        params: { sessionId: row.id },
+    });
+  }}>
           <Text style={styles.placeText} numberOfLines={1}>
             {row['event name']}
           </Text>
@@ -268,7 +274,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
               {buttonMessage(row.isRegistered, row.isWaitlisted, row.isFull)}
             </Button>
           </View>
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );
