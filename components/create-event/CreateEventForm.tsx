@@ -45,7 +45,78 @@ import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
 import StatusModal from './components/StatusModal';
-useEffect(() => {
+
+const CreateEventForm = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userId = user?.userId;
+  const params = useLocalSearchParams();
+  const [newPlaceData, setNewPlaceData] = useState<any>(null);
+
+  const [eventName, setEventName] = useState('');
+  const [place, setPlace] = useState('');
+  const [court, setCourt] = useState('');
+  const [date, setDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [customRepeatDays, setCustomRepeatDays] = useState<string[]>([]);
+  const [customRepeatDates, setCustomRepeatDates] = useState<Date[]>([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [repeat, setRepeat] = useState('');
+  const [skillLevel, setSkillLevel] = useState(0);
+  const [price, setPrice] = useState('');
+  const [maxPlayers, setMaxPlayers] = useState('');
+  const [description, setDescription] = useState('');
+  const { createSession } = useCreateOpenPlaySession();
+
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
+  const [showTimePicker, setShowTimePicker] = useState<{
+    visible: boolean;
+    type: 'start' | 'end';
+  }>({ visible: false, type: 'start' });
+  const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
+
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState<
+    boolean | null
+  >(null);
+  const [repeatInterval, setRepeatInterval] = useState('1');
+  const [repeatEndDate, setRepeatEndDate] = useState<Date | null>(null);
+  const [showRepeatEndDatePicker, setShowRepeatEndDatePicker] = useState(false);
+  const [contactsModalVisible, setContactsModalVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customRepeat, setCustomRepeat] = useState<
+    'daily' | 'weekly' | 'monthly' | 'yearly'
+  >('daily');
+  const DAYS = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ];
+  const [customInterval, setCustomInterval] = useState(1);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const sliderWidth = useRef(0);
+  const animatedValue = useRef(new Animated.Value(skillLevel)).current;
+  const [sliderPos, setSliderPos] = useState(0);
+  const isInitialMount = useRef(true);
+  const [errors, setErrors] = useState({
+    eventName: false,
+    placeToPlay: false,
+    date: false,
+    startTime: false,
+    endTime: false,
+    repeatEndDate: false,
+  });
+
+  useEffect(() => {
   if (isInitialMount.current) {
     // Check if we have params from AddPlace
     if (params.newPlace && params.placeName) {
@@ -136,77 +207,6 @@ useEffect(() => {
     }
   }
 }, [params.newPlace, params.placeName, params.formState]);
-
-const CreateEventForm = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const userId = user?.userId;
-  const params = useLocalSearchParams();
-  const [newPlaceData, setNewPlaceData] = useState<any>(null);
-
-  const [eventName, setEventName] = useState('');
-  const [place, setPlace] = useState('');
-  const [court, setCourt] = useState('');
-  const [date, setDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [customRepeatDays, setCustomRepeatDays] = useState<string[]>([]);
-  const [customRepeatDates, setCustomRepeatDates] = useState<Date[]>([]);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [repeat, setRepeat] = useState('');
-  const [skillLevel, setSkillLevel] = useState(0);
-  const [price, setPrice] = useState('');
-  const [maxPlayers, setMaxPlayers] = useState('');
-  const [description, setDescription] = useState('');
-  const { createSession } = useCreateOpenPlaySession();
-
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [endTime, setEndTime] = useState<Date | null>(null);
-  const [showTimePicker, setShowTimePicker] = useState<{
-    visible: boolean;
-    type: 'start' | 'end';
-  }>({ visible: false, type: 'start' });
-  const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
-
-  const [locationPermissionGranted, setLocationPermissionGranted] = useState<
-    boolean | null
-  >(null);
-  const [repeatInterval, setRepeatInterval] = useState('1');
-  const [repeatEndDate, setRepeatEndDate] = useState<Date | null>(null);
-  const [showRepeatEndDatePicker, setShowRepeatEndDatePicker] = useState(false);
-  const [contactsModalVisible, setContactsModalVisible] = useState(false);
-  const [successVisible, setSuccessVisible] = useState(false);
-  const [errorVisible, setErrorVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const [showCustomModal, setShowCustomModal] = useState(false);
-  const [customRepeat, setCustomRepeat] = useState<
-    'daily' | 'weekly' | 'monthly' | 'yearly'
-  >('daily');
-  const DAYS = [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-  ];
-  const [customInterval, setCustomInterval] = useState(1);
-  const [modalVisible, setModalVisible] = useState(false);
-
-  const sliderWidth = useRef(0);
-  const animatedValue = useRef(new Animated.Value(skillLevel)).current;
-  const [sliderPos, setSliderPos] = useState(0);
-  const isInitialMount = useRef(true);
-  const [errors, setErrors] = useState({
-    eventName: false,
-    placeToPlay: false,
-    date: false,
-    startTime: false,
-    endTime: false,
-    repeatEndDate: false,
-  });
-
   // Handle initial mount - clear form only on first load
   useEffect(() => {
     if (isInitialMount.current) {
