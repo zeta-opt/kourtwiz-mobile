@@ -79,21 +79,37 @@ const AddPlace = () => {
       return;
     }
 
+    // Convert number of courts to integer
+    const courtsNumber =
+      numberOfCourts === '10+' ? 10 : parseInt(numberOfCourts);
+
+    // Convert membership value to match expected format
+    const membershipValue =
+      membershipRequired === 'required'
+        ? 'Required'
+        : membershipRequired === 'yes'
+        ? 'Yes'
+        : 'No';
+
     const placeData = {
-      placeName,
-      location,
-      courtType: courtType || null,
-      netType,
-      numberOfCourts,
-      hoursOfOperation: {
-        startTime: formatTime(startTime),
-        endTime: formatTime(endTime),
+      allCourts: {
+        Name: placeName,
+        Location: location,
+        'Court Type': courtType || undefined,
+        netType: netType,
+        noOfCourts: courtsNumber,
+        openingTime: `${String(startTime.getHours()).padStart(2, '0')}:${String(
+          startTime.getMinutes()
+        ).padStart(2, '0')}:00`,
+        closingTime: `${String(endTime.getHours()).padStart(2, '0')}:${String(
+          endTime.getMinutes()
+        ).padStart(2, '0')}:00`,
+        isFree: isFree,
+        membership: membershipValue,
+        Lighting: lightsAvailable ? 'Available' : 'Not Available',
+        isRestRoomAvailable: restroom,
+        isCarParkingAvailable: parking,
       },
-      membershipRequired,
-      isFree,
-      lightsAvailable,
-      restroom,
-      parking,
     };
 
     console.log('Add Place Data:', placeData);
@@ -102,7 +118,16 @@ const AddPlace = () => {
     Alert.alert('Success!', 'Place has been added successfully.', [
       {
         text: 'OK',
-        onPress: () => router.back(),
+        onPress: () => {
+          // Pass the place data back to the create event form
+          router.replace({
+            pathname: '/(authenticated)/create-event',
+            params: {
+              newPlace: JSON.stringify(placeData.allCourts),
+              placeName: placeData.allCourts.Name,
+            },
+          });
+        },
       },
     ]);
   };

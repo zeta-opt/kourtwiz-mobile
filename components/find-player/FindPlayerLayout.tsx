@@ -29,14 +29,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-  Button,
-  Dialog,
-  Icon,
-  IconButton,
-  Portal,
-  Text,
-} from 'react-native-paper';
+import { Button, Dialog, Icon, Portal, Text } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PlayerCountDropdown from '../player-count/PlayerCountDropdown';
@@ -126,9 +119,6 @@ const FindPlayerLayout = () => {
       setLocationPermissionGranted(true);
       dispatch(openPreferredPlaceModal());
     }
-  };
-  const handleAddPlace = () => {
-    router.push('/(authenticated)/add-place');
   };
 
   const showPreferredPlayers = () => {
@@ -346,13 +336,7 @@ const FindPlayerLayout = () => {
               </View>
             </View>
           </Button>
-          <IconButton
-            icon='plus'
-            size={24}
-            iconColor='white'
-            onPress={handleAddPlace}
-            style={styles.disabledPlus}
-          />
+
           <PreferredPlacesModal
             visible={preferredPlaceModal}
             handleClose={() => {

@@ -153,6 +153,11 @@ const PreferredPlacesModal = ({
     preferredStatus === 'loading' ||
     (locationPermissionGranted && nearbyStatus === 'loading' && !coords);
 
+  // Handler to prevent propagation without accessing the event
+  const handleModalContentPress = () => {
+    // This prevents the modal from closing when clicking inside
+  };
+
   return (
     <Portal>
       {visible && (
@@ -164,7 +169,7 @@ const PreferredPlacesModal = ({
           <TouchableOpacity
             style={styles.modalContent}
             activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
+            onPress={handleModalContentPress}
           >
             <View style={styles.contentArea}>
               {/* Search Input */}
