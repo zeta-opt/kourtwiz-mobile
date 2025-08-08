@@ -1,3 +1,5 @@
+// EditProfile.tsx
+
 import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
@@ -21,7 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Avatar } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { setProfileImage as setProfileImageAction } from '@/store/authSlice';
-
+import { updateUserImage } from '@/hooks/apis/user/useUpdateUserImage'; // Ensure this path is correct
 
 const GENDER_OPTIONS = ['Male', 'Female', 'NIL'];
 
@@ -46,43 +48,60 @@ const EditProfile = () => {
   });
 
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const { updateUserById} = useUpdateUserById();
+  const { updateUserById } = useUpdateUserById();
   const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  // Pick and upload image using dedicated API
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'We need camera roll permissions to update your profile picture.');
       return;
     }
-  
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
-      base64: true,
     });
-  
+
     if (!result.canceled && result.assets.length > 0) {
       const uri = result.assets[0].uri;
-      const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
-  
-      // Update preview + update in payload later
-      setProfileImage(uri);
-      dispatch(setProfileImageAction(uri));
-      setUserData((prev) => ({ ...prev, profilePicture: base64Image }));
+
+      try {
+        if (!userId) {
+          Alert.alert('Error', 'User ID is missing. Please try later.');
+          return;
+        }
+
+        // Use your dedicated multipart API to upload image
+        const imageResponse = await updateUserImage(userId, uri);
+
+        // The backend should return an object with the new image URL: imageResponse.profilePicture
+        setProfileImage(imageResponse.profilePicture || uri); // fallback to local
+        dispatch(setProfileImageAction(imageResponse.profilePicture));
+        setUserData(prev => ({ ...prev, profilePicture: imageResponse.profilePicture }));
+        Alert.alert('Success', 'Profile image updated!');
+      } catch (err) {
+        Alert.alert('Error', 'Failed to update profile image.');
+      }
     }
   };
-  const handleRemoveProfileImage = () => {
-    setProfileImage(null);
-    setUserData((prev) => ({ ...prev, profilePicture: '' }));
-    dispatch(setProfileImageAction(''));
-  }; 
 
+  // Remove image (this sets to empty; implement API call if needed)
+  const handleRemoveProfileImage = async () => {
+    setProfileImage(null);
+    setUserData(prev => ({ ...prev, profilePicture: '' }));
+    dispatch(setProfileImageAction(''));
+    // If you have a backend endpoint to remove the image, call it here
+  };
+
+  // Load user's profile data on mount
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        let token = await getToken();
+        const token = await getToken();
 
         const meRes = await fetch(`${BASE_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -117,6 +136,7 @@ const EditProfile = () => {
           skillLevel: profileData.playerDetails?.personalRating ?? 0,
         });
 
+        // For avatar preview
         dispatch(setProfileImageAction(profileData.profilePicture));
         setProfileImage(profileData.profilePicture);
 
@@ -125,7 +145,6 @@ const EditProfile = () => {
         Alert.alert('Error', 'Failed to load user details.');
       }
     };
-
     fetchUserData();
   }, [BASE_URL]);
 
@@ -136,33 +155,33 @@ const EditProfile = () => {
     setShowDatePicker(false);
     if (event.type === 'set' && selectedDate) {
       const iso = selectedDate.toISOString().split('T')[0];
-      //console.log('📅 Selected DOB:', iso);
-      setUserData((prev) => ({ ...prev, dateOfBirth: iso }));
+      setUserData(prev => ({ ...prev, dateOfBirth: iso }));
     }
   };
 
+  // Update non-image profile fields
   const handleSave = async () => {
     try {
       const token = await getToken();
-  
-      // Step 1: Get user ID from /users/me
+
+      // Get user ID (already in state, but re-fetching just in case)
       const meRes = await fetch(`${BASE_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
+
       if (!meRes.ok) throw new Error('Failed to get user ID');
-  
+
       const meData = await meRes.json();
       const userId = meData.userId;
 
-      const dobParts = userData.dateOfBirth.split('-'); // e.g. ["2003", "07", "19"]
-      const formattedDOB = [parseInt(dobParts[0]), parseInt(dobParts[1]), parseInt(dobParts[2])]; // [2003, 7, 19]
+      const dobParts = userData.dateOfBirth.split('-');
+      const formattedDOB = [parseInt(dobParts[0]), parseInt(dobParts[1]), parseInt(dobParts[2])];
 
-      // Step 2: Construct payload
+      // Construct payload: only send image URL, NOT base64 image
       const payload = {
         name: userData.name,
         email: userData.email,
-        profilePicture: userData.profilePicture, 
+        profilePicture: userData.profilePicture, // image URL from backend (after uploading via image API)
         phoneNumber: userData.phoneNumber,
         dateOfBirth: formattedDOB,
         gender: userData.gender,
@@ -177,16 +196,15 @@ const EditProfile = () => {
         },
       };
 
-      // Step 3: PUT request to update user profile
       await updateUserById(userId, payload);
-  
+
       Alert.alert('Success', 'Your profile has been updated!');
       router.replace('/(authenticated)/profile');
     } catch (err) {
       console.error('Error updating profile:', err);
       Alert.alert('Error', 'Failed to update profile. Please try again.');
     }
-  }; 
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
@@ -199,7 +217,6 @@ const EditProfile = () => {
           <Ionicons name="arrow-back" size={24} color="#cce5e3" />
         </TouchableOpacity>
         <Text style={styles.modalTitle}>Edit Profile</Text>
-        {/* Placeholder for right side to center title */}
         <View style={styles.backButton} />
       </View>
 
@@ -213,14 +230,10 @@ const EditProfile = () => {
               <UserAvatar size={70} onPress={() => {}} />
             )}
           </TouchableOpacity>
-
-          {/* Pencil Icon */}
           <TouchableOpacity style={styles.editAvatarIcon} onPress={pickImage}>
             <Ionicons name="pencil" size={18} color="#2F7C83" />
           </TouchableOpacity>
         </View>
-
-        {/* Remove Image Button - Show only when image exists */}
         {profileImage ? (
           <TouchableOpacity
             onPress={handleRemoveProfileImage}
@@ -239,7 +252,7 @@ const EditProfile = () => {
           value={userData.name}
           placeholder="Enter Username"
           placeholderTextColor="#a0a0a0"
-          onChangeText={(text) => setUserData({ ...userData, name: text })}
+          onChangeText={text => setUserData({ ...userData, name: text })}
         />
 
         <Text style={styles.label}>Email Id</Text>
@@ -251,43 +264,43 @@ const EditProfile = () => {
 
         <Text style={styles.label}>Street Address</Text>
         <TextInput
-        style={styles.input}
-        value={userData.address}
-        onChangeText={(text) => setUserData({ ...userData, address: text })}
-        placeholder="Enter Street Address"
+          style={styles.input}
+          value={userData.address}
+          onChangeText={text => setUserData({ ...userData, address: text })}
+          placeholder="Enter Street Address"
         />
 
         <Text style={styles.label}>City</Text>
         <TextInput
-        style={styles.input}
-        value={userData.city}
-        onChangeText={(text) => setUserData({ ...userData, city: text })}
-        placeholder="Enter City"
+          style={styles.input}
+          value={userData.city}
+          onChangeText={text => setUserData({ ...userData, city: text })}
+          placeholder="Enter City"
         />
 
         <Text style={styles.label}>State</Text>
         <TextInput
-        style={styles.input}
-        value={userData.state}
-        onChangeText={(text) => setUserData({ ...userData, state: text })}
-        placeholder="Enter State"
+          style={styles.input}
+          value={userData.state}
+          onChangeText={text => setUserData({ ...userData, state: text })}
+          placeholder="Enter State"
         />
 
         <Text style={styles.label}>Country</Text>
         <TextInput
-        style={styles.input}
-        value={userData.country}
-        onChangeText={(text) => setUserData({ ...userData, country: text })}
-        placeholder="Enter Country"
+          style={styles.input}
+          value={userData.country}
+          onChangeText={text => setUserData({ ...userData, country: text })}
+          placeholder="Enter Country"
         />
 
         <Text style={styles.label}>Zip Code</Text>
         <TextInput
-        style={styles.input}
-        value={userData.zipCode}
-        onChangeText={(text) => setUserData({ ...userData, zipCode: text })}
-        placeholder="Enter Zip Code"
-        keyboardType="number-pad"
+          style={styles.input}
+          value={userData.zipCode}
+          onChangeText={text => setUserData({ ...userData, zipCode: text })}
+          placeholder="Enter Zip Code"
+          keyboardType="number-pad"
         />
 
         <Text style={styles.label}>Date Of Birth</Text>
@@ -312,7 +325,7 @@ const EditProfile = () => {
 
         <Text style={styles.label}>Gender</Text>
         <View style={styles.genderContainer}>
-          {GENDER_OPTIONS.map((gender) => (
+          {GENDER_OPTIONS.map(gender => (
             <TouchableOpacity
               key={gender}
               style={[
@@ -349,10 +362,10 @@ const EditProfile = () => {
             maximumValue={6}
             step={0.1}
             value={userData.skillLevel}
-            minimumTrackTintColor='#3E6370'
+            minimumTrackTintColor="#3E6370"
             maximumTrackTintColor="#d3d3d3"
-            thumbTintColor='#3E6370'
-            onValueChange={(value) => setUserData({ ...userData, skillLevel: value })}
+            thumbTintColor="#3E6370"
+            onValueChange={value => setUserData({ ...userData, skillLevel: value })}
           />
           <Text style={styles.skillLevelText}>{userData.skillLevel.toFixed(1)}</Text>
         </View>
