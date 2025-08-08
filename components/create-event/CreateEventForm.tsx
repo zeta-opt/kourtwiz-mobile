@@ -1,4 +1,3 @@
-// Handle initial mount - clear form only on first load
 import UserAvatar from '@/assets/UserAvatar';
 import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay';
 import { AppDispatch, RootState } from '@/store';
@@ -116,124 +115,10 @@ const CreateEventForm = () => {
     repeatEndDate: false,
   });
 
+  // Clear form data on component mount
   useEffect(() => {
-  if (isInitialMount.current) {
-    // Check if we have params from AddPlace
+    // Check if coming from AddPlace with new place data
     if (params.newPlace && params.placeName) {
-      try {
-        const parsedPlaceData = JSON.parse(params.newPlace as string);
-        setNewPlaceData(parsedPlaceData);
-        dispatch(setPlaceToPlay(params.placeName as string));
-
-        // Restore form state if available
-        if (params.formState) {
-          const formState = JSON.parse(params.formState as string);
-          setEventName(formState.eventName || '');
-          setCourt(formState.court || '');
-          setSelectedDate(new Date(formState.selectedDate));
-          setStartTime(
-            formState.startTime ? new Date(formState.startTime) : null
-          );
-          setEndTime(formState.endTime ? new Date(formState.endTime) : null);
-          setRepeat(formState.repeat || '');
-          setRepeatEndDate(
-            formState.repeatEndDate ? new Date(formState.repeatEndDate) : null
-          );
-          setSkillLevel(formState.skillLevel || 0);
-          setPrice(formState.price || '');
-          setMaxPlayers(formState.maxPlayers || '');
-          setDescription(formState.description || '');
-          setCustomRepeatDays(formState.customRepeatDays || []);
-          setCustomRepeatDates(
-            (formState.customRepeatDates || []).map((d: string) => new Date(d))
-          );
-          setRepeatInterval(formState.repeatInterval || '1');
-          setCustomInterval(formState.customInterval || 1);
-        }
-
-        // Clear params to prevent re-processing
-        router.setParams({ newPlace: '', placeName: '', formState: '' });
-      } catch (error) {
-        console.error('Error parsing data from AddPlace:', error);
-      }
-    } else {
-      // Only reset if this is truly the first load (not coming from AddPlace)
-      dispatch(setPlaceToPlay(''));
-      dispatch(setPreferredContacts([]));
-      resetForm();
-    }
-    isInitialMount.current = false;
-  }
-}, []);
-
-// Handle subsequent params from AddPlace
-useEffect(() => {
-  if (!isInitialMount.current && params.newPlace && params.placeName) {
-    try {
-      const parsedPlaceData = JSON.parse(params.newPlace as string);
-      setNewPlaceData(parsedPlaceData);
-      dispatch(setPlaceToPlay(params.placeName as string));
-
-      // Restore form state if available
-      if (params.formState) {
-        const formState = JSON.parse(params.formState as string);
-        setEventName(formState.eventName || '');
-        setCourt(formState.court || '');
-        setSelectedDate(new Date(formState.selectedDate));
-        setStartTime(
-          formState.startTime ? new Date(formState.startTime) : null
-        );
-        setEndTime(formState.endTime ? new Date(formState.endTime) : null);
-        setRepeat(formState.repeat || '');
-        setRepeatEndDate(
-          formState.repeatEndDate ? new Date(formState.repeatEndDate) : null
-        );
-        setSkillLevel(formState.skillLevel || 0);
-        setPrice(formState.price || '');
-        setMaxPlayers(formState.maxPlayers || '');
-        setDescription(formState.description || '');
-        setCustomRepeatDays(formState.customRepeatDays || []);
-        setCustomRepeatDates(
-          (formState.customRepeatDates || []).map((d: string) => new Date(d))
-        );
-        setRepeatInterval(formState.repeatInterval || '1');
-        setCustomInterval(formState.customInterval || 1);
-      }
-
-      // Clear params to prevent re-processing
-      router.setParams({ newPlace: '', placeName: '', formState: '' });
-    } catch (error) {
-      console.error('Error parsing data from AddPlace:', error);
-    }
-  }
-}, [params.newPlace, params.placeName, params.formState]);
-  // Handle initial mount - clear form only on first load
-  useEffect(() => {
-    if (isInitialMount.current) {
-      // Check if we have params from AddPlace
-      if (params.newPlace && params.placeName) {
-        try {
-          const parsedPlaceData = JSON.parse(params.newPlace as string);
-          setNewPlaceData(parsedPlaceData);
-          dispatch(setPlaceToPlay(params.placeName as string));
-          // Clear params to prevent re-processing
-          router.setParams({ newPlace: '', placeName: '' });
-        } catch (error) {
-          console.error('Error parsing new place data:', error);
-        }
-      } else {
-        // Only reset if this is truly the first load (not coming from AddPlace)
-        dispatch(setPlaceToPlay(''));
-        dispatch(setPreferredContacts([]));
-        resetForm();
-      }
-      isInitialMount.current = false;
-    }
-  }, []);
-
-  // Handle subsequent params from AddPlace
-  useEffect(() => {
-    if (!isInitialMount.current && params.newPlace && params.placeName) {
       try {
         const parsedPlaceData = JSON.parse(params.newPlace as string);
         setNewPlaceData(parsedPlaceData);
@@ -243,8 +128,14 @@ useEffect(() => {
       } catch (error) {
         console.error('Error parsing new place data:', error);
       }
+    } else {
+      // Clear Redux state only if not coming from AddPlace
+      dispatch(setPlaceToPlay(''));
+      dispatch(setPreferredContacts([]));
+      // Reset all form fields
+      resetForm();
     }
-  }, [params.newPlace, params.placeName]);
+  }, [params.newPlace, params.placeName, dispatch]); // Only watch these specific params
 
   // Function to reset form to initial state
   const resetForm = () => {
@@ -273,6 +164,9 @@ useEffect(() => {
       repeatEndDate: false,
     });
   };
+
+  // Get display place name
+  const displayPlaceName = newPlaceData?.Name || placeToPlay || '';
 
   const handleLayout = (e: LayoutChangeEvent) => {
     sliderWidth.current = e.nativeEvent.layout.width;
@@ -344,7 +238,9 @@ useEffect(() => {
 
   const handleModalClose = (selectedPlace?: string) => {
     if (selectedPlace) {
-      dispatch(setPlaceToPlay(selectedPlace));
+      setPlaceToPlay(selectedPlace);
+      // Clear newPlaceData when user selects a different place
+      setNewPlaceData(null);
     }
     setModalVisible(false);
   };
@@ -424,31 +320,7 @@ useEffect(() => {
   };
 
   const handleAddPlace = () => {
-    // Save current form state before navigating
-    const formState = {
-      eventName,
-      court,
-      selectedDate: selectedDate.toISOString(),
-      startTime: startTime?.toISOString() || null,
-      endTime: endTime?.toISOString() || null,
-      repeat,
-      repeatEndDate: repeatEndDate?.toISOString() || null,
-      skillLevel,
-      price,
-      maxPlayers,
-      description,
-      customRepeatDays,
-      customRepeatDates: customRepeatDates.map((d) => d.toISOString()),
-      repeatInterval,
-      customInterval,
-    };
-
-    router.push({
-      pathname: '/(authenticated)/add-place',
-      params: {
-        formState: JSON.stringify(formState),
-      },
-    });
+    router.push('/(authenticated)/add-place');
   };
 
   const handleCustomApply = () => {
@@ -494,7 +366,7 @@ useEffect(() => {
   const handleSubmit = async () => {
     const newErrors = {
       eventName: !eventName,
-      placeToPlay: !placeToPlay,
+      placeToPlay: !newPlaceData && !placeToPlay,
       date: !selectedDate,
       startTime: !startTime,
       endTime: !endTime,
@@ -659,7 +531,7 @@ useEffect(() => {
                 <TextInput
                   style={styles.input}
                   placeholder='Enter Place Name'
-                  value={newPlaceData ? newPlaceData.Name : placeToPlay}
+                  value={displayPlaceName}
                   editable={false}
                   pointerEvents='none'
                 />
