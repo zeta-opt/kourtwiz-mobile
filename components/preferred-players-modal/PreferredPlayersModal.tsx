@@ -2,17 +2,19 @@ import { useGetRegisteredPlayers } from '@/hooks/apis/player-finder/useGetRegist
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 import { RootState } from '@/store';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import {
-  Button,
-  Checkbox,
-  Divider,
-  IconButton,
+  ActivityIndicator,
   Modal,
-  Portal,
-  Searchbar,
-  Text,
-} from 'react-native-paper';
+  Platform,
+  Text as RNText,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Button, Checkbox, Searchbar } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSelector } from 'react-redux';
 
 export interface Contact {
@@ -33,9 +35,9 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   onSelectPlayers,
   selectedPlayers,
 }) => {
-  console.log(selectedPlayers, 'selectedPlayers in modal');
   const [searchQuery, setSearchQuery] = useState('');
   const [tempSelectedPlayers, setTempSelectedPlayers] = useState<Contact[]>([]);
+
   // Get user ID from Redux store
   const userId = useSelector((state: RootState) => state.auth?.user?.id || '');
 
@@ -55,7 +57,6 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     enabled: visible,
   });
 
-  // Inside the component body:
   useEffect(() => {
     if (visible) {
       setTempSelectedPlayers(selectedPlayers);
@@ -120,10 +121,20 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     ...preferredPlayersAsContacts,
     ...registeredPlayersAsContacts,
   ];
+
   const filteredPlayers = allPlayers.filter(
     (player) =>
       player.contactName &&
       player.contactName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const preferredFilteredPlayers = filteredPlayers.filter(
+    (p) => p.contactPhoneNumber && p.contactPhoneNumber.startsWith('preferred-')
+  );
+
+  const registeredFilteredPlayers = filteredPlayers.filter(
+    (p) =>
+      !p.contactPhoneNumber || !p.contactPhoneNumber.startsWith('preferred-')
   );
 
   const renderPlayer = (player: Contact, index: number) => {
@@ -132,28 +143,26 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
       player.contactPhoneNumber.startsWith('preferred-');
 
     return (
-      <View
+      <TouchableOpacity
         key={`${player.contactPhoneNumber || index}-${index}`}
-        style={styles.playerCard}
+        style={styles.playerItem}
+        onPress={() => handleTogglePlayer(player)}
+        activeOpacity={0.7}
       >
-        <View style={styles.playerContent}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.playerName}>
-              {player.contactName || 'Unknown Player'}
-            </Text>
-            <Text style={styles.playerSubText}>
-              {isPreferred
-                ? 'Preferred Player'
-                : player.contactPhoneNumber || ''}
-            </Text>
-          </View>
-          <Checkbox
-            status={isPlayerSelected(player) ? 'checked' : 'unchecked'}
-            onPress={() => handleTogglePlayer(player)}
-            color='#2C7E88'
-          />
+        <View style={styles.playerInfo}>
+          <RNText style={styles.playerName}>
+            {player.contactName || 'Unknown Player'}
+          </RNText>
+          <RNText style={styles.playerPhone}>
+            {isPreferred ? 'Preferred Player' : player.contactPhoneNumber || ''}
+          </RNText>
         </View>
-      </View>
+        <Checkbox
+          status={isPlayerSelected(player) ? 'checked' : 'unchecked'}
+          onPress={() => handleTogglePlayer(player)}
+          color='#2C7E88'
+        />
+      </TouchableOpacity>
     );
   };
 
@@ -161,210 +170,279 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   const hasError = userStatus === 'error' || registeredStatus === 'error';
 
   return (
-    <Portal>
-      <Modal
-        visible={visible}
-        onDismiss={handleCancel}
-        contentContainerStyle={styles.modalContainer}
-      >
+    <Modal
+      animationType='slide'
+      transparent={false}
+      visible={visible}
+      onRequestClose={handleCancel}
+      presentationStyle='fullScreen'
+    >
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text variant='headlineSmall'>Players</Text>
-          <IconButton icon='close' size={24} onPress={handleCancel} />
+          <TouchableOpacity onPress={handleCancel} style={styles.closeButton}>
+            <Icon name='close' size={24} color='#333' />
+          </TouchableOpacity>
+          <RNText style={styles.headerTitle}>Select Players</RNText>
+          <View style={styles.placeholder} />
         </View>
 
-        <Searchbar
-          placeholder='Search players...'
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchBar}
-        />
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Searchbar
+            placeholder='Search players...'
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+            style={styles.searchBar}
+            inputStyle={styles.searchInput}
+          />
+        </View>
 
-        <Divider />
-
-        <ScrollView style={styles.scrollView}>
+        {/* Content */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {isLoading ? (
-            <ActivityIndicator size='large' style={styles.loader} />
+            <View style={styles.centerContent}>
+              <ActivityIndicator size='large' color='#2C7E88' />
+              <RNText style={styles.loadingText}>Loading players...</RNText>
+            </View>
           ) : hasError ? (
-            <Text style={styles.errorText}>
-              Failed to load players. Please try again.
-            </Text>
-          ) : filteredPlayers.length > 0 ? (
+            <View style={styles.centerContent}>
+              <Icon name='error-outline' size={48} color='#ff6b6b' />
+              <RNText style={styles.errorText}>Failed to load players</RNText>
+              <RNText style={styles.errorSubtext}>
+                Please check your connection and try again
+              </RNText>
+            </View>
+          ) : filteredPlayers.length === 0 ? (
+            <View style={styles.centerContent}>
+              <Icon name='search-off' size={48} color='#999' />
+              <RNText style={styles.emptyText}>No players found</RNText>
+              <RNText style={styles.emptySubtext}>
+                Try adjusting your search
+              </RNText>
+            </View>
+          ) : (
             <>
               {/* Preferred Players Section */}
-              {filteredPlayers.some(
-                (p) =>
-                  p.contactPhoneNumber &&
-                  p.contactPhoneNumber.startsWith('preferred-')
-              ) && (
-                <>
-                  <Text style={styles.sectionHeader}>Preferred Players</Text>
-                  {filteredPlayers
-                    .filter(
-                      (p) =>
-                        p.contactPhoneNumber &&
-                        p.contactPhoneNumber.startsWith('preferred-')
-                    )
-                    .map((player, index) => renderPlayer(player, index))}
-                </>
+              {preferredFilteredPlayers.length > 0 && (
+                <View style={styles.section}>
+                  <RNText style={styles.sectionTitle}>PREFERRED PLAYERS</RNText>
+                  {preferredFilteredPlayers.map((player, index) =>
+                    renderPlayer(player, index)
+                  )}
+                </View>
               )}
 
               {/* Registered Players Section */}
-              {filteredPlayers.some(
-                (p) =>
-                  !p.contactPhoneNumber ||
-                  !p.contactPhoneNumber.startsWith('preferred-')
-              ) && (
-                <>
-                  <Text style={styles.sectionHeader}>Registered Players</Text>
-                  {filteredPlayers
-                    .filter(
-                      (p) =>
-                        !p.contactPhoneNumber ||
-                        !p.contactPhoneNumber.startsWith('preferred-')
-                    )
-                    .map((player, index) => renderPlayer(player, index))}
-                </>
+              {registeredFilteredPlayers.length > 0 && (
+                <View style={styles.section}>
+                  <RNText style={styles.sectionTitle}>
+                    REGISTERED PLAYERS
+                  </RNText>
+                  {registeredFilteredPlayers.map((player, index) =>
+                    renderPlayer(player, index)
+                  )}
+                </View>
+              )}
+
+              {/* Load More Button */}
+              {hasMore && registeredStatus === 'success' && (
+                <TouchableOpacity
+                  style={styles.loadMoreButton}
+                  onPress={loadMore}
+                >
+                  <RNText style={styles.loadMoreText}>Load More Players</RNText>
+                </TouchableOpacity>
               )}
             </>
-          ) : (
-            <Text style={styles.emptyText}>No players found</Text>
-          )}
-
-          {hasMore && registeredStatus === 'success' && (
-            <Button
-              mode='text'
-              onPress={loadMore}
-              style={styles.loadMoreButton}
-              textColor='#2C7E88'
-            >
-              Load More
-            </Button>
           )}
         </ScrollView>
 
-        <Divider />
-
+        {/* Footer */}
         <View style={styles.footer}>
+          <View style={styles.selectedInfo}>
+            <RNText style={styles.selectedCount}>
+              {tempSelectedPlayers.length} player
+              {tempSelectedPlayers.length !== 1 ? 's' : ''} selected
+            </RNText>
+          </View>
           <Button
             mode='contained'
             onPress={handleSave}
-            style={styles.addPlayersButton}
-            contentStyle={{ paddingVertical: 10 }}
-            labelStyle={{ fontSize: 16 }}
+            style={styles.addButton}
+            labelStyle={styles.addButtonLabel}
+            contentStyle={styles.addButtonContent}
           >
-            Add Players ({tempSelectedPlayers.length})
+            Add Players
           </Button>
         </View>
-      </Modal>
-    </Portal>
+      </SafeAreaView>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  container: {
     flex: 1,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  playerCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    marginHorizontal: 16,
-    marginVertical: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
-
-  playerContent: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
-
+  closeButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  placeholder: {
+    width: 40,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  searchBar: {
+    backgroundColor: '#f5f5f5',
+    elevation: 0,
+    borderRadius: 10,
+  },
+  searchInput: {
+    fontSize: 16,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  centerContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 100,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#ff6b6b',
+  },
+  errorSubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#999',
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#999',
+  },
+  section: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    letterSpacing: 0.5,
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  playerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e0e0e0',
+  },
+  playerInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
   playerName: {
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
+    marginBottom: 2,
   },
-
-  playerSubText: {
-    fontSize: 13,
-    color: '#777',
-    marginTop: 2,
-  },
-
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingLeft: 16,
-    paddingTop: 8,
-  },
-  searchBar: {
-    margin: 16,
-    marginTop: 8,
-    backgroundColor: '#D9D9D9',
-  },
-  scrollView: {
-    flex: 1,
-    minHeight: 300,
-  },
-  sectionHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    backgroundColor: '#f5f5f5',
-  },
-  listItem: {
-    paddingVertical: 8,
-  },
-
-  loader: {
-    marginTop: 50,
+  playerPhone: {
+    fontSize: 14,
+    color: '#666',
   },
   loadMoreButton: {
-    marginVertical: 16,
+    alignSelf: 'center',
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
   },
-  errorText: {
-    textAlign: 'center',
-    color: 'red',
-    marginTop: 50,
-    paddingHorizontal: 16,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 50,
+  loadMoreText: {
+    fontSize: 16,
+    color: '#2C7E88',
+    fontWeight: '500',
   },
   footer: {
-    padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: '#e0e0e0',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#fff',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
-  addPlayersButton: {
-    width: '100%',
-    borderRadius: 8,
-    backgroundColor: '#2C7E88', // Changed to a more suitable color
+  selectedInfo: {
+    marginBottom: 12,
   },
   selectedCount: {
-    marginBottom: 12,
+    fontSize: 14,
     color: '#666',
+    textAlign: 'center',
   },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
+  addButton: {
+    borderRadius: 8,
+    backgroundColor: '#2C7E88',
   },
-  button: {
-    minWidth: 80,
+  addButtonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  addButtonContent: {
+    paddingVertical: 8,
   },
 });
 

@@ -24,20 +24,12 @@ import {
   Alert,
   Animated,
   LayoutChangeEvent,
-  Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-  Button,
-  Dialog,
-  Icon,
-  IconButton,
-  Portal,
-  Text,
-} from 'react-native-paper';
+import { Button, Dialog, Icon, Portal, Text } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PlayerCountDropdown from '../player-count/PlayerCountDropdown';
@@ -77,12 +69,12 @@ const FindPlayerLayout = () => {
   );
   console.log(preferredContacts);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState<
-     boolean | null
-   >(null);
- 
-   const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
-   const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
-   const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
+    boolean | null
+  >(null);
+
+  const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
+  const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
+  const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
 
   // Check location permission status on mount
   useEffect(() => {
@@ -93,23 +85,22 @@ const FindPlayerLayout = () => {
     dispatch(loadContacts());
   }, [dispatch]);
 
-
   const checkLocationPermission = async () => {
-     const { status } = await Location.getForegroundPermissionsAsync();
-     setLocationPermissionGranted(status === 'granted');
+    const { status } = await Location.getForegroundPermissionsAsync();
+    setLocationPermissionGranted(status === 'granted');
   };
 
-    const handleClubDetailsClick = async () => {
+  const handleClubDetailsClick = async () => {
     // First check if we already have permission
-     const { status: currentStatus } =
-       await Location.getForegroundPermissionsAsync();
- 
-     if (currentStatus !== 'granted') {
-       // Request permission
-	       const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      setLocationPermissionGranted(true);
-      dispatch(openPreferredPlaceModal());
+    const { status: currentStatus } =
+      await Location.getForegroundPermissionsAsync();
+
+    if (currentStatus !== 'granted') {
+      // Request permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        setLocationPermissionGranted(true);
+        dispatch(openPreferredPlaceModal());
         Alert.alert(
           'Location Access Granted',
           'You can now search for nearby courts in addition to your preferred places!',
@@ -125,12 +116,9 @@ const FindPlayerLayout = () => {
         );
       }
     } else {
-       setLocationPermissionGranted(true);
-	       dispatch(openPreferredPlaceModal());
+      setLocationPermissionGranted(true);
+      dispatch(openPreferredPlaceModal());
     }
-  };
-  const handleAddPlace = () => {
-    router.push('/(authenticated)/add-place');
   };
 
   const showPreferredPlayers = () => {
@@ -141,9 +129,9 @@ const FindPlayerLayout = () => {
     const { status } = await Contacts.getPermissionsAsync();
 
     if (status === 'granted') {
-      setContactsModalVisible(true);}
-      else {
-	       const { status: newStatus } = await Contacts.requestPermissionsAsync();
+      setContactsModalVisible(true);
+    } else {
+      const { status: newStatus } = await Contacts.requestPermissionsAsync();
 
       if (newStatus === 'granted') {
         setContactsModalVisible(true);
@@ -153,14 +141,14 @@ const FindPlayerLayout = () => {
           'To select contacts from your device, we need access to your contacts.',
           [
             {
-               text: "Don't Allow",
-	             },
+              text: "Don't Allow",
+            },
             {
               text: 'Allow',
               onPress: async () => {
                 const { status: finalStatus } =
-                   await Contacts.requestPermissionsAsync();
-	                 if (finalStatus === 'granted') {
+                  await Contacts.requestPermissionsAsync();
+                if (finalStatus === 'granted') {
                   setContactsModalVisible(true);
                 } else {
                   Alert.alert(
@@ -175,7 +163,6 @@ const FindPlayerLayout = () => {
       }
     }
   };
-
 
   const handleRemovePlayer = (index: number) => {
     dispatch(
@@ -349,13 +336,7 @@ const FindPlayerLayout = () => {
               </View>
             </View>
           </Button>
-          <IconButton
-            icon='plus'
-            size={24}
-            iconColor='white'
-            onPress={handleAddPlace}
-            style={styles.disabledPlus}
-          />
+
           <PreferredPlacesModal
             visible={preferredPlaceModal}
             handleClose={() => {
@@ -373,7 +354,7 @@ const FindPlayerLayout = () => {
         )}
 
         {/* Event Name Section */}
-        <Text style={styles.sectionTitle}>Event Name</Text>
+        {/* <Text style={styles.sectionTitle}>Event Name</Text>
         <View style={styles.dropdownRow}>
           <Button
             mode='outlined'
@@ -388,7 +369,7 @@ const FindPlayerLayout = () => {
               </Text>
             </View>
           </Button>
-        </View>
+        </View> */}
 
         {/* Game Schedule Section - Using the new component */}
         <GameSchedulePicker

@@ -2,7 +2,7 @@ import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useMemo, useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, Platform, Modal, View as RNView, TouchableWithoutFeedback } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Button, Menu, Text } from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 import TopBarWithChips from '@/components/home-page/topBarWithChips';
 import OpenPlayCard from '@/components/home-page/openPlayCard';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const OpenPlay = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -21,6 +22,8 @@ const OpenPlay = () => {
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  const [tempDate, setTempDate] = useState<Date | null>(selectedDate ?? new Date());
+  const [tempTime, setTempTime] = useState<Date | null>(selectedTime ?? new Date());
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -155,23 +158,117 @@ console.log('Filtered Plays:', filteredPlays);
         </View>
       </ScrollView>
 
-      {/* Pickers */}
-      {showDatePicker && (
+      {/* iOS Date Picker Modal */}
+      {Platform.OS === 'ios' && showDatePicker && (
+        <Modal
+          transparent
+          animationType="slide"
+          visible={showDatePicker}
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
+            <RNView style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <SafeAreaView style={styles.modalContent}>
+                  <DateTimePicker
+                    value={tempDate ?? new Date()}
+                    mode="date"
+                    display="spinner"
+                    onChange={(event, date) => {
+                      if (Platform.OS === 'ios' && date) {
+                        setTempDate(date); // update only temp state
+                      }
+                    }}
+                  />
+                  <RNView style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Button
+                      onPress={() => {
+                        setShowDatePicker(false);
+                        setTempDate(selectedDate); // discard changes
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onPress={() => {
+                        setShowDatePicker(false);
+                        if (tempDate) setSelectedDate(tempDate); // apply changes
+                      }}
+                    >
+                      Done
+                    </Button>
+                  </RNView>
+                </SafeAreaView>
+              </TouchableWithoutFeedback>
+            </RNView>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+
+      {Platform.OS === 'ios' && showTimePicker && (
+        <Modal
+          transparent
+          animationType="slide"
+          visible={showTimePicker}
+          onRequestClose={() => setShowTimePicker(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowTimePicker(false)}>
+            <RNView style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <SafeAreaView style={styles.modalContent}>
+                  <DateTimePicker
+                    value={tempTime ?? new Date()}
+                    mode="time"
+                    display="spinner"
+                    onChange={(event, time) => {
+                      if (Platform.OS === 'ios' && time) {
+                        setTempTime(time);
+                      }
+                    }}
+                    style={{ backgroundColor: 'white' }}
+                  />
+                  <RNView style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Button
+                      onPress={() => {
+                        setShowTimePicker(false);
+                        setTempTime(selectedTime); // discard changes
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onPress={() => {
+                        setShowTimePicker(false);
+                        if (tempTime) setSelectedTime(tempTime); // apply changes
+                      }}
+                    >
+                      Done
+                    </Button>
+                  </RNView>
+                </SafeAreaView>
+              </TouchableWithoutFeedback>
+            </RNView>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
+
+      {Platform.OS === 'android' && showDatePicker && (
         <DateTimePicker
           value={selectedDate || new Date()}
-          mode="date"
-          display="calendar"
+          mode='date'
+          display='calendar'
           onChange={(event, date) => {
             setShowDatePicker(false);
             if (date) setSelectedDate(date);
           }}
         />
       )}
-      {showTimePicker && (
+
+      {Platform.OS === 'android' && showTimePicker && (
         <DateTimePicker
           value={selectedTime || new Date()}
-          mode="time"
-          display="spinner"
+          mode='time'
+          display='spinner'
           onChange={(event, time) => {
             setShowTimePicker(false);
             if (time) setSelectedTime(time);
@@ -269,5 +366,17 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
     fontSize: 14,
     color: '#666',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: 300,
   },
 });
