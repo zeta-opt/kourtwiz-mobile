@@ -5,7 +5,6 @@ import OpenPlayCard from '@/components/home-page/openPlayCard';
 import OutgoingInviteCardItem from '@/components/home-page/outgoingInvitationsCard';
 import PlayCalendarCard from '@/components/home-page/PlayCalendarCard';
 import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
-import PlayersNearbyMap from '@/components/players-nearby/PlayersNearbyMap';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
@@ -30,10 +29,10 @@ import {
 import {
   Button,
   Dialog,
+  Modal,
   Provider as PaperProvider,
   Portal,
   TextInput,
-  Modal,
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux'; // ADD useDispatch
 
@@ -348,8 +347,8 @@ const Dashboard = () => {
           </View>
         <View style={styles.playCalendarHeaderRow}>
           <Text style={styles.playCalendarHeader}>Play Calendar</Text>
-          <TouchableOpacity onPress={() => router.push('/(authenticated)/full-calendar')}>
-            <Text style={styles.viewAllText}>View All</Text>
+          <TouchableOpacity onPress={() => router.push('/(authenticated)/play-calendar')}>
+            <Text style={styles.viewAllText}>Play Calendar</Text>
           </TouchableOpacity>
         </View>
 
