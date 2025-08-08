@@ -223,6 +223,8 @@ const handleEndDateConfirm = (date: Date) => {
     await setUnavailability(userId);
     console.log('payload',payload)
     console.log('Unavailability set successfully!');
+    alert('Unavailability set successfully!');
+    router.replace('/(authenticated)/home')
   } catch (err) {
     console.error('Failed to set unavailability', err);
   }
