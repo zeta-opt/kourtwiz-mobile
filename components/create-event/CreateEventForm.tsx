@@ -607,18 +607,19 @@ const CreateEventForm = () => {
                   <Text
                     style={[
                       styles.timeText,
-                      { color: selectedDate ? '#000' : '#9F9F9F' },
+                      { color: repeatEndDate ? '#000' : '#9F9F9F' },
                     ]}
                   >
-                    {selectedDate
-                      ? selectedDate.toLocaleDateString('en-GB')
+                    {repeatEndDate
+                      ? repeatEndDate.toLocaleDateString('en-GB')
                       : 'DD/MM/YYYY'}
                   </Text>
                   <Icon
                     source='calendar'
                     size={20}
-                    color={selectedDate ? '#000' : '#9F9F9F'}
+                    color={repeatEndDate ? '#000' : '#9F9F9F'}
                   />
+
                 </View>
               </Button>
             </View>
