@@ -24,15 +24,17 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite,
   const router = useRouter();
 
   //const request = invite.Requests?.[0];
-  const acceptedCount = invite.accepted || 0;
-  const totalPlayers = invite.playersNeeded || 0;
+  const acceptedCount = invite.accepted + 1 || 0;
+  const totalPlayers = invite.playersNeeded + 1 || 0;
+  const totalPlayers2 = invite.playersNeeded || 0;
   console.log('Invite:', invite);
 
   const isFullyAccepted = acceptedCount === totalPlayers;
   const statusText = isFullyAccepted ? 'Accepted' : 'Pending';
   const statusColor = isFullyAccepted ? '#429645' : '#c47602';
 
-  const peopleText = `${totalPlayers} ${totalPlayers === 1 ? 'Person' : 'People'} Invited`;
+  const peopleText = `${totalPlayers2} ${totalPlayers === 1 ? 'Person' : 'People'} Invited`;
+
 
   const formatDateParts = (timestamp: number) => {
     const dateObj = new Date(timestamp);

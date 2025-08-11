@@ -69,10 +69,10 @@ export default function OpenPlayDetailedView() {
   const userId = user?.userId;
   const isRegistered = registeredPlayerIds.includes(userId);
   const isWaitlisted = waitlistedPlayerIds.includes(userId);
-  const isFull = (registeredPlayerIds.length - 1) >= selectedPlay.maxPlayers;
+  const isFull = (registeredPlayerIds.length) >= selectedPlay.maxPlayers + 1;
 
-  const acceptedCount = registeredPlayerIds.length - 1;
-  const maxSlots = selectedPlay.maxPlayers;
+  const acceptedCount = registeredPlayerIds.length;
+  const maxSlots = selectedPlay.maxPlayers + 1;
   const courtName = selectedPlay.allCourts?.Name || 'Not specified';
   const eventName = selectedPlay.eventName || 'Open Play';
   const requestorName = requestorData?.name || 'Someone';

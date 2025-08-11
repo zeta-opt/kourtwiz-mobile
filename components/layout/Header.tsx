@@ -82,14 +82,14 @@ const Header = () => {
         <View style={styles.profileWrapper}>
           <View style={styles.iconRow}>
             {/* Messages Icon */}
-            <TouchableOpacity onPress={() => Alert.alert('Messages')}>
+            {/* <TouchableOpacity onPress={() => Alert.alert('Messages')}>
               <Ionicons
                 name='chatbox-outline'
                 size={24}
                 color='black'
                 style={{ marginRight: 12 }}
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* Bell Icon */}
             <TouchableOpacity onPress={() => Alert.alert('Notifications')}>

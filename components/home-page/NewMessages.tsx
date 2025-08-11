@@ -27,16 +27,13 @@ export default function NewMessages({ userId }: NewMessagesProps) {
   const { data: sessions } = useGetAvailableIWantToPlay(userId);
   const [modalVisible, setModalVisible] = useState(false);
 
-  if (!sessions || sessions.length === 0) return null;
-
-  const filteredSessions = sessions.filter((session) => {
-    const participants = session.preferredPlayers ?? [];
-    const isUserInvited = participants.some((p) => p.userId === userId);
-    const isCreator = session.userId === userId;
-    return isUserInvited && !isCreator;
-  });
-
-  if (filteredSessions.length === 0) return null;
+  const filteredSessions =
+    sessions?.filter((session) => {
+      const participants = session.preferredPlayers ?? [];
+      const isUserInvited = participants.some((p) => p.userId === userId);
+      const isCreator = session.userId === userId;
+      return isUserInvited && !isCreator;
+    }) || [];
 
   const sortedSessions = filteredSessions.sort((a, b) => {
     const dateA = convertDateArrayToDate(a.createdAt);
@@ -51,30 +48,39 @@ export default function NewMessages({ userId }: NewMessagesProps) {
       <View style={styles.container}>
         <View style={styles.headerRow}>
           <Text style={styles.heading}>New Messages</Text>
-          <TouchableOpacity onPress={() => setModalVisible(true)}>
-            <Text style={styles.viewAllText}>View All</Text>
-          </TouchableOpacity>
+          {sortedSessions.length > 0 && (
+            <TouchableOpacity onPress={() => setModalVisible(true)}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.card}>
-          {previewMessages.map((item) => {
-            const createdAtDate = convertDateArrayToDate(item.createdAt);
-            return (
-              <View key={item.id} style={styles.messageBlock}>
-                <View style={styles.userRow}>
-                  <MaterialIcons name="person" size={16} color="#444" />
-                  <Text style={styles.username}>{item.username}</Text>
+          {sortedSessions.length === 0 ? (
+            <Text style={styles.noMessageText}>No new messages</Text>
+          ) : (
+            previewMessages.map((item) => {
+              const createdAtDate = convertDateArrayToDate(item.createdAt);
+              return (
+                <View key={item.id} style={styles.messageBlock}>
+                  <View style={styles.userRow}>
+                    <MaterialIcons name="person" size={16} color="#444" />
+                    <Text style={styles.username}>{item.username}</Text>
+                  </View>
+                  <View style={styles.messageRow}>
+                    <Text style={styles.messageText} numberOfLines={1}>
+                      {item.message}
+                    </Text>
+                    <Text style={styles.timeText}>{formatTime(createdAtDate)}</Text>
+                  </View>
                 </View>
-                <View style={styles.messageRow}>
-                  <Text style={styles.messageText} numberOfLines={1}>{item.message}</Text>
-                  <Text style={styles.timeText}>{formatTime(createdAtDate)}</Text>
-                </View>
-              </View>
-            );
-          })}
+              );
+            })
+          )}
         </View>
       </View>
 
+      {/* Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -84,23 +90,29 @@ export default function NewMessages({ userId }: NewMessagesProps) {
                 <Text style={styles.closeButton}>×</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator>
-              {sortedSessions.map((item) => {
-                const createdAtDate = convertDateArrayToDate(item.createdAt);
-                return (
-                  <View key={item.id} style={styles.modalMessageBlock}>
-                    <View style={styles.userRow}>
-                      <MaterialIcons name="person" size={16} color="#444" />
-                      <Text style={styles.username}>{item.username}</Text>
+            {sortedSessions.length === 0 ? (
+              <Text style={styles.noMessageText}>No new messages</Text>
+            ) : (
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator>
+                {sortedSessions.map((item) => {
+                  const createdAtDate = convertDateArrayToDate(item.createdAt);
+                  return (
+                    <View key={item.id} style={styles.modalMessageBlock}>
+                      <View style={styles.userRow}>
+                        <MaterialIcons name="person" size={16} color="#444" />
+                        <Text style={styles.username}>{item.username}</Text>
+                      </View>
+                      <View style={styles.modalMessageRow}>
+                        <Text style={styles.modalMessageText}>{item.message}</Text>
+                        <Text style={styles.modalTimeText}>
+                          {formatTime(createdAtDate)}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.modalMessageRow}>
-                      <Text style={styles.modalMessageText}>{item.message}</Text>
-                      <Text style={styles.modalTimeText}>{formatTime(createdAtDate)}</Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </ScrollView>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
@@ -133,6 +145,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 12,
+  },
+  noMessageText: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    paddingVertical: 8,
   },
   messageBlock: {
     marginBottom: 12,

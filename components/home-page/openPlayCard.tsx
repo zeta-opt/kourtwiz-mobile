@@ -179,8 +179,8 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
       const isRegistered = registeredPlayers.includes(userId);
       const isWaitlisted = waitlistedPlayers.includes(userId);
 
-      const filledSlots = registeredPlayers.length - 1;
-      const isFull = filledSlots >= play.maxPlayers;
+      const filledSlots = registeredPlayers.length ;
+      const isFull = filledSlots >= play.maxPlayers + 1;
 
       return {
         id: play.id,
@@ -190,7 +190,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
         duration: play.durationMinutes,
         'skill level': play.skillLevel,
         court: courtName,
-        'max slots': play.maxPlayers,
+        'max slots': play.maxPlayers + 1,
         'filled slots': filledSlots,
         action: play.playTypeName?.split('_').join(' ').toLowerCase(),
         isFull,

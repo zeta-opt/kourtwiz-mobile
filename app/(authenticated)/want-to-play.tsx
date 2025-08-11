@@ -45,6 +45,7 @@ const IWantToPlayScreen = () => {
       Alert.alert('Success', 'Broadcast sent to all players.');
       setMessage('');
       setLocation('');
+      router.push('/(authenticated)/home');
     } catch (error) {
       console.error('Broadcast failed', error);
       Alert.alert('Error', 'Failed to send broadcast.');
@@ -76,6 +77,7 @@ const IWantToPlayScreen = () => {
       Alert.alert('Message sent to preferred players Successfully');
       setMessage('');
       setLocation('');
+      router.push('/(authenticated)/home');
     } catch (error) {
       console.error('Error sending message to preferred players:', error);
       Alert.alert('Error', 'Failed to send message.');
