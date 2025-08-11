@@ -25,6 +25,8 @@ import { useRemoveGroupMember } from '@/hooks/apis/groups/useRemoveMember';
 import MemberInfoModal from '@/components/groups/MemberInfoModal';
 import { useDeleteGroup } from '@/hooks/apis/groups/useDeleteGroup';
 import { useUpdateGroupName } from '@/hooks/apis/groups/useUpdateGroupName';
+import { useAddGroupMember } from '@/hooks/apis/groups/useAddMembers';
+import ContactsModal, { Contact } from '@/components/find-player/contacts-modal/ContactsModal';
 
 const GroupInfoScreen: React.FC = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -34,15 +36,18 @@ const GroupInfoScreen: React.FC = () => {
   const { removeMember } = useRemoveGroupMember();
   const { deleteGroup } = useDeleteGroup();
   const { updateGroupName } = useUpdateGroupName();
-
+  const { addMember } = useAddGroupMember();
 
   const [exitModalVisible, setExitModalVisible] = useState(false);
   const [memberModalVisible, setMemberModalVisible] = useState(false);
   const [showMemberInfoModal, setShowMemberInfoModal] = useState(false);
   const [editGroupModalVisible, setEditGroupModalVisible] = useState(false);
+  const [contactsModalVisible, setContactsModalVisible] = useState(false);
+
   const [editedGroupName, setEditedGroupName] = useState(group?.name || '');
   const [selectedMember, setSelectedMember] = useState<any>(null);
-  const isCurrentUserAdmin = group?.members?.find(m => m.userId === user.userId)?.admin;
+  const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
+  const isCurrentUserAdmin = group?.members?.find((m) => m.userId === user.userId)?.admin;
 
   useEffect(() => {
     if (id && typeof id === 'string') {
@@ -154,6 +159,45 @@ const GroupInfoScreen: React.FC = () => {
         }              
       }
     );
+  }; 
+  
+  const handleContactsSelected = async (contacts: Contact[]) => {
+    setSelectedContacts(contacts);
+  
+    if (!id || typeof id !== 'string' || !user?.userId) {
+      Alert.alert('Error', 'Missing required information to add members.');
+      return;
+    }
+  
+    for (const contact of contacts) {
+      if (!contact.contactName || !contact.contactPhoneNumber) {
+        console.warn("Skipping invalid contact:", contact);
+        continue;
+      }
+      
+      try {
+        await addMember({
+          groupId: id,
+          requesterUserId: user.userId,
+          memberData: {
+            name: contact.contactName,
+            phoneNumber: contact.contactPhoneNumber,
+          },
+          callbacks: {
+            onSuccess: () => {
+              console.log(`Added ${contact.contactName}`);
+            },
+            onError: (err) => {
+              console.error(`Failed to add ${contact.contactName}`, err.message);
+            },
+          },
+        });
+      } catch (err) {
+        console.error('Error adding member:', err);
+      }
+    }
+  
+    getGroup({ groupId: id });
   };  
 
   const handleDeleteGroup = () => {
@@ -279,7 +323,9 @@ const GroupInfoScreen: React.FC = () => {
           {/* Members section */}
           <View style={styles.modalOptionLeft}>
           <Text style={styles.sectionTitle}>Members</Text>
-          <TouchableOpacity style={styles.sectionTitle}><Text style={[styles.actionText, { color: '#257073' }]}>Add Members</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setContactsModalVisible(true)}>
+            <Text style={[styles.sectionTitle, { color: '#257073' }]}>Add Members</Text>
+          </TouchableOpacity>
           </View>
 
           <View style={styles.membersListContainer}>
@@ -509,6 +555,12 @@ const GroupInfoScreen: React.FC = () => {
             </View>
           </Pressable>
         </Modal>
+        <ContactsModal
+          visible={contactsModalVisible}
+          onClose={() => setContactsModalVisible(false)}
+          onSelectContacts={handleContactsSelected}
+          selectedContacts={selectedContacts}
+        />
       </LinearGradient>
     </SafeAreaView>
   );
