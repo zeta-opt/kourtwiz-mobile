@@ -17,22 +17,31 @@ import { useCreateGroup } from "@/hooks/apis/groups/useCreateGroup";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { useGetUserDetails } from "@/hooks/apis/player-finder/useGetUserDetails";
-import ContactsModal, { Contact } from "../find-player/contacts-modal/ContactsModal";
 
-type Player = {
+export type Player = {
   id: string;
   name: string;
   phoneNumber: string;
 };
 
-export default function CreateGroup({ onClose }: { onClose: () => void }) {
+export default function CreateGroup({
+  onClose,
+  onAddPlayers,
+  players,
+  setPlayers,
+  groupName,
+  setGroupName,
+}: {
+  onClose: () => void;
+  onAddPlayers: () => void; 
+  players: Player[]; 
+  setPlayers: (players: Player[]) => void; 
+  groupName: string;
+  setGroupName: (name: string) => void;
+}) {
     const { user } = useSelector((state: RootState) => state.auth);
     const { createGroup, status, error } = useCreateGroup();
-    const [groupName, setGroupName] = useState("");
-    const [selectedPlayer, setSelectedPlayer] =  useState<Contact[]>([]);
-    const [showContactsModal, setShowContactsModal] = useState(false);
     const [preferredContacts, setPreferredContacts] = useState<Player[]>([]);
-    const [players, setPlayers] = useState<Player[]>([]);
     const { data: userDetails } = useGetUserDetails(user?.userId);
 
     useEffect(() => {
@@ -42,47 +51,46 @@ export default function CreateGroup({ onClose }: { onClose: () => void }) {
         phoneNumber: c.contactPhoneNumber,
         })));
     }
-    }, [userDetails]);
+    }, [userDetails]);     
 
-    const normalizeContact = (c: any): Contact => ({
-            contactName: c.contactName ?? c.name ?? '',
-            contactPhoneNumber: c.contactPhoneNumber ?? c.phoneNumber ?? '',
-        });      
-
-        const onSave = async () => {
-          if (!groupName.trim()) {
-            alert("Group name is required.");
-            return;
-          }
-        
-          const creatorUserId = user?.userId;
-        
-          const allMembers = players.map((p) => ({
-            name: p.name,
-            phoneNumber: p.phoneNumber,
-            admin: true, // or dynamic based on logic
-          }));
-        
-          const payload = {
-            name: groupName,
-            creatorUserId,
-            members: allMembers,
-          };
-        
-          await createGroup({
-            groupData: payload,
-            callbacks: {
-              onSuccess: () => {
-                alert("Group created successfully!");
-                onClose();
-                setShowContactsModal(false);
-              },
-              onError: (err) => {
-                alert(`Failed to create group: ${err.message}`);
-              },
-            },
-          });
-        };        
+    const onSave = async () => {
+      if (!user?.userId) {
+        alert("User ID missing. Please log in again.");
+        return;
+      }
+      
+      if (!groupName.trim()) {
+        alert("Group name is required.");
+        return;
+      }
+    
+      const creatorUserId = user?.userId;
+      const allMembers = players.map((p) => ({
+        name: p.name,
+        phoneNumber: p.phoneNumber,
+        admin: false,
+      }));
+    
+      const payload = {
+        name: groupName,
+        creatorUserId,
+        members: allMembers,
+      };
+    
+      console.log("Payload:", JSON.stringify(payload, null, 2));
+      await createGroup({
+        groupData: payload,
+        callbacks: {
+          onSuccess: () => {
+            alert("Group created successfully!");
+            onClose();
+          },
+          onError: (err) => {
+            alert(`Failed to create group: ${err.message}`);
+          },
+        },
+      });
+    };        
   
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -129,7 +137,7 @@ export default function CreateGroup({ onClose }: { onClose: () => void }) {
               <View style={styles.addRow}>
 
                 <TouchableOpacity
-                onPress={() => setShowContactsModal(true)}
+                onPress={onAddPlayers}
                 style={styles.addButton}
                 activeOpacity={0.7}
                 >
@@ -137,11 +145,17 @@ export default function CreateGroup({ onClose }: { onClose: () => void }) {
                 </TouchableOpacity>
             </View>
             <View style={styles.tagsContainer}>
-                {players.map((player) => (
-                    <View key={player.id} style={styles.tag}>
-                        <Text style={styles.tagText}>{player.name}</Text>
-                    </View>
-                ))}
+              {players.map((player) => (
+                <View key={player.id} style={styles.tag}>
+                  <Text style={styles.tagText}>{player.name}</Text>
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => setPlayers(players.filter(p => p.id !== player.id))}
+                  >
+                    <Ionicons name="close" size={16} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
             </View>
         </ScrollView>
 
@@ -159,25 +173,6 @@ export default function CreateGroup({ onClose }: { onClose: () => void }) {
                 {status === "loading" ? "Saving..." : "Save"}
             </Text>
         </TouchableOpacity>
-
-        <ContactsModal
-          visible={showContactsModal}
-          onClose={() => setShowContactsModal(false)}
-          onSelectContacts={(selected) => {
-            const normalized = selected.map(normalizeContact);
-
-            // Set selectedPlayer (for payload)
-            setSelectedPlayer(normalized);
-
-            // Set players (for UI display)
-            setPlayers(normalized.map((p, index) => ({
-              id: `${p.contactPhoneNumber}-${index}`,
-              name: p.contactName,
-              phoneNumber: p.contactPhoneNumber,
-            })));
-          }}
-          selectedContacts={selectedPlayer}
-        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -303,6 +298,19 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: 13,
   },
+  removeButton: {
+    backgroundColor: "#ddd",
+    borderRadius: 12,
+    padding: 4,
+    margin: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },  
   saveButton: {
     height: 48,
     backgroundColor: "#5E9CA3",
