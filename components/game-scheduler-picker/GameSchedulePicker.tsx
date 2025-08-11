@@ -10,6 +10,11 @@ interface GameSchedulePickerProps {
   onDateChange: (date: Date) => void;
   onStartTimeChange: (time: Date) => void;
   onEndTimeChange: (time: Date) => void;
+  errors?: { 
+    selectedDate?: boolean;
+    startTime?: boolean;
+    endTime?: boolean;
+  };
 }
 
 const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
@@ -19,6 +24,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
   onDateChange,
   onStartTimeChange,
   onEndTimeChange,
+  errors = {}
 }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [isStartTimePickerVisible, setStartTimePickerVisibility] =
@@ -85,6 +91,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
               styles.roundedButton,
               styles.whiteButton,
               styles.blackBorder,
+              errors.selectedDate && { borderColor: 'red', borderWidth: 1 }
             ]}
             onPress={showDatePicker}
             contentStyle={styles.fullWidth}
@@ -121,6 +128,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
                 styles.roundedButton,
                 styles.whiteButton,
                 styles.blackBorder,
+                errors.startTime && { borderColor: 'red', borderWidth: 1 }
               ]}
               contentStyle={styles.fullWidth}
               onPress={showStartTimePicker}
@@ -153,6 +161,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
                 styles.roundedButton,
                 styles.whiteButton,
                 styles.blackBorder,
+                errors.endTime && { borderColor: 'red', borderWidth: 1 }
               ]}
               contentStyle={styles.fullWidth}
               onPress={showEndTimePicker}

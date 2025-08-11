@@ -34,7 +34,7 @@ import {
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { IconButton } from 'react-native-paper';
+import { Button, Icon, IconButton } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import error_image from '../../assets/images/error_image.png';
 import success_image from '../../assets/images/success_image.png';
@@ -109,9 +109,11 @@ const CreateEventForm = () => {
   const [errors, setErrors] = useState({
     eventName: false,
     placeToPlay: false,
+    maxPlayers: false,
     date: false,
     startTime: false,
     endTime: false,
+    repeat : false,
     repeatEndDate: false,
   });
 
@@ -159,8 +161,10 @@ const CreateEventForm = () => {
       eventName: false,
       placeToPlay: false,
       date: false,
+      maxPlayers :false,
       startTime: false,
       endTime: false,
+      repeat:false,
       repeatEndDate: false,
     });
   };
@@ -367,9 +371,11 @@ const CreateEventForm = () => {
     const newErrors = {
       eventName: !eventName,
       placeToPlay: !newPlaceData && !placeToPlay,
+      maxPlayers: !maxPlayers,
       date: !selectedDate,
       startTime: !startTime,
       endTime: !endTime,
+      repeat: !repeat,
       repeatEndDate: repeat !== 'NONE' && !repeatEndDate,
     };
 
@@ -513,14 +519,17 @@ const CreateEventForm = () => {
             </View>
           </View>
           <ScrollView contentContainerStyle={styles.card}>
-            <Text style={styles.label}>Event Name</Text>
+            <Text style={styles.label}>Event Name *</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                errors.eventName && { borderColor: 'red', borderWidth: 1 }
+              ]}
               placeholder='Enter Event Name'
               value={eventName}
               onChangeText={setEventName}
             />
-            <Text style={styles.label}>Club Name</Text>
+            <Text style={styles.label}>Club Name *</Text>
             <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
 
             <View style={styles.inputRow}>
@@ -529,7 +538,10 @@ const CreateEventForm = () => {
                 style={{ flex: 1 }}
               >
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.placeToPlay && { borderColor: 'red', borderWidth: 1 }
+                  ]}
                   placeholder='Enter Place Name'
                   value={displayPlaceName}
                   editable={false}
@@ -565,28 +577,61 @@ const CreateEventForm = () => {
               onDateChange={setSelectedDate}
               onStartTimeChange={setStartTime}
               onEndTimeChange={setEndTime}
+              errors={{
+                selectedDate: errors.date,
+                startTime: errors.startTime,
+                endTime: errors.endTime
+              }}
             />
 
-            <Text style={styles.label}>Repeat Event</Text>
-            <Picker
-              selectedValue={repeat}
-              onValueChange={handleRepeatChange}
-              itemStyle={{ color: '#000' }}
-            >
-              <Picker.Item label='None' value='NONE' />
-              <Picker.Item label='Daily' value='DAILY' />
-              <Picker.Item label='Weekly' value='WEEKLY' />
-              <Picker.Item label='Monthly' value='MONTHLY' />
-              <Picker.Item label='Custom' value='custom' />
-            </Picker>
+            <Text style={styles.label}>Repeat Event *</Text>
+            <View style={[errors.repeat && { borderColor: 'red', borderWidth: 1, borderRadius: 5 }]}>
+              <Picker
+                selectedValue={repeat}
+                onValueChange={handleRepeatChange}
+                itemStyle={{ color: '#000' }}
+              >
+                <Picker.Item label='None' value='NONE' />
+                <Picker.Item label='Daily' value='DAILY' />
+                <Picker.Item label='Weekly' value='WEEKLY' />
+                <Picker.Item label='Monthly' value='MONTHLY' />
+                <Picker.Item label='Custom' value='custom' />
+              </Picker>
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Repeat End Date *</Text>
+              <Button
+                mode='outlined'
+                style={[
+                  styles.dateTimeButton,
+                  styles.roundedButton,
+                  styles.whiteButton,
+                  styles.blackBorder,
+                  errors.repeatEndDate && { borderColor: 'red', borderWidth: 1 }
+                ]}
+                onPress={() => setShowRepeatEndDatePicker(true)}
+                contentStyle={styles.fullWidth}
+              >
+                <View style={styles.buttonContent}>
+                  <Text
+                    style={[
+                      styles.timeText,
+                      { color: selectedDate ? '#000' : '#9F9F9F' },
+                    ]}
+                  >
+                    {selectedDate
+                      ? selectedDate.toLocaleDateString('en-GB')
+                      : 'DD/MM/YYYY'}
+                  </Text>
+                  <Icon
+                    source='calendar'
+                    size={20}
+                    color={selectedDate ? '#000' : '#9F9F9F'}
+                  />
+                </View>
+              </Button>
+            </View>
 
-            <TouchableOpacity onPress={() => setShowRepeatEndDatePicker(true)}>
-              <Text style={styles.enddate}>
-                {repeatEndDate
-                  ? `Repeat Ends: ${repeatEndDate.toDateString()}`
-                  : 'Set Repeat End Date'}
-              </Text>
-            </TouchableOpacity>
 
             {showRepeatEndDatePicker && (
               <DateTimePickerModal
@@ -606,7 +651,7 @@ const CreateEventForm = () => {
 
             <View style={styles.formSection}>
               <View style={styles.sliderSection}>
-                <Text style={styles.skillLevelTitle}>Skill Level</Text>
+                <Text style={styles.skillLevelTitle}>Skill Level *</Text>
                 <View onLayout={handleLayout} style={styles.sliderWrapper}>
                   <Animated.View
                     style={[styles.floatingLabel, { left: sliderPos - 10 }]}
@@ -644,14 +689,18 @@ const CreateEventForm = () => {
               </View>
 
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Max Players</Text>
+                <Text style={styles.label}>Max Players *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.maxPlayers && { borderColor: 'red', borderWidth: 1 }
+                  ]}
                   placeholder='Enter Max Players'
                   value={maxPlayers}
                   onChangeText={setMaxPlayers}
                   keyboardType='numeric'
                 />
+
               </View>
             </View>
 
@@ -1025,6 +1074,41 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: 60,
     justifyContent: 'center',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'black',
+  },
+  dateTimeButton: {
+    justifyContent: 'flex-start',
+  },
+  roundedButton: {
+    borderRadius: 8,
+  },
+  whiteButton: {
+    backgroundColor: '#fff',
+  },
+  blackBorder: {
+    borderColor: '#000',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+
+  fullWidth: {
+    width: '100%',
+  },
+  timeText: {
+    flex: 1,
+    textAlign: 'left',
   },
   slider: {
     width: '100%',
