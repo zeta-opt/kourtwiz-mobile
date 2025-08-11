@@ -52,8 +52,8 @@ export default function BottomTabs() {
         onPress={() => console.log('payment icon pressed')}
         style={styles.tabItem}
       >
-        <MaterialIcons name="payment" size={24} color="#000" />
-        <Text style={styles.label}>Payment</Text>
+        <MaterialIcons name="feedback" size={24} color="#000" />
+        <Text style={styles.label}>Feedback</Text>
       </TouchableOpacity>
 
       <TouchableOpacity

@@ -280,7 +280,7 @@ const UserProfile = () => {
         </Text>
 
         {/* AVOIDED PLAYERS */}
-        <Text style={styles.sectionTitle}>AVOIDED PLAYERS</Text>
+        {/* <Text style={styles.sectionTitle}>AVOIDED PLAYERS</Text>
         <View style={styles.sectionCard}>
         <TouchableOpacity style={styles.optionRow} onPress={() => {console.log('players avoideed')}}>
           <Text style={styles.optionText}>Avoided Players</Text>
@@ -289,7 +289,7 @@ const UserProfile = () => {
         </View>
         <Text style={styles.sectionHelperText}>
             Avoid players you don’t enjoy playing with.
-        </Text>
+        </Text> */}
       </View>
 
       <View style={styles.DetailsCard}>

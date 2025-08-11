@@ -45,6 +45,7 @@ const IWantToPlayScreen = () => {
       Alert.alert('Success', 'Broadcast sent to all players.');
       setMessage('');
       setLocation('');
+      router.push('/(authenticated)/home');
     } catch (error) {
       console.error('Broadcast failed', error);
       Alert.alert('Error', 'Failed to send broadcast.');
