@@ -40,8 +40,8 @@ export default function MyRequestsDetailedView() {
   const playTime = arrayToDate(invite?.playTime);
   const dateString = playTime.toLocaleDateString();
   const timeString = playTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const accepted = data.filter((p: any) => p.status === 'ACCEPTED').length;
-  const total = invite?.playersNeeded || 0;
+  const accepted = data.filter((p: any) => p.status === 'ACCEPTED').length + 1;
+  const total = invite?.playersNeeded + 1 || 0;
   const location = invite?.placeToPlay || 'Not specified';
   const requesterName = invite?.inviteeName || 'Someone';
 

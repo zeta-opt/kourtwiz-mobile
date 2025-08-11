@@ -64,8 +64,8 @@ export default function SentRequestDetailedView() {
   const timeString = playTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const requestId = invite?.requestId || invite?.Requests?.[0]?.requestId;
   const organizerName = invite?.Requests?.[0]?.inviteeName ?? 'Unknown';
-  const total = invite?.playersNeeded || 0;
-  const accepted = invite?.Requests?.filter((r: any) => r.status === 'ACCEPTED').length || 0;
+  const total = invite?.playersNeeded + 1 || 0;
+  const accepted = invite?.Requests?.filter((r: any) => r.status === 'ACCEPTED').length + 1 || 0;
 
   const handleWithdraw = async () => {
     try {
