@@ -77,6 +77,7 @@ const IWantToPlayScreen = () => {
       Alert.alert('Message sent to preferred players Successfully');
       setMessage('');
       setLocation('');
+      router.push('/(authenticated)/home');
     } catch (error) {
       console.error('Error sending message to preferred players:', error);
       Alert.alert('Error', 'Failed to send message.');
