@@ -1,11 +1,10 @@
 import 'dotenv/config';
-import { runtimeVersion } from 'expo-updates';
  
 export default {
   expo: {
     name: 'kourtwiz-mobile',
     slug: 'kourtwiz-mobile',
-    version: '1.0.2',
+    version: '1.0.6',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'kourtwizmobile',
@@ -16,13 +15,13 @@ export default {
     },
  
     runtimeVersion: {
-      policy: 'appVersion', // Uses version field for runtime versioning (EAS Update compatible)
+      policy: 'appVersion', 
     },
  
     ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.kourtwiz.mobile',
-    buildNumber: '1.0.2',
+    buildNumber: '1.0.6',
     infoPlist: {
       NSContactsUsageDescription:
         'This app needs access to your contacts to let you invite or select players.',

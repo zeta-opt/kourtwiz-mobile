@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Button, Icon, Text } from 'react-native-paper';
 
@@ -10,6 +10,11 @@ interface GameSchedulePickerProps {
   onDateChange: (date: Date) => void;
   onStartTimeChange: (time: Date) => void;
   onEndTimeChange: (time: Date) => void;
+  errors?: { 
+    selectedDate?: boolean;
+    startTime?: boolean;
+    endTime?: boolean;
+  };
 }
 
 const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
@@ -19,6 +24,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
   onDateChange,
   onStartTimeChange,
   onEndTimeChange,
+  errors = {}
 }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [isStartTimePickerVisible, setStartTimePickerVisibility] =
@@ -35,19 +41,41 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
   const showStartTimePicker = () => setStartTimePickerVisibility(true);
   const hideStartTimePicker = () => setStartTimePickerVisibility(false);
   const handleStartTimeConfirm = (time: Date) => {
-    const newTime = selectedDate ? new Date(selectedDate) : new Date();
-    newTime.setHours(time.getHours(), time.getMinutes(), 0);
-    onStartTimeChange(newTime);
+    onStartTimeChange(time);
+
+    // Automatically update end time to be 1 hour later if no end time is set
+    if (!endTime) {
+      const newEndTime = new Date(time);
+      newEndTime.setHours(time.getHours() + 1);
+      onEndTimeChange(newEndTime);
+    }
+
     hideStartTimePicker();
   };
 
   const showEndTimePicker = () => setEndTimePickerVisibility(true);
   const hideEndTimePicker = () => setEndTimePickerVisibility(false);
   const handleEndTimeConfirm = (time: Date) => {
-    const newTime = selectedDate ? new Date(selectedDate) : new Date();
-    newTime.setHours(time.getHours(), time.getMinutes(), 0);
-    onEndTimeChange(newTime);
+    onEndTimeChange(time);
     hideEndTimePicker();
+  };
+
+  // Format time for display
+  const formatTime = (date: Date | null) => {
+    if (!date) return null;
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Get default date for time picker
+  const getDefaultTimePickerDate = () => {
+    const now = new Date();
+    // Round to nearest 15 minutes for better UX
+    const minutes = Math.ceil(now.getMinutes() / 15) * 15;
+    now.setMinutes(minutes, 0, 0);
+    return now;
   };
 
   return (
@@ -63,9 +91,10 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
               styles.roundedButton,
               styles.whiteButton,
               styles.blackBorder,
+              errors.selectedDate && { borderColor: 'red', borderWidth: 1 }
             ]}
             onPress={showDatePicker}
-            contentStyle={styles.fullWidth} // 👈 new
+            contentStyle={styles.fullWidth}
           >
             <View style={styles.buttonContent}>
               <Text
@@ -91,7 +120,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
         <View style={styles.timeRow}>
           {/* Start Time */}
           <View style={[styles.inputGroup, styles.timeInput]}>
-            <Text style={styles.inputLabel}>Duration *</Text>
+            <Text style={styles.inputLabel}>Start Time *</Text>
             <Button
               mode='outlined'
               style={[
@@ -99,6 +128,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
                 styles.roundedButton,
                 styles.whiteButton,
                 styles.blackBorder,
+                errors.startTime && { borderColor: 'red', borderWidth: 1 }
               ]}
               contentStyle={styles.fullWidth}
               onPress={showStartTimePicker}
@@ -110,12 +140,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
                     { color: startTime ? '#000' : '#9F9F9F' },
                   ]}
                 >
-                  {startTime
-                    ? startTime.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : 'Start Time'}
+                  {formatTime(startTime) || 'Start Time'}
                 </Text>
                 <Icon
                   source='chevron-down'
@@ -128,7 +153,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
 
           {/* End Time */}
           <View style={[styles.inputGroup, styles.timeInput]}>
-            <Text style={styles.inputLabel}>Duration *</Text>
+            <Text style={styles.inputLabel}>End Time *</Text>
             <Button
               mode='outlined'
               style={[
@@ -136,6 +161,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
                 styles.roundedButton,
                 styles.whiteButton,
                 styles.blackBorder,
+                errors.endTime && { borderColor: 'red', borderWidth: 1 }
               ]}
               contentStyle={styles.fullWidth}
               onPress={showEndTimePicker}
@@ -147,12 +173,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
                     { color: endTime ? '#000' : '#9F9F9F' },
                   ]}
                 >
-                  {endTime
-                    ? endTime.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : 'End Time'}
+                  {formatTime(endTime) || 'End Time'}
                 </Text>
                 <Icon
                   source='chevron-down'
@@ -172,27 +193,38 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
         date={selectedDate || new Date()}
         onConfirm={handleDateConfirm}
         onCancel={hideDatePicker}
-        display='calendar'
+        display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+        minimumDate={new Date()}
       />
 
       {/* Start Time Picker */}
       <DateTimePickerModal
         isVisible={isStartTimePickerVisible}
         mode='time'
-        date={startTime || new Date()}
+        date={startTime || getDefaultTimePickerDate()}
         onConfirm={handleStartTimeConfirm}
         onCancel={hideStartTimePicker}
         display='spinner'
+        is24Hour={false}
+        minuteInterval={15}
       />
 
       {/* End Time Picker */}
       <DateTimePickerModal
         isVisible={isEndTimePickerVisible}
         mode='time'
-        date={endTime || startTime || new Date()}
+        date={
+          endTime ||
+          (startTime
+            ? new Date(startTime.getTime() + 60 * 60 * 1000)
+            : getDefaultTimePickerDate())
+        }
         onConfirm={handleEndTimeConfirm}
         onCancel={hideEndTimePicker}
         display='spinner'
+        is24Hour={false}
+        minuteInterval={15}
+        minimumDate={startTime || undefined}
       />
     </>
   );
@@ -222,7 +254,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
   },
-
   fullWidth: {
     width: '100%',
   },
@@ -242,7 +273,6 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'left',
   },
-
   timeRow: {
     flexDirection: 'row',
     gap: 12,

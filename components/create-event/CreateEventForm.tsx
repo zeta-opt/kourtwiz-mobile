@@ -12,12 +12,11 @@ import {
   openPreferredPlayersModal,
 } from '@/store/uiSlice';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Slider from '@react-native-community/slider';
 import { Picker } from '@react-native-picker/picker';
 import * as Contacts from 'expo-contacts';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -34,24 +33,25 @@ import {
   View,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { Button, Icon, IconButton } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
+import error_image from '../../assets/images/error_image.png';
+import success_image from '../../assets/images/success_image.png';
 import ContactsModal from '../find-player/contacts-modal/ContactsModal';
 import PreferredPlacesModal from '../find-player/preferred-places-modal/PreferredPlacesModal';
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
 import StatusModal from './components/StatusModal';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import success_image from '../../assets/images/success_image.png';
-import error_image from '../../assets/images/error_image.png';
-import { Icon,Button, IconButton } from 'react-native-paper';
-
-
+import RepeatPicker from './components/RepeatPicker';
 
 const CreateEventForm = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
+  const params = useLocalSearchParams();
+  const [newPlaceData, setNewPlaceData] = useState<any>(null);
 
   const [eventName, setEventName] = useState('');
   const [place, setPlace] = useState('');
@@ -85,6 +85,7 @@ const CreateEventForm = () => {
   const [contactsModalVisible, setContactsModalVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customRepeat, setCustomRepeat] = useState<
@@ -105,14 +106,72 @@ const CreateEventForm = () => {
   const sliderWidth = useRef(0);
   const animatedValue = useRef(new Animated.Value(skillLevel)).current;
   const [sliderPos, setSliderPos] = useState(0);
+  const isInitialMount = useRef(true);
   const [errors, setErrors] = useState({
-  eventName: false,
-  placeToPlay: false,
-  date: false,
-  startTime: false,
-  endTime: false,
-  repeatEndDate: false,
-});
+    eventName: false,
+    placeToPlay: false,
+    maxPlayers: false,
+    date: false,
+    startTime: false,
+    endTime: false,
+    repeat : false,
+    repeatEndDate: false,
+  });
+
+  // Clear form data on component mount
+  useEffect(() => {
+    // Check if coming from AddPlace with new place data
+    if (params.newPlace && params.placeName) {
+      try {
+        const parsedPlaceData = JSON.parse(params.newPlace as string);
+        setNewPlaceData(parsedPlaceData);
+        dispatch(setPlaceToPlay(params.placeName as string));
+        // Clear params to prevent re-processing
+        router.setParams({ newPlace: '', placeName: '' });
+      } catch (error) {
+        console.error('Error parsing new place data:', error);
+      }
+    } else {
+      // Clear Redux state only if not coming from AddPlace
+      dispatch(setPlaceToPlay(''));
+      dispatch(setPreferredContacts([]));
+      // Reset all form fields
+      resetForm();
+    }
+  }, [params.newPlace, params.placeName, dispatch]); // Only watch these specific params
+
+  // Function to reset form to initial state
+  const resetForm = () => {
+    setEventName('');
+    setPlace('');
+    setCourt('');
+    setSelectedDate(new Date());
+    setStartTime(null);
+    setEndTime(null);
+    setRepeat('');
+    setRepeatEndDate(null);
+    setSkillLevel(0);
+    setPrice('');
+    setMaxPlayers('');
+    setDescription('');
+    setCustomRepeatDays([]);
+    setCustomRepeatDates([]);
+    setRepeatInterval('1');
+    setCustomInterval(1);
+    setErrors({
+      eventName: false,
+      placeToPlay: false,
+      date: false,
+      maxPlayers :false,
+      startTime: false,
+      endTime: false,
+      repeat:false,
+      repeatEndDate: false,
+    });
+  };
+
+  // Get display place name
+  const displayPlaceName = newPlaceData?.Name || placeToPlay || '';
 
   const handleLayout = (e: LayoutChangeEvent) => {
     sliderWidth.current = e.nativeEvent.layout.width;
@@ -131,6 +190,7 @@ const CreateEventForm = () => {
 
   const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
   const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
+
   useEffect(() => {
     const requestPermission = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -140,104 +200,110 @@ const CreateEventForm = () => {
   }, []);
 
   const showPreferredPlayers = () => {
-      dispatch(openPreferredPlayersModal());
-    };
-  
-    const handleAddContact = async () => {
-      const { status } = await Contacts.getPermissionsAsync();
-      if (status === 'granted') {
-    setContactsModalVisible(true);
-  }  else {
-	         const { status: newStatus } = await Contacts.requestPermissionsAsync();
+    dispatch(openPreferredPlayersModal());
+  };
 
-    if (newStatus === 'granted') {
+  const handleAddContact = async () => {
+    const { status } = await Contacts.getPermissionsAsync();
+    if (status === 'granted') {
       setContactsModalVisible(true);
     } else {
-      Alert.alert(
-        'Contacts Permission Required',
-        'To select contacts from your device, we need access to your contacts.',
-        [
-          {
-            text: "Don't Allow",
-          },
-          {
-            text: 'Allow',
-            onPress: async () => {
-              const { status: finalStatus } =
-                     await Contacts.requestPermissionsAsync();
-	                   if (finalStatus === 'granted') {
-                setContactsModalVisible(true);
-              } else {
-                Alert.alert(
-                  'Permission Denied',
-                  'You can still select players from your preferred contacts.'
-                );
-              }
+      const { status: newStatus } = await Contacts.requestPermissionsAsync();
+
+      if (newStatus === 'granted') {
+        setContactsModalVisible(true);
+      } else {
+        Alert.alert(
+          'Contacts Permission Required',
+          'To select contacts from your device, we need access to your contacts.',
+          [
+            {
+              text: "Don't Allow",
             },
-          },
-        ]
-      );
-    }
-  }
-};
-
-    const handleModalClose = (selectedPlace?: string) => {
-      if (selectedPlace) {
-        setPlaceToPlay(selectedPlace);
+            {
+              text: 'Allow',
+              onPress: async () => {
+                const { status: finalStatus } =
+                  await Contacts.requestPermissionsAsync();
+                if (finalStatus === 'granted') {
+                  setContactsModalVisible(true);
+                } else {
+                  Alert.alert(
+                    'Permission Denied',
+                    'You can still select players from your preferred contacts.'
+                  );
+                }
+              },
+            },
+          ]
+        );
       }
-      setModalVisible(false);
-    };
-  
-    const handleRemovePlayer = (index: number) => {
-      dispatch(
-        setPreferredContacts(preferredContacts.filter((_, i) => i !== index))
-      );
-    };
-  
-    const handleSelectPlayers = (players: Contact[]) => {
-      dispatch(setPreferredContacts(players));
-    };
-  
-    const handleSelectContactsFromDevice = (contacts: Contact[]) => {
-      dispatch(setPreferredContacts(contacts));
-      setContactsModalVisible(false);
-    };
-const handleRepeatChange = (value: string) => {
-  if (value === 'custom') {
-    setShowCustomModal(true);
-  } else {
-    setRepeat(value);
-    setRepeatInterval('1');
-    setRepeatEndDate(null);
+    }
+  };
 
-    if (value === 'monthly') {
-  const date = new Date(
-    selectedDate.getFullYear(),
-    selectedDate.getMonth(),
-    selectedDate.getDate(),
-    startTime?.getHours() || 0,
-    startTime?.getMinutes() || 0
-  );
-  console.log('Adding monthly date:', date);
-  setCustomRepeatDates((prev) => {
-    const formattedDate = formatDateToLocalISOString(date);
-    const exists = prev.some(d => formatDateToLocalISOString(d) === formattedDate);
-    return exists ? prev : [...prev, date];
-  });
-}
-  }
-};
-const handleClubDetailsClick = async () => {
+  const handleModalClose = (selectedPlace?: string) => {
+    if (selectedPlace) {
+      setPlaceToPlay(selectedPlace);
+      // Clear newPlaceData when user selects a different place
+      setNewPlaceData(null);
+    }
+    setModalVisible(false);
+  };
+
+  const handleRemovePlayer = (index: number) => {
+    dispatch(
+      setPreferredContacts(preferredContacts.filter((_, i) => i !== index))
+    );
+  };
+
+  const handleSelectPlayers = (players: Contact[]) => {
+    dispatch(setPreferredContacts(players));
+  };
+
+  const handleSelectContactsFromDevice = (contacts: Contact[]) => {
+    dispatch(setPreferredContacts(contacts));
+    setContactsModalVisible(false);
+  };
+
+  const handleRepeatChange = (value: string) => {
+    if (value === 'custom') {
+      setShowCustomModal(true);
+    } else {
+      setRepeat(value);
+      setRepeatInterval('1');
+      setRepeatEndDate(null);
+
+      if (value === 'monthly') {
+        const date = new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+          startTime?.getHours() || 0,
+          startTime?.getMinutes() || 0
+        );
+        console.log('Adding monthly date:', date);
+        setCustomRepeatDates((prev) => {
+          const formattedDate = formatDateToLocalISOString(date);
+          const exists = prev.some(
+            (d) => formatDateToLocalISOString(d) === formattedDate
+          );
+          return exists ? prev : [...prev, date];
+        });
+      }
+    }
+  };
+
+  const handleClubDetailsClick = async () => {
     // First check if we already have permission
-     const { status: currentStatus } =
-       await Location.getForegroundPermissionsAsync();
- 
-     if (currentStatus !== 'granted') {
-       // Request permission
-         const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      setLocationPermissionGranted(true);
-      dispatch(openPreferredPlaceModal());
+    const { status: currentStatus } =
+      await Location.getForegroundPermissionsAsync();
+
+    if (currentStatus !== 'granted') {
+      // Request permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        setLocationPermissionGranted(true);
+        dispatch(openPreferredPlaceModal());
         Alert.alert(
           'Location Access Granted',
           'You can now search for nearby courts in addition to your preferred places!',
@@ -253,183 +319,184 @@ const handleClubDetailsClick = async () => {
         );
       }
     } else {
-       setLocationPermissionGranted(true);
-         dispatch(openPreferredPlaceModal());
+      setLocationPermissionGranted(true);
+      dispatch(openPreferredPlaceModal());
     }
   };
+
   const handleAddPlace = () => {
     router.push('/(authenticated)/add-place');
   };
-const handleCustomApply = () => {
-  setRepeat('custom');
-  setRepeatInterval(String(customInterval));
-  setShowCustomModal(false);
 
-  if (customRepeat === 'monthly') {
-    const date = new Date(
-      selectedDate.getFullYear(),
-      selectedDate.getMonth(),
-      selectedDate.getDate(),
-      startTime?.getHours() || 0,
-      startTime?.getMinutes() || 0
-    );
+  const handleCustomApply = () => {
+    setRepeat('custom');
+    setRepeatInterval(String(customInterval));
+    setShowCustomModal(false);
 
-    setCustomRepeatDates((prev) => {
-      const formattedDate = formatDateToLocalISOString(date);
-      const exists = prev.some(d => formatDateToLocalISOString(d) === formattedDate);
-      return exists ? prev : [...prev, date];
-    });
-  }
-};
+    if (customRepeat === 'monthly') {
+      const date = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        startTime?.getHours() || 0,
+        startTime?.getMinutes() || 0
+      );
 
-const formatDateToLocalISOString = (date: Date) => {
-  const pad = (num: number) => String(num).padStart(2, '0');
-
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  const seconds = pad(date.getSeconds());
-
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
-};
-
-const formatDatesArray = (dates: Date[]) =>
-  dates.map(formatDateToLocalISOString);
-
-const handleSubmit = async () => {
- const newErrors = {
-    eventName: !eventName,
-    placeToPlay: !placeToPlay,
-    date: !selectedDate,
-    startTime: !startTime,
-    endTime: !endTime,
-    repeatEndDate: repeat !== 'NONE' && !repeatEndDate,
+      setCustomRepeatDates((prev) => {
+        const formattedDate = formatDateToLocalISOString(date);
+        const exists = prev.some(
+          (d) => formatDateToLocalISOString(d) === formattedDate
+        );
+        return exists ? prev : [...prev, date];
+      });
+    }
   };
 
-  setErrors(newErrors);
+  const formatDateToLocalISOString = (date: Date) => {
+    const pad = (num: number) => String(num).padStart(2, '0');
 
-  const hasErrors = Object.values(newErrors).some(Boolean);
-  if (hasErrors) {
-    Alert.alert('Missing Fields', 'Please fill in all required fields.');
-    return;
-  }
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
 
-  try {
-    const durationMinutes = Math.floor(
-      (endTime.getTime() - startTime.getTime()) / (1000 * 60)
-    );
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
+  };
 
-    const startDateTime = new Date(
-      selectedDate.getFullYear(),
-      selectedDate.getMonth(),
-      selectedDate.getDate(),
-      startTime.getHours(),
-      startTime.getMinutes()
-    );
+  const formatDatesArray = (dates: Date[]) =>
+    dates.map(formatDateToLocalISOString);
 
-    const payload: any = {
-      eventName,
-      ...(court?.trim() && { courtId: court.trim() }),
-      ...(price?.trim() && { priceForPlay: Number(price) }),
-      requestorId: userId,
-      startTime: formatDateToLocalISOString(startDateTime),
-      durationMinutes,
-      skillLevel: Number(skillLevel.toFixed(2)),
-      maxPlayers: Number(maxPlayers),
-      description: description || undefined,
-      allCourts: {
-        Name: placeToPlay,
-      },
-      ...(preferredContacts.length > 0 && {
-        preferredPlayers: preferredContacts,
-      }),
+  const handleSubmit = async () => {
+    const newErrors = {
+      eventName: !eventName,
+      placeToPlay: !newPlaceData && !placeToPlay,
+      maxPlayers: !maxPlayers,
+      date: !selectedDate,
+      startTime: !startTime,
+      endTime: !endTime,
+      repeat: !repeat,
+      repeatEndDate: repeat !== 'NONE' && !repeatEndDate,
     };
 
-    if (repeat && repeat.toUpperCase() !== 'NONE') {
-      let eventRepeatType = '';
-      let repeatOnDays: string[] | undefined;
-      let repeatOnDates: string[] | undefined;
+    setErrors(newErrors);
 
-      const interval = Number(repeatInterval);
-
-      if (repeat === 'custom') {
-        if (customRepeat === 'daily') {
-          eventRepeatType = 'DAILY';
-        } else if (customRepeat === 'weekly') {
-          eventRepeatType = 'DAYS';
-          repeatOnDays = customRepeatDays;
-        } else if (customRepeat === 'monthly') {
-          eventRepeatType = 'MONTHLY';
-          repeatOnDates = formatDatesArray(customRepeatDates);
-        }
-      } else {
-        eventRepeatType = repeat.toUpperCase();
-
-        if (repeat === 'WEEKLY') {
-          repeatOnDays = [
-            selectedDate.toLocaleDateString('en-US', {
-              weekday: 'long',
-            }).toUpperCase(),
-          ];
-        }
-
-        if (repeat === 'MONTHLY') {
-          const date = new Date(
-            selectedDate.getFullYear(),
-            selectedDate.getMonth(),
-            selectedDate.getDate(),
-            startTime?.getHours() || 0,
-            startTime?.getMinutes() || 0
-          );
-          repeatOnDates = [formatDateToLocalISOString(date)];
-        }
-
-        if (repeat === 'custom' && customRepeat === 'monthly') {
-          repeatOnDates = formatDatesArray(customRepeatDates);
-        }
-      }
-
-      payload.eventRepeatType = eventRepeatType;
-      payload.repeatInterval = interval;
-
-      if (repeatEndDate) {
-        payload.repeatEndDate = formatDateToLocalISOString(repeatEndDate);
-      }
-      if (repeatOnDays) {
-        payload.repeatOnDays = repeatOnDays;
-      }
-      if (repeatOnDates) {
-        payload.repeatOnDates = repeatOnDates;
-      }
+    const hasErrors = Object.values(newErrors).some(Boolean);
+    if (hasErrors) {
+      Alert.alert('Missing Fields', 'Please fill in all required fields.');
+      return;
     }
 
-    await createSession(payload);
-    setSuccessVisible(true);
+    try {
+      const durationMinutes = Math.floor(
+        (endTime!.getTime() - startTime!.getTime()) / (1000 * 60)
+      );
 
-    setEventName('');
-    setPlaceToPlay('');
-    setCourt('');
-    setSelectedDate(new Date());
-    setStartTime(new Date());
-    setEndTime(new Date());
-    setRepeat('NONE');
-    setRepeatEndDate(null);
-    setSkillLevel(0);
-    setPrice('');
-    setMaxPlayers('');
-    setDescription('');
+      const startDateTime = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        startTime!.getHours(),
+        startTime!.getMinutes()
+      );
 
-    console.log('Payload:', payload);
+      const payload: any = {
+        eventName,
+        ...(court?.trim() && { courtId: court.trim() }),
+        ...(price?.trim() && { priceForPlay: Number(price) }),
+        requestorId: userId,
+        startTime: formatDateToLocalISOString(startDateTime),
+        durationMinutes,
+        skillLevel: Number(skillLevel.toFixed(2)),
+        maxPlayers: Number(maxPlayers),
+        description: description || undefined,
+        allCourts: newPlaceData || {
+          Name: placeToPlay,
+        },
+        ...(preferredContacts.length > 0 && {
+          preferredPlayers: preferredContacts,
+        }),
+      };
 
-  } catch (err: any) {
-    console.error('Error creating session:', err);
-    setErrorMessage(err.message || 'Failed to create session');
-    setErrorVisible(true);
-  }
-};
+      if (repeat && repeat.toUpperCase() !== 'NONE') {
+        let eventRepeatType = '';
+        let repeatOnDays: string[] | undefined;
+        let repeatOnDates: string[] | undefined;
 
+        const interval = Number(repeatInterval);
+
+        if (repeat === 'custom') {
+          if (customRepeat === 'daily') {
+            eventRepeatType = 'DAILY';
+          } else if (customRepeat === 'weekly') {
+            eventRepeatType = 'DAYS';
+            repeatOnDays = customRepeatDays;
+          } else if (customRepeat === 'monthly') {
+            eventRepeatType = 'MONTHLY';
+            repeatOnDates = formatDatesArray(customRepeatDates);
+          }
+        } else {
+          eventRepeatType = repeat.toUpperCase();
+
+          if (repeat === 'WEEKLY') {
+            repeatOnDays = [
+              selectedDate
+                .toLocaleDateString('en-US', {
+                  weekday: 'long',
+                })
+                .toUpperCase(),
+            ];
+          }
+
+          if (repeat === 'MONTHLY') {
+            const date = new Date(
+              selectedDate.getFullYear(),
+              selectedDate.getMonth(),
+              selectedDate.getDate(),
+              startTime?.getHours() || 0,
+              startTime?.getMinutes() || 0
+            );
+            repeatOnDates = [formatDateToLocalISOString(date)];
+          }
+
+          if (repeat === 'custom' && customRepeat === 'monthly') {
+            repeatOnDates = formatDatesArray(customRepeatDates);
+          }
+        }
+
+        payload.eventRepeatType = eventRepeatType;
+        payload.repeatInterval = interval;
+
+        if (repeatEndDate) {
+          payload.repeatEndDate = formatDateToLocalISOString(repeatEndDate);
+        }
+        if (repeatOnDays) {
+          payload.repeatOnDays = repeatOnDays;
+        }
+        if (repeatOnDates) {
+          payload.repeatOnDates = repeatOnDates;
+        }
+      }
+
+      await createSession(payload);
+      setSuccessVisible(true);
+
+      // Clear Redux state after successful submission
+      dispatch(setPlaceToPlay(''));
+      dispatch(setPreferredContacts([]));
+
+      // Reset form and clear new place data
+      resetForm();
+      setNewPlaceData(null);
+
+      console.log('Payload:', payload);
+    } catch (err: any) {
+      console.error('Error creating session:', err);
+      setErrorMessage(err.message || 'Failed to create session');
+      setErrorVisible(true);
+    }
+  };
 
   return (
     <>
@@ -453,22 +520,31 @@ const handleSubmit = async () => {
             </View>
           </View>
           <ScrollView contentContainerStyle={styles.card}>
-            <Text style={styles.label}>Event Name</Text>
+            <Text style={styles.label}>Event Name *</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                errors.eventName && { borderColor: 'red', borderWidth: 1 }
+              ]}
               placeholder='Enter Event Name'
               value={eventName}
               onChangeText={setEventName}
             />
-            <Text style={styles.label}>Club Name</Text>
+            <Text style={styles.label}>Club Name *</Text>
             <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
 
             <View style={styles.inputRow}>
-              <TouchableOpacity onPress={() => setModalVisible(true)} style={{ flex: 1 }}>
+              <TouchableOpacity
+                onPress={() => setModalVisible(true)}
+                style={{ flex: 1 }}
+              >
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.placeToPlay && { borderColor: 'red', borderWidth: 1 }
+                  ]}
                   placeholder='Enter Place Name'
-                  value={placeToPlay}
+                  value={displayPlaceName}
                   editable={false}
                   pointerEvents='none'
                 />
@@ -502,24 +578,52 @@ const handleSubmit = async () => {
               onDateChange={setSelectedDate}
               onStartTimeChange={setStartTime}
               onEndTimeChange={setEndTime}
+              errors={{
+                selectedDate: errors.date,
+                startTime: errors.startTime,
+                endTime: errors.endTime
+              }}
             />
-            
-            <Text style={styles.label}>Repeat Event</Text>
-            <Picker selectedValue={repeat} onValueChange={handleRepeatChange}>
-              <Picker.Item label='None' value='NONE' />
-              <Picker.Item label='Daily' value='DAILY' />
-              <Picker.Item label='Weekly' value='WEEKLY' />
-              <Picker.Item label='Monthly' value='MONTHLY' />
-              <Picker.Item label='Custom' value='custom' />
-            </Picker>
 
-            <TouchableOpacity onPress={() => setShowRepeatEndDatePicker(true)}>
-              <Text style={styles.enddate}>
-                {repeatEndDate
-                  ? `Repeat Ends: ${repeatEndDate.toDateString()}`
-                  : 'Set Repeat End Date'}
-              </Text>
-            </TouchableOpacity>
+            <Text style={styles.label}>Repeat Event *</Text>
+            <View style={[errors.repeat && { borderColor: 'red', borderWidth: 1, borderRadius: 5 }]}>
+              <RepeatPicker repeat={repeat} handleRepeatChange={handleRepeatChange} />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Repeat End Date *</Text>
+              <Button
+                mode='outlined'
+                style={[
+                  styles.dateTimeButton,
+                  styles.roundedButton,
+                  styles.whiteButton,
+                  styles.blackBorder,
+                  errors.repeatEndDate && { borderColor: 'red', borderWidth: 1 }
+                ]}
+                onPress={() => setShowRepeatEndDatePicker(true)}
+                contentStyle={styles.fullWidth}
+              >
+                <View style={styles.buttonContent}>
+                  <Text
+                    style={[
+                      styles.timeText,
+                      { color: repeatEndDate ? '#000' : '#9F9F9F' },
+                    ]}
+                  >
+                    {repeatEndDate
+                      ? repeatEndDate.toLocaleDateString('en-GB')
+                      : 'DD/MM/YYYY'}
+                  </Text>
+                  <Icon
+                    source='calendar'
+                    size={20}
+                    color={repeatEndDate ? '#000' : '#9F9F9F'}
+                  />
+
+                </View>
+              </Button>
+            </View>
+
 
             {showRepeatEndDatePicker && (
               <DateTimePickerModal
@@ -539,7 +643,7 @@ const handleSubmit = async () => {
 
             <View style={styles.formSection}>
               <View style={styles.sliderSection}>
-                <Text style={styles.skillLevelTitle}>Skill Level</Text>
+                <Text style={styles.skillLevelTitle}>Skill Level *</Text>
                 <View onLayout={handleLayout} style={styles.sliderWrapper}>
                   <Animated.View
                     style={[styles.floatingLabel, { left: sliderPos - 10 }]}
@@ -577,14 +681,18 @@ const handleSubmit = async () => {
               </View>
 
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Max Players</Text>
+                <Text style={styles.label}>Max Players *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.maxPlayers && { borderColor: 'red', borderWidth: 1 }
+                  ]}
                   placeholder='Enter Max Players'
                   value={maxPlayers}
                   onChangeText={setMaxPlayers}
                   keyboardType='numeric'
                 />
+
               </View>
             </View>
 
@@ -618,16 +726,15 @@ const handleSubmit = async () => {
               selectedContacts={preferredContacts}
             />
 
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={handleSubmit}
-        >
-          <Text style={styles.buttonText}>Create Event</Text>
-        </TouchableOpacity>
-      </ScrollView>
-      </View>
-      
-            
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleSubmit}
+            >
+              <Text style={styles.buttonText}>Create Event</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
         <Modal visible={showCustomModal} animationType='slide' transparent>
           <View style={styles.overlay}>
             <View style={styles.modalWrapper}>
@@ -643,6 +750,7 @@ const handleSubmit = async () => {
                       selectedValue={customRepeat}
                       onValueChange={setCustomRepeat}
                       style={styles.picker}
+                      itemStyle={{ color: '#000' }}
                     >
                       <Picker.Item label='Daily' value='daily' />
                       <Picker.Item label='Weekly' value='weekly' />
@@ -658,6 +766,7 @@ const handleSubmit = async () => {
                         setCustomInterval(Number(value))
                       }
                       style={styles.picker}
+                      itemStyle={{ color: '#000' }}
                     >
                       {Array.from({ length: 30 }, (_, i) => (
                         <Picker.Item
@@ -704,40 +813,54 @@ const handleSubmit = async () => {
                     </View>
                   )}
 
-           {customRepeat === 'monthly' && (
-            <View style={styles.calendarWrapper}>
-              <Calendar
-                onDayPress={(day) => {
-                  const dateStr = day.dateString;
-                  const selected = customRepeatDates.find(d =>
-                    formatDateToLocalISOString(d).startsWith(dateStr)
-                  );
+                  {customRepeat === 'monthly' && (
+                    <View style={styles.calendarWrapper}>
+                      <Calendar
+                        onDayPress={(day) => {
+                          const dateStr = day.dateString;
+                          const selected = customRepeatDates.find((d) =>
+                            formatDateToLocalISOString(d).startsWith(dateStr)
+                          );
 
-                  if (selected) {
-                    setCustomRepeatDates(prev =>
-                      prev.filter(d => !formatDateToLocalISOString(d).startsWith(dateStr))
-                    );
-                  } else {
-                    setCustomRepeatDates(prev => [
-                      ...prev,
-                      new Date(`${dateStr}T${startTime?.getHours() || 0}:${startTime?.getMinutes() || 0}:00.00`)
-                    ]);
-                  }
-                }}
-                markedDates={
-                  customRepeatDates.reduce((acc, date) => {
-                    const formatted = formatDateToLocalISOString(date).split('T')[0];
-                    acc[formatted] = { selected: true, selectedColor: '#00adf5' };
-                    return acc;
-                  }, {} as Record<string, any>)
-                }
-              />
-            </View>
-          )}
+                          if (selected) {
+                            setCustomRepeatDates((prev) =>
+                              prev.filter(
+                                (d) =>
+                                  !formatDateToLocalISOString(d).startsWith(
+                                    dateStr
+                                  )
+                              )
+                            );
+                          } else {
+                            setCustomRepeatDates((prev) => [
+                              ...prev,
+                              new Date(
+                                `${dateStr}T${startTime?.getHours() || 0}:${
+                                  startTime?.getMinutes() || 0
+                                }:00.00`
+                              ),
+                            ]);
+                          }
+                        }}
+                        markedDates={customRepeatDates.reduce((acc, date) => {
+                          const formatted =
+                            formatDateToLocalISOString(date).split('T')[0];
+                          acc[formatted] = {
+                            selected: true,
+                            selectedColor: '#00adf5',
+                          };
+                          return acc;
+                        }, {} as Record<string, any>)}
+                      />
+                    </View>
+                  )}
 
-          <TouchableOpacity style={styles.button} onPress={handleCustomApply}>
-            <Text style={styles.buttonText}>Customize</Text>
-          </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleCustomApply}
+                  >
+                    <Text style={styles.buttonText}>Customize</Text>
+                  </TouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.cancelButton}
@@ -758,21 +881,21 @@ const handleSubmit = async () => {
             router.replace('/(authenticated)/home');
           }}
           imageSource={success_image}
-          title="Event Created Successfully!"
-          description="You can now share the event, view details, or make changes anytime."
-          buttonText="Got It"
-          buttonColor="#00796B"
+          title='Event Created Successfully!'
+          description='You can now share the event, view details, or make changes anytime.'
+          buttonText='Got It'
+          buttonColor='#00796B'
         />
 
-      <StatusModal
-        visible={errorVisible}
-        onClose={() => setErrorVisible(false)}
-        imageSource={error_image}
-        title="Event Not Created."
-        description="Please review your details and try again. If the issue continues, contact support."
-        buttonText="Try Again"
-        buttonColor="#E53935"
-      />
+        <StatusModal
+          visible={errorVisible}
+          onClose={() => setErrorVisible(false)}
+          imageSource={error_image}
+          title='Event Not Created.'
+          description='Please review your details and try again. If the issue continues, contact support.'
+          buttonText='Try Again'
+          buttonColor='#E53935'
+        />
       </SafeAreaView>
     </>
   );
@@ -802,13 +925,13 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   modalWrapper: {
-  width: '100%',
-  maxHeight: '100%',
-  backgroundColor: 'white',
-  borderRadius: 16,
-  padding: 16,
-  alignSelf: 'center',
-},
+    width: '100%',
+    maxHeight: '100%',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    alignSelf: 'center',
+  },
   disabledPlus: {
     backgroundColor: '#2C7E88',
     marginTop: 8,
@@ -875,7 +998,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   label: {
-    marginTop:10,
+    marginTop: 10,
     fontSize: 14,
     marginBottom: 4,
     color: '#333',
@@ -891,9 +1014,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   inputRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   halfInput: {
     flex: 1,
   },
@@ -937,12 +1060,47 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 14,
     color: '#444',
-    fontWeight: 500,
+    fontWeight: '500',
   },
   sliderWrapper: {
     position: 'relative',
     height: 60,
     justifyContent: 'center',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'black',
+  },
+  dateTimeButton: {
+    justifyContent: 'flex-start',
+  },
+  roundedButton: {
+    borderRadius: 8,
+  },
+  whiteButton: {
+    backgroundColor: '#fff',
+  },
+  blackBorder: {
+    borderColor: '#000',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+
+  fullWidth: {
+    width: '100%',
+  },
+  timeText: {
+    flex: 1,
+    textAlign: 'left',
   },
   slider: {
     width: '100%',
@@ -958,20 +1116,20 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   subText: {
-  fontSize: 13,
-  color: '#666',
-  textAlign: 'center',
-  marginTop: 20,
-  marginBottom: 10,
-},
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
   pickerWrapper1: {
     backgroundColor: '#f8f8f8',
     borderRadius: 10,
     marginVertical: 10,
   },
   picker: {
-  height: Platform.OS === 'ios' ? 200 : 70,
-  width: '100%',
+    height: Platform.OS === 'ios' ? 200 : 70,
+    width: '100%',
   },
   dayList: {
     marginTop: 10,
@@ -999,7 +1157,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginTop: 12,
-    marginBottom:12,
+    marginBottom: 12,
     alignItems: 'center',
   },
   cancelText: {

@@ -33,7 +33,7 @@ export default function BottomTabs() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => console.log('group icon pressed')}
+        onPress={() => router.replace('/groups')}
         style={styles.tabItem}
       >
         <MaterialIcons name="groups" size={24} color="#000" />
