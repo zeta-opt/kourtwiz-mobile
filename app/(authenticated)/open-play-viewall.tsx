@@ -1,4 +1,5 @@
 import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
+import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useMemo, useState } from 'react';
@@ -18,7 +19,20 @@ const OpenPlay = () => {
   const userId = user?.userId;
 
   const { data: plays, refetch } = useGetPlays(clubId, userId);
-  const safePlays = plays ?? [];
+  const { data: initiatedData } = useGetInitiatedPlays(userId);
+
+  // merge and mark initiated
+  const safePlays = useMemo(() => {
+    let base = (plays ?? []).map((p:any) => ({ ...p, initiated: false }));
+    if (initiatedData && Array.isArray(initiatedData)) {
+      const existingIds = new Set(base.map((p:any) => p.id));
+      const extra = initiatedData
+        .filter(p => !existingIds.has(p.id))
+        .map(p => ({ ...p, initiated: true }));
+      base = [...base, ...extra];
+    }
+    return base;
+  }, [plays, initiatedData]);
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
@@ -33,14 +47,19 @@ const OpenPlay = () => {
     return Array.from(
       new Set(
         safePlays
-          .map((p : any) => p.allCourts?.Name)
-          .filter((name : any): name is string => typeof name === 'string')
+          .map((p: any) => p.allCourts?.Name)
+          .filter((name: any): name is string => typeof name === 'string')
       )
     );
   }, [safePlays]);
 
   const filteredPlays = useMemo(() => {
-    return safePlays.filter((play : any) => {
+    // NEW: if no filters are set, show all plays
+    if (!selectedDate && !selectedTime && !selectedLocation) {
+      return safePlays;
+    }
+
+    return safePlays.filter((play: any) => {
       const [year, month, day, hour = 0, minute = 0] = play.startTime || [];
       if (!year || !month || !day) return false;
 
@@ -69,7 +88,9 @@ const OpenPlay = () => {
     setSelectedTime(null);
     setSelectedLocation(null);
   };
-console.log('Filtered Plays:', filteredPlays);
+
+  console.log('Filtered Plays:', filteredPlays);
+
   return (
     <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
       <TopBarWithChips active="open" />
@@ -176,7 +197,7 @@ console.log('Filtered Plays:', filteredPlays);
                     display="spinner"
                     onChange={(event, date) => {
                       if (Platform.OS === 'ios' && date) {
-                        setTempDate(date); // update only temp state
+                        setTempDate(date);
                       }
                     }}
                   />
@@ -184,7 +205,7 @@ console.log('Filtered Plays:', filteredPlays);
                     <Button
                       onPress={() => {
                         setShowDatePicker(false);
-                        setTempDate(selectedDate); // discard changes
+                        setTempDate(selectedDate);
                       }}
                     >
                       Cancel
@@ -192,7 +213,7 @@ console.log('Filtered Plays:', filteredPlays);
                     <Button
                       onPress={() => {
                         setShowDatePicker(false);
-                        if (tempDate) setSelectedDate(tempDate); // apply changes
+                        if (tempDate) setSelectedDate(tempDate);
                       }}
                     >
                       Done
@@ -231,7 +252,7 @@ console.log('Filtered Plays:', filteredPlays);
                     <Button
                       onPress={() => {
                         setShowTimePicker(false);
-                        setTempTime(selectedTime); // discard changes
+                        setTempTime(selectedTime);
                       }}
                     >
                       Cancel
@@ -239,7 +260,7 @@ console.log('Filtered Plays:', filteredPlays);
                     <Button
                       onPress={() => {
                         setShowTimePicker(false);
-                        if (tempTime) setSelectedTime(tempTime); // apply changes
+                        if (tempTime) setSelectedTime(tempTime);
                       }}
                     >
                       Done
@@ -255,8 +276,8 @@ console.log('Filtered Plays:', filteredPlays);
       {Platform.OS === 'android' && showDatePicker && (
         <DateTimePicker
           value={selectedDate || new Date()}
-          mode='date'
-          display='calendar'
+          mode="date"
+          display="calendar"
           onChange={(event, date) => {
             setShowDatePicker(false);
             if (date) setSelectedDate(date);
@@ -267,8 +288,8 @@ console.log('Filtered Plays:', filteredPlays);
       {Platform.OS === 'android' && showTimePicker && (
         <DateTimePicker
           value={selectedTime || new Date()}
-          mode='time'
-          display='spinner'
+          mode="time"
+          display="spinner"
           onChange={(event, time) => {
             setShowTimePicker(false);
             if (time) setSelectedTime(time);

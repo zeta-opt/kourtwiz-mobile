@@ -3,6 +3,7 @@ import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
+import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import { RootState } from '@/store';
 import React, { useEffect, useState } from 'react';
@@ -27,6 +28,7 @@ type PlayRow = {
   isWaitlisted: boolean;
   priceForPlay: number;
   'event name': string;
+  initiated: boolean;
   [key: string]: any;
 };
 
@@ -49,6 +51,9 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
   const { user } = useSelector((state: RootState) => state.auth);
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
+
+  // Get initiated plays
+  const { data: initiatedData, status: initiatedStatus } = useGetInitiatedPlays(userId);
 
   const { data: courtsData, status: courtsStatus } = useGetClubCourt({ clubId });
   const { joinPlaySession } = useMutateJoinPlay();
@@ -73,11 +78,11 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
         refetch();
         setRows(prev => prev.map(r => r.id === id ? { ...r, isWaitlisted: false } : r));
       } catch (err) {
-        Toast.show({ 
-          type: 'error', 
-          text1: 'Failed to withdraw from waitlist', 
-          text2: extractErrorMessage(err), 
-          topOffset: 100 
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to withdraw from waitlist',
+          text2: extractErrorMessage(err),
+          topOffset: 100,
         });
       } finally {
         setLoadingId(null);
@@ -90,17 +95,16 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
         await withdraw({ sessionId: id, userId });
         Toast.show({ type: 'success', text1: 'Withdrawn from play', topOffset: 100 });
         refetch();
-        setRows(prev => prev.map(r => r.id === id ? { ...r, isRegistered: false } : r));
-      }catch (err) {
-        Toast.show({ 
-          type: 'error', 
-          text1: 'Failed to withdraw', 
-          text2: extractErrorMessage(err), 
-          topOffset: 100 
+        setRows(prev => prev.map(r => r.id === id ? { ...r, isRegistered: false, 'filled slots': Math.max(0, r['filled slots'] - 1) } : r));
+      } catch (err) {
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to withdraw',
+          text2: extractErrorMessage(err),
+          topOffset: 100,
         });
       } finally {
         setLoadingId(null);
-        
       }
       return;
     }
@@ -119,15 +123,14 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
           setRows(prev =>
             prev.map(r =>
               r.id === id
-                ? { ...r, isRegistered: !isFull, isWaitlisted: isFull }
+                ? { ...r, isRegistered: !isFull, isWaitlisted: isFull, 'filled slots': !isFull ? r['filled slots'] + 1 : r['filled slots'] }
                 : r
             )
           );
-          
           setLoadingId(null);
         },
         onError: (error) => {
-          Toast.show({ type: 'error', text1: 'Unable to join',text2: error.message, topOffset: 100 });
+          Toast.show({ type: 'error', text1: 'Unable to join', text2: error.message, topOffset: 100 });
           setLoadingId(null);
         },
       },
@@ -150,6 +153,16 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
       return;
     }
 
+    // Merge and mark initiated plays
+    let allPlays = [...data.map(p => ({ ...p, initiated: false }))];
+    if (initiatedData && Array.isArray(initiatedData)) {
+      const existingIds = new Set(allPlays.map(p => p.id));
+      const extra = initiatedData
+        .filter(p => !existingIds.has(p.id))
+        .map(p => ({ ...p, initiated: true }));
+      allPlays = [...allPlays, ...extra];
+    }
+
     const courtMap: Record<string, string> = {};
     if (clubId !== 'GLOBAL') {
       courtsData?.forEach((court: any) => {
@@ -157,7 +170,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
       });
     }
 
-    const mappedRows = data.map((play: any) => {
+    const mappedRows = allPlays.map((play: any) => {
       const startDate = new Date(
         play.startTime[0],
         play.startTime[1] - 1,
@@ -178,12 +191,12 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
 
       const isRegistered = registeredPlayers.includes(userId);
       const isWaitlisted = waitlistedPlayers.includes(userId);
-
-      const filledSlots = registeredPlayers.length ;
+      const filledSlots = registeredPlayers.length;
       const isFull = filledSlots >= play.maxPlayers + 1;
 
       return {
         id: play.id,
+        initiated: play.initiated || false,
         'event name': play.eventName?.split('_').join(' ').toLowerCase() || 'Unknown Event',
         date: startDate.toLocaleDateString(),
         time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -201,16 +214,14 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
     });
 
     setRows(mappedRows);
-  }, [data, courtsData, userId, clubId]);
+  }, [data, initiatedData, courtsData, userId, clubId]);
 
   if (!clubId) {
     return <Text style={styles.noDataText}>No open play sessions available</Text>;
   }
-
-  if (courtsStatus === 'loading') {
+  if (courtsStatus === 'loading' || initiatedStatus === 'loading') {
     return <LoaderScreen />;
   }
-
   if (rows.length === 0) {
     return <Text style={styles.noDataText}>No open play sessions available</Text>;
   }
@@ -218,15 +229,27 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
   return (
     <View>
       {rows.map((row) => (
-        <TouchableOpacity key={row.id} style={[styles.card, cardStyle]}  onPress={() => {
-      router.push({
-        pathname: '/(authenticated)/openPlayDetailedView',
-        params: { sessionId: row.id },
-    });
-  }}>
-          <Text style={styles.placeText} numberOfLines={1}>
-            {row['event name']}
-          </Text>
+        <TouchableOpacity
+          key={row.id}
+          style={[styles.card, cardStyle]}
+          onPress={() => {
+            router.push({
+              pathname: '/(authenticated)/openPlayDetailedView',
+              params: { sessionId: row.id },
+            });
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Text style={styles.placeText} numberOfLines={1}>
+              {row['event name']}
+            </Text>
+            {row.initiated && (
+              <View style={styles.initiatedBadge}>
+                <Text style={styles.initiatedBadgeText}>Initiated by Me</Text>
+              </View>
+            )}
+          </View>
+
           <View style={styles.datePeopleRow}>
             <Text style={styles.dateText}>
               {row.date} | {row.time}
@@ -292,6 +315,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     marginTop: 6,
+  },
+  initiatedBadge: {
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  initiatedBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   datePeopleRow: {
     flexDirection: 'row',
