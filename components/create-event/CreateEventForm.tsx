@@ -44,6 +44,7 @@ import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
 import StatusModal from './components/StatusModal';
+import RepeatPicker from './components/RepeatPicker';
 
 const CreateEventForm = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -586,17 +587,7 @@ const CreateEventForm = () => {
 
             <Text style={styles.label}>Repeat Event *</Text>
             <View style={[errors.repeat && { borderColor: 'red', borderWidth: 1, borderRadius: 5 }]}>
-              <Picker
-                selectedValue={repeat}
-                onValueChange={handleRepeatChange}
-                itemStyle={{ color: '#000' }}
-              >
-                <Picker.Item label='None' value='NONE' />
-                <Picker.Item label='Daily' value='DAILY' />
-                <Picker.Item label='Weekly' value='WEEKLY' />
-                <Picker.Item label='Monthly' value='MONTHLY' />
-                <Picker.Item label='Custom' value='custom' />
-              </Picker>
+              <RepeatPicker repeat={repeat} handleRepeatChange={handleRepeatChange} />
             </View>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Repeat End Date *</Text>
