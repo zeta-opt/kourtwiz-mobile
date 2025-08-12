@@ -107,7 +107,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
                   invite.requestId
                 );
                 router.push({
-                  pathname: '/(authenticated)/incoming-summarty',
+                  pathname: '/(authenticated)/chat-summary',
                   params: { requestId: invite.requestId },
                 });
               } catch (err) {
