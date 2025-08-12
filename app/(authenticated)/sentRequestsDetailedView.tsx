@@ -165,7 +165,7 @@ export default function SentRequestDetailedView() {
           style={styles.joinButton}
           onPress={() =>
             router.push({
-              pathname: '/(authenticated)/incoming-summarty',
+              pathname: '/(authenticated)/chat-summary',
               params: { requestId: invite.requestId }, // or whatever variable holds it
             })
           }
