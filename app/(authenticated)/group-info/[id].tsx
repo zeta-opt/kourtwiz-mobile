@@ -285,7 +285,7 @@ const GroupInfoScreen: React.FC = () => {
       <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1, padding: 10 }}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/groups')}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.replace({ pathname: '/chat-summary', params: { id } })}>
             <Feather name="arrow-left" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.title}>Group info</Text>
