@@ -341,10 +341,6 @@ const GroupInfoScreen: React.FC = () => {
           {/* Actions */}
           <View style={styles.actionContainer}>
             <TouchableOpacity style={styles.actionButton}>
-              <Text style={[styles.actionText, { color: '#222' }]}>Add to Favourites</Text>
-            </TouchableOpacity>
-            <View style={styles.actionSeparator} />
-            <TouchableOpacity style={styles.actionButton}>
               <Text style={[styles.actionText, { color: '#a61c1c' }]}>Clear Chat</Text>
             </TouchableOpacity>
             <View style={styles.actionSeparator} />
@@ -519,7 +515,7 @@ const GroupInfoScreen: React.FC = () => {
               </View>
 
               {/* Conditionally render Admin Controls */}
-              {isCurrentUserAdmin && (
+              {isCurrentUserAdmin && selectedMember?.userId !== group.createdByUserId && selectedMember?.userId !== user?.userId && (
                 <>
                   <View style={styles.actionContainer}>
                     <TouchableOpacity
@@ -586,7 +582,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#333',
+    backgroundColor: "#2E7165",
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -676,7 +672,7 @@ const styles = StyleSheet.create({
   },
   memberName: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#404040',
   },
   adminText: {
