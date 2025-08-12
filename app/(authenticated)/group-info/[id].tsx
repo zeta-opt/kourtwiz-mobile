@@ -7,7 +7,6 @@ import {
   Image,
   FlatList,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
   ActivityIndicator,
   Alert,
