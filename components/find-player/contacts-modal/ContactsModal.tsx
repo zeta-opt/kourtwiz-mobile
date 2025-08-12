@@ -7,6 +7,7 @@ import {
   Linking,
   StyleSheet,
   View,
+  Pressable,
 } from 'react-native';
 import {
   Button,
@@ -52,6 +53,9 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   const [tempSelectedContacts, setTempSelectedContacts] =
     useState<Contact[]>(selectedContacts);
   const [loading, setLoading] = useState(false);
+  const normalizePhoneNumber = (phone: string) => {
+    return phone.replace(/\D/g, ''); 
+  };
 
   useEffect(() => {
     if (visible) {
@@ -135,13 +139,17 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   const handleToggleContact = (deviceContact: DeviceContact) => {
     const appContact = convertToAppContact(deviceContact);
     const isSelected = tempSelectedContacts.some(
-      (c) => c.contactPhoneNumber === appContact.contactPhoneNumber
+      (c) =>
+        normalizePhoneNumber(c.contactPhoneNumber) ===
+        normalizePhoneNumber(appContact.contactPhoneNumber)
     );
 
     if (isSelected) {
       setTempSelectedContacts((prev) =>
         prev.filter(
-          (c) => c.contactPhoneNumber !== appContact.contactPhoneNumber
+          (c) =>
+            normalizePhoneNumber(c.contactPhoneNumber) !==
+            normalizePhoneNumber(appContact.contactPhoneNumber)
         )
       );
     } else {
@@ -152,7 +160,9 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   const isContactSelected = (deviceContact: DeviceContact): boolean => {
     const appContact = convertToAppContact(deviceContact);
     return tempSelectedContacts.some(
-      (c) => c.contactPhoneNumber === appContact.contactPhoneNumber
+      (c) =>
+        normalizePhoneNumber(c.contactPhoneNumber) ===
+        normalizePhoneNumber(appContact.contactPhoneNumber)
     );
   };
 
@@ -171,11 +181,17 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   );
 
   const renderContact = ({ item }: { item: DeviceContact }) => {
-    const appContact = convertToAppContact(item);
     const isSelected = isContactSelected(item);
 
     return (
-      <View key={item.id} style={styles.contactCard}>
+      <Pressable
+        key={item.id}
+        onPress={() => handleToggleContact(item)}
+        style={({ pressed }) => [
+          styles.contactCard,
+          pressed && { backgroundColor: '#f0f0f0' }
+        ]}
+      >
         <View style={styles.contactContent}>
           <View style={{ flex: 1 }}>
             <Text style={styles.contactName}>{item.name}</Text>
@@ -189,7 +205,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
             color='#2C7E88'
           />
         </View>
-      </View>
+      </Pressable>
     );
   };
 

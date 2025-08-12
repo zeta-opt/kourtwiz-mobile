@@ -127,7 +127,7 @@ export default function MyRequestsDetailedView() {
             <TouchableOpacity
               style={styles.joinButton}
               onPress={() =>
-                router.push({ pathname: '/(authenticated)/incoming-summarty', params: { requestId } })
+                router.push({ pathname: '/(authenticated)/chat-summary', params: { requestId } })
               }
             >
               <Text style={styles.joinButtonText}>Join Chat</Text>
