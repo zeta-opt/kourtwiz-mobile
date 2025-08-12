@@ -79,7 +79,6 @@ export default function GroupsScreen() {
     if (!comments || comments.length === 0) return null;
     let max: Date | null = null;
     for (const c of comments) {
-      // tolerate several possible field names
       const rawTs = c.timestamp ?? c.time ?? c.createdAt ?? c.created_at ?? c.editedAt ?? c.date ?? c.ts;
       const d = parseTimestamp(rawTs);
       if (d && (!max || d > max)) max = d;
@@ -87,12 +86,10 @@ export default function GroupsScreen() {
     return max;
   }
 
-  // UNIFY place to compute the group's latest message time (comments -> fallback lastUpdated)
+  // (comments -> fallback lastUpdated)
   function getGroupLatestMessageTime(item: any): Date | null {
     const latestFromComments = getLatestCommentTimestamp(item.comments || []);
     if (latestFromComments) return latestFromComments;
-
-    // check possible lastUpdated fields
     const fallback = parseTimestamp(item.lastUpdated ?? item.updatedAt ?? item.updated_at ?? item.last_update);
     return fallback;
   }
@@ -296,7 +293,7 @@ export default function GroupsScreen() {
           style={{ marginLeft: 12, marginRight: 6 }}
         />
         <TextInput
-          placeholder="Search"
+          placeholder="Search Group Name"
           placeholderTextColor="#8E8E8E"
           style={styles.searchInput}
           value={search}

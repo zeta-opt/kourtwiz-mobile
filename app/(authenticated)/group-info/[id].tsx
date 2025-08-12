@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -9,27 +10,29 @@ import {
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
-  Modal,
-  Pressable,
   Alert,
-  TextInput,
-} from 'react-native';
-import { Feather} from '@expo/vector-icons';
-import { useGetGroupById } from '@/hooks/apis/groups/useGetGroupById';
-import { router, useLocalSearchParams } from 'expo-router';
+} from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient';
-import { useUpdateGroupAdminStatus } from '@/hooks/apis/groups/useUpdateAdminStatus';
+import { Feather} from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useRemoveGroupMember } from '@/hooks/apis/groups/useRemoveMember';
-import MemberInfoModal from '@/components/groups/MemberInfoModal';
+
+import EditModal from '@/components/groups/EditModal';
+import ExitGroupModal from '@/components/groups/ExitGroupModal';
+import MemberOptionsModal from '@/components/groups/MemberOptionsModal';
+import ContactsModal, { Contact } from '@/components/find-player/contacts-modal/ContactsModal';
+
 import { useDeleteGroup } from '@/hooks/apis/groups/useDeleteGroup';
 import { useUpdateGroupName } from '@/hooks/apis/groups/useUpdateGroupName';
 import { useAddGroupMember } from '@/hooks/apis/groups/useAddMembers';
-import ContactsModal, { Contact } from '@/components/find-player/contacts-modal/ContactsModal';
+import { useUpdateGroupAdminStatus } from '@/hooks/apis/groups/useUpdateAdminStatus';
+import { useRemoveGroupMember } from '@/hooks/apis/groups/useRemoveMember';
+import { useGetGroupById } from '@/hooks/apis/groups/useGetGroupById';
 
 const GroupInfoScreen: React.FC = () => {
   const user = useSelector((state: RootState) => state.auth.user);
+  const userId = user?.userId;
   const { id } = useLocalSearchParams(); // dynamic param from route
   const { getGroup, data: group, status} = useGetGroupById();
   const { updateAdminStatus } = useUpdateGroupAdminStatus();
@@ -44,22 +47,18 @@ const GroupInfoScreen: React.FC = () => {
   const [editGroupModalVisible, setEditGroupModalVisible] = useState(false);
   const [contactsModalVisible, setContactsModalVisible] = useState(false);
 
-  const [editedGroupName, setEditedGroupName] = useState(group?.name || '');
   const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [favoriteGroups, setFavoriteGroups] = useState<string[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
-  const isCurrentUserAdmin = group?.members?.find((m) => m.userId === user.userId)?.admin;
+  const isCurrentUserAdmin = group?.members?.find((m:any) => m.userId === user.userId)?.admin;
+  const membersCount = group?.members?.length ?? 0;
+  const maxListHeight = membersCount > 5 ? 350 : 'auto';
 
   useEffect(() => {
     if (id && typeof id === 'string') {
       getGroup({ groupId: id });
     }
   }, [id]);
-
-  useEffect(() => {
-    if (group?.name) {
-      setEditedGroupName(group.name);
-    }
-  }, [group]);
 
   const openMemberModal = (member: any) => {
     setSelectedMember(member);
@@ -69,6 +68,39 @@ const GroupInfoScreen: React.FC = () => {
   const closeMemberModal = () => {
     setSelectedMember(null);
     setMemberModalVisible(false);
+  };
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const key = `favoriteGroups_${userId}`;
+        const raw = await AsyncStorage.getItem(key);
+        const storedFavorites = raw ? JSON.parse(raw) : [];
+        setFavoriteGroups(storedFavorites);
+      } catch (err) {
+        console.warn('Error loading favorites', err);
+        setFavoriteGroups([]);
+      }
+    };
+    if (userId) {
+      loadFavorites();
+    }
+  }, [userId]);
+
+  const toggleFavorite = async (groupId: string) => {
+    const key = `favoriteGroups_${userId}`;
+    let updated;
+    if (favoriteGroups.includes(groupId)) {
+      updated = favoriteGroups.filter((id) => id !== groupId);
+    } else {
+      updated = [...favoriteGroups, groupId];
+    }
+    setFavoriteGroups(updated);
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
+    } catch (err) {
+      console.warn('Failed to persist favorites', err);
+    }
   };
 
   const handleToggleAdmin = async () => {
@@ -127,39 +159,7 @@ const GroupInfoScreen: React.FC = () => {
         },
       }
     );
-  };  
-
-  const handleExitGroup = () => {
-    if (!id || typeof id !== 'string') {
-      Alert.alert('Error', 'Invalid group ID.');
-      return;
-    }
-  
-    if (!user?.userId || !user?.phoneNumber) {
-      Alert.alert('Error', 'User info missing');
-      return;
-    }
-  
-    removeMember(
-      {
-        groupId: id,
-        memberPhone: user.phoneNumber,
-        requesterUserId: user.userId,
-      },
-      {
-        onSuccess: () => {
-          Alert.alert('Success', 'You exited the group');
-          setExitModalVisible(false);
-          router.replace('/groups');
-        },
-        onError: (err: any) => {
-          const errorMessage = err?.response?.data?.message || 'Group creator cannot exit the group';
-          Alert.alert('Error', errorMessage);
-          console.error('Exit group error:', err);
-        }              
-      }
-    );
-  }; 
+  };
   
   const handleContactsSelected = async (contacts: Contact[]) => {
     setSelectedContacts(contacts);
@@ -242,7 +242,6 @@ const GroupInfoScreen: React.FC = () => {
     );
   };
   
-
   const renderMember = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.memberRow} onPress={() => openMemberModal(item)}>
       {item.avatarUrl ? (
@@ -252,7 +251,7 @@ const GroupInfoScreen: React.FC = () => {
           <Text style={styles.initialsText}>
             {item.name
               ?.split(' ')
-              .map((word) => word[0])
+              .map((word: string) => word[0])
               .join('')
               .toUpperCase()
               .slice(0, 2)}
@@ -260,11 +259,11 @@ const GroupInfoScreen: React.FC = () => {
         </View>
       )}
       <View style={{flex: 1, marginLeft: 12,}}>
-      <Text style={styles.memberName}>{item.name}</Text>
+        <Text style={styles.memberName}>{item.name}</Text>
       </View>
       <View style={{flexDirection: 'row', alignItems: 'center', gap: 8,}}>
-      {item.admin && <Text style={styles.adminText}>Admin</Text>}
-      <Feather name="chevron-right" size={20} color="#a0a0a0" style={{ marginLeft: 'auto' }} />
+        {item.admin && <Text style={styles.adminText}>Admin</Text>}
+        <Feather name="chevron-right" size={20} color="#a0a0a0" style={{ marginLeft: 'auto' }} />
       </View>
     </TouchableOpacity>
   );
@@ -297,14 +296,13 @@ const GroupInfoScreen: React.FC = () => {
           )}
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
           {/* Group Logo */}
           <View style={styles.logoContainer}>
             <View style={[styles.initialsCircle, { width: 100, height: 100, borderRadius: 50 }]}>
               <Text style={[styles.initialsText, { fontSize: 32 }]}>
                 {group?.name
                   ?.split(' ')
-                  .map((word) => word[0])
+                  .map((word: string) => word[0])
                   .join('')
                   .toUpperCase()
                   .slice(0, 2)}
@@ -322,24 +320,34 @@ const GroupInfoScreen: React.FC = () => {
 
           {/* Members section */}
           <View style={styles.modalOptionLeft}>
-          <Text style={styles.sectionTitle}>Members</Text>
-          <TouchableOpacity onPress={() => setContactsModalVisible(true)}>
-            <Text style={[styles.sectionTitle, { color: '#257073' }]}>Add Members</Text>
-          </TouchableOpacity>
+            <Text style={styles.sectionTitle}>Members</Text>
+            <TouchableOpacity onPress={() => setContactsModalVisible(true)}>
+              <Text style={[styles.sectionTitle, { color: '#257073' }]}>Add Members</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.membersListContainer}>
+          <View style={[styles.membersListContainer, { maxHeight: maxListHeight, }]}>
             <FlatList
               data={group?.members ?? []}
               renderItem={renderMember}
               keyExtractor={(item) => item.userId || item.id || Math.random().toString()}
-              scrollEnabled={group?.members?.length > 5}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              scrollEnabled={true}
+              nestedScrollEnabled={true}
+              ItemSeparatorComponent={() => <View style={styles.actionSeparator} />}
             />
           </View>
 
           {/* Actions */}
           <View style={styles.actionContainer}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => toggleFavorite(typeof id === 'string' ? id : Array.isArray(id) ? id[0] : '')}
+            >
+              <Text style={styles.actionText}>
+                {favoriteGroups.includes(typeof id === 'string' ? id : Array.isArray(id) ? id[0] : '') ? 'Remove from Favorites' : 'Add to Favorites'}
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.actionSeparator} />
             <TouchableOpacity style={styles.actionButton}>
               <Text style={[styles.actionText, { color: '#a61c1c' }]}>Clear Chat</Text>
             </TouchableOpacity>
@@ -353,204 +361,47 @@ const GroupInfoScreen: React.FC = () => {
                 <Text style={[styles.actionText, { color: '#a61c1c' }]}>Exit Group</Text>
               </TouchableOpacity>
             )}
-            <View style={styles.actionSeparator} />
-            <TouchableOpacity style={styles.actionButton} onPress={handleDeleteGroup}>
-              <Text style={[styles.actionText, { color: '#a61c1c' }]}>Delete Group</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-
-        <Modal
-          animationType="slide"
-          transparent
-          visible={editGroupModalVisible}
-          onRequestClose={() => setEditGroupModalVisible(false)}
-        >
-          <Pressable style={styles.modalOverlay} onPress={() => setEditGroupModalVisible(false)}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit Group Name</Text>
-                <TouchableOpacity onPress={() => setEditGroupModalVisible(false)}>
-                  <Feather name="x" size={20} color="#000" />
-                </TouchableOpacity>
-              </View>
-
-              <TextInput
-                style={styles.textInput}
-                value={editedGroupName}
-                onChangeText={setEditedGroupName}
-                placeholder="Enter new group name"
-              />
-
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={async () => {
-                  if (!id || typeof id !== 'string' || !user?.userId) return;
-
-                  try {
-                    await updateGroupName({
-                      groupId: id,
-                      requesterUserId: user.userId,
-                      newName: editedGroupName,
-                    });
-                    setEditGroupModalVisible(false);
-                    getGroup({ groupId: id });
-                    Alert.alert('Success', 'Group name updated');
-                  } catch (err: any) {
-                    Alert.alert('Error', err?.response?.data?.message || 'Update failed');
-                    console.error(err);
-                  }
-                }}
-              >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Save</Text>
+            {user?.userId === group?.createdByUserId  && (
+              <TouchableOpacity style={styles.actionButton} onPress={handleDeleteGroup}>
+                <Text style={[styles.actionText, { color: '#a61c1c' }]}>Delete Group</Text>
               </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Modal>
+            )}
+          </View>
 
-        {/* Exit Group Modal */}
-        <Modal
-          animationType="slide"
-          transparent
+        <EditModal
+          visible={editGroupModalVisible}
+          onClose={() => setEditGroupModalVisible(false)}
+          groupId={typeof id === 'string' ? id : Array.isArray(id) ? id[0] : undefined}
+          userId={user?.userId}
+          currentName={group?.name ?? ''}
+          updateGroupName={async (params) => { await updateGroupName(params); }}
+          refreshGroup={getGroup}
+        />
+
+        <ExitGroupModal
           visible={exitModalVisible}
-          onRequestClose={() => setExitModalVisible(false)}
-        >
-          <Pressable style={styles.modalOverlay} onPress={() => setExitModalVisible(false)}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Exit group?</Text>
-                <TouchableOpacity onPress={() => setExitModalVisible(false)}>
-                  <Feather name="x" size={20} color="#000" />
-                </TouchableOpacity>
-              </View>
+          onClose={() => setExitModalVisible(false)}
+          groupId={typeof id === 'string' ? id : Array.isArray(id) ? id[0] : undefined}
+          groupName={group?.name}
+          userId={user?.userId}
+          userPhone={user?.phoneNumber}
+          removeMember={removeMember}
+          navigateToGroups={() => router.replace('/groups')}
+        />
 
-              <Text style={styles.modalSubtitle}>
-                Do you want to exit {group?.name ?? 'the'} group?
-              </Text>
-
-              <View style={styles.actionContainer}>
-                <TouchableOpacity
-                  style={styles.modalOption}
-                  onPress={() => {
-                    handleExitGroup()
-                    setExitModalVisible(false);
-                    router.replace('/groups')
-                  }}
-                >
-                  <View style={styles.modalOptionLeft}>
-                    <Text style={styles.modalOptionText}>Exit group</Text>
-                    <Feather name="log-out" size={18} color="#555" />
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.actionContainer}>
-                <TouchableOpacity
-                  style={[styles.modalOption, { marginTop: 10 }]}
-                  onPress={() => {
-                    handleExitGroup()
-                    setExitModalVisible(false);
-                    router.replace('/groups')
-                  }}
-                >
-                  <View style={styles.modalOptionLeft}>
-                    <Text style={styles.modalButtonRemoveText}>Exit and delete for me</Text>
-                    <Feather name="trash-2" size={18} color="#a61c1c" />
-                  </View>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Pressable>
-        </Modal>
-
-        {/* Member Options Modal */}
-        <Modal
-          animationType="slide"
-          transparent
+        <MemberOptionsModal
           visible={memberModalVisible}
-          onRequestClose={closeMemberModal}
-        >
-          <Pressable style={styles.modalOverlay} onPress={closeMemberModal}>
-            <View style={styles.modalContainer}>
-              {/* Modal Header */}
-              <View style={styles.modalHeader}>
-                {selectedMember?.avatarUrl ? (
-                  <Image source={{ uri: selectedMember.avatarUrl }} style={styles.modalMemberAvatar} />
-                ) : (
-                  <View style={[styles.initialsCircle, { width: 40, height: 40, borderRadius: 20 }]}>
-                    <Text style={styles.initialsText}>
-                      {selectedMember?.name
-                        ?.split(' ')
-                        .map((word: string) => word[0])
-                        .join('')
-                        .toUpperCase()
-                        .slice(0, 2)}
-                    </Text>
-                  </View>
-                )}
-                <Text style={[styles.modalTitle, { marginLeft: 12, flex: 1 }]}>
-                  {selectedMember?.name ?? 'Member'}
-                </Text>
-                <TouchableOpacity onPress={closeMemberModal}>
-                  <Feather name="x" size={20} color="#000" />
-                </TouchableOpacity>
-              </View>
+          onClose={closeMemberModal}
+          selectedMember={selectedMember}
+          isCurrentUserAdmin={isCurrentUserAdmin}
+          groupCreatedByUserId={group?.createdByUserId}
+          currentUserId={user?.userId}
+          showMemberInfoModal={showMemberInfoModal}
+          setShowMemberInfoModal={setShowMemberInfoModal}
+          handleToggleAdmin={handleToggleAdmin}
+          handleRemove={handleRemove}
+        />
 
-              {/* Always-visible: Info Option */}
-              <View style={styles.actionContainer}>
-                <TouchableOpacity
-                  style={styles.modalOption}
-                  onPress={() => setShowMemberInfoModal(true)}
-                >
-                  <View style={styles.modalOptionLeft}>
-                    <Text style={styles.modalOptionText}>Info</Text>
-                    <Feather name="info" size={18} color="#555" />
-                  </View>
-                </TouchableOpacity>
-                <MemberInfoModal
-                    visible={showMemberInfoModal}
-                    onClose={() => setShowMemberInfoModal(false)}
-                    member={selectedMember}
-                  />
-              </View>
-
-              {/* Conditionally render Admin Controls */}
-              {isCurrentUserAdmin && selectedMember?.userId !== group.createdByUserId && selectedMember?.userId !== user?.userId && (
-                <>
-                  <View style={styles.actionContainer}>
-                    <TouchableOpacity
-                      style={styles.modalOption}
-                      onPress={handleToggleAdmin}
-                    >
-                      <View style={styles.modalOptionLeft}>
-                        <Text style={styles.modalOptionText}>
-                          {selectedMember?.admin ? 'Remove as group admin' : 'Make group admin'}
-                        </Text>
-                        <Feather
-                          name={selectedMember?.admin ? 'user-x' : 'user-check'}
-                          size={18}
-                          color="#555"
-                        />
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.actionContainer}>
-                    <TouchableOpacity
-                      style={[styles.modalOption, { marginTop: 10 }]}
-                      onPress={handleRemove}
-                    >
-                      <View style={styles.modalOptionLeft}>
-                        <Text style={styles.modalButtonRemoveText}>Remove from group</Text>
-                        <Feather name="user-minus" size={18} color="#a61c1c" />
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-            </View>
-          </Pressable>
-        </Modal>
         <ContactsModal
           visible={contactsModalVisible}
           onClose={() => setContactsModalVisible(false)}
@@ -611,21 +462,6 @@ const styles = StyleSheet.create({
     color: '#257073',
     fontSize: 16,
     fontWeight: '600',
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 16,
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  saveButton: {
-    backgroundColor: '#257073',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
   },  
   logoContainer: {
     alignItems: 'center',
@@ -643,7 +479,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sectionTitle: {
-    marginTop: 24,
+    marginTop: 50,
     marginBottom: 8,
     fontWeight: '700',
     fontSize: 14,
@@ -653,8 +489,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     overflow: 'hidden',
-    maxHeight: 350,
-    elevation: 1,
+    elevation: 1, 
   },
   memberRow: {
     flexDirection: 'row',
@@ -681,12 +516,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#257073',
   },
-  separator: {
-    height: 1,
-    backgroundColor: '#ddd',
-    marginLeft: 64,
-    width: '100%',
-  },
   actionContainer: {
     marginTop: 12,
     backgroundColor: '#fff',
@@ -706,93 +535,10 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#ddd',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: '#00000050',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 30,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#222',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  modalButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-  },
-  modalButtonExit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#eee',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-  },
-  modalButtonExitText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111',
-    marginRight: 8,
-  },
-  modalButtonRemove: {
-    marginTop: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalButtonRemoveMember: {
-    marginTop: 24,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalButtonRemoveText: {
-    color: '#a61c1c',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  modalOption: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   modalOptionLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    flex: 1,
-  },
-  modalOptionText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#222',
-    marginRight: 8,
-  },
-  modalMemberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
   },
 });
 
