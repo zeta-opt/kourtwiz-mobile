@@ -194,7 +194,7 @@ export default function GroupsScreen() {
     const adminMember = item.members?.find((m: any) => m.userId === item.createdByUserId);
     const adminName = adminMember?.name || "Admin";
 
-    const latestMessageTime = getGroupLatestMessageTime(item); // unified source
+    const latestMessageTime = getGroupLatestMessageTime(item);
     const lastReadAt = lastReadTimestamps[item.id];
     const lastReadDate = lastReadAt ? new Date(lastReadAt) : null;
     const hasMessages = Boolean(latestMessageTime);
@@ -269,7 +269,7 @@ export default function GroupsScreen() {
   };
 
   // ---------- UI: filter badges counts use same logic ----------
-  const unreadCount = (data ?? []).filter(g => groupHasUnread(g)).length;
+  const unreadCount = (data ?? []).filter((g:any) => groupHasUnread(g)).length;
   const favoriteCount = favoriteGroups.length;
 
   return (
