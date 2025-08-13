@@ -67,11 +67,14 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   const loadContacts = async () => {
     setLoading(true);
     try {
-      const { status } = await Contacts.requestPermissionsAsync();
+      // Double-check permission before loading
+      const { status } = await Contacts.getPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Contact permission is required.', [
-          { text: 'OK', onPress: () => onClose() }
-        ]);
+        Alert.alert(
+          'Permission Required',
+          'Contact permission is required to load your contacts.',
+          [{ text: 'OK', onPress: () => onClose() }]
+        );
         return;
       }
 
@@ -80,18 +83,32 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
         sort: Contacts.SortTypes.FirstName,
       });
 
-      const transformedContacts = data
-        .filter(contact => contact.name)
-        .map(contact => ({
+      // Transform expo contacts to our format
+      const transformedContacts: DeviceContact[] = data
+        .filter((contact) => contact.name) // Only contacts with names
+        .map((contact) => ({
           id: contact.id || `contact-${Math.random()}`,
           name: contact.name || 'Unknown',
           phoneNumbers: contact.phoneNumbers,
         }));
 
       setDeviceContacts(transformedContacts);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading contacts:', error);
-      Alert.alert('Error', 'Failed to load contacts.');
+
+      // Check if it's a permission error
+      if (error.message && error.message.includes('permission')) {
+        Alert.alert(
+          'Permission Error',
+          'Unable to access contacts. Please ensure you have granted contact permissions in your device settings.',
+          [
+            { text: 'Cancel', onPress: () => onClose() },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to load contacts. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -100,23 +117,22 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   const getContactDisplayNumber = (contact: DeviceContact): string => {
     if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
       const firstNumber = contact.phoneNumbers[0];
-      return normalizePhoneNumber(firstNumber.number || firstNumber.digits || '');
+      return firstNumber.number || firstNumber.digits || 'No number';
     }
-    return '';
+    return 'No phone number';
   };
 
-
   const convertToAppContact = (deviceContact: DeviceContact): Contact => {
-    const phoneNumberRaw =
+    const phoneNumber =
       deviceContact.phoneNumbers && deviceContact.phoneNumbers.length > 0
         ? deviceContact.phoneNumbers[0].number ||
           deviceContact.phoneNumbers[0].digits ||
-          ''
-        : '';
+          deviceContact.id
+        : deviceContact.id;
 
     return {
       contactName: deviceContact.name,
-      contactPhoneNumber: normalizePhoneNumber(phoneNumberRaw) || deviceContact.id,
+      contactPhoneNumber: phoneNumber,
     };
   };
 
@@ -146,9 +162,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
     return tempSelectedContacts.some(
       (c) =>
         normalizePhoneNumber(c.contactPhoneNumber) ===
-          normalizePhoneNumber(appContact.contactPhoneNumber) ||
-        // Fallback: match by name if no number
-        (!c.contactPhoneNumber && c.contactName === appContact.contactName)
+        normalizePhoneNumber(appContact.contactPhoneNumber)
     );
   };
 
