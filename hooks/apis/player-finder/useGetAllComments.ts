@@ -5,11 +5,21 @@ import { useState, useEffect } from 'react';
 
 type Comment = {
   id: string;
+  requestId: string;
+  eventType: string;      // e.g. "iwanttoplay", "group", "event", etc.
+  eventName: string;
+  placeToPlay: string;
+  groupName: string;
+  joined: boolean;        // whether the user has joined (important for iwanttoplay)
   userId: string;
   userName: string;
   commentText: string;
-  imageUrl?: string;
+  image?: string;
+  timestamp: string;      // ISO string
+  edited: boolean;
+  editedAt?: string;
 };
+
 
 type UseGetAllCommentsReturn = {
   data: Comment[] | null;

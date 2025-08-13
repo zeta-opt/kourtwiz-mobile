@@ -31,7 +31,7 @@ const FILTERS = [
 export default function GroupsScreen() {
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
-  const { getGroups, status, error, data } = useGetGroupsByPhoneNumber();
+  const { getGroups, status, error, data, refetch } = useGetGroupsByPhoneNumber();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [modalVisible, setModalVisible] = useState(false);
@@ -395,6 +395,7 @@ export default function GroupsScreen() {
           setGroupName={setGroupName}
           players={players}
           setPlayers={setPlayers}
+          onGroupCreated={refetch}
         />
       </Modal>
 

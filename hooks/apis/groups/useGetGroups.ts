@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { getToken } from '@/shared/helpers/storeToken';
@@ -7,6 +7,14 @@ export const useGetGroupsByPhoneNumber = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
+
+  const lastParamsRef = useRef<{
+    phoneNumber: string;
+    callbacks?: {
+      onSuccess?: (data: any) => void;
+      onError?: (error: Error) => void;
+    };
+  } | null>(null);
 
   const getGroups = async ({
     phoneNumber,
@@ -20,6 +28,7 @@ export const useGetGroupsByPhoneNumber = () => {
   }): Promise<void> => {
     setStatus('loading');
     setError(null);
+    lastParamsRef.current = { phoneNumber, callbacks }; // store params for refetch
 
     try {
       const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
@@ -37,12 +46,17 @@ export const useGetGroupsByPhoneNumber = () => {
       callbacks?.onSuccess?.(response.data);
     } catch (err: any) {
       setStatus('error');
-      const errorMessage =
-        err?.response?.data?.message || err.message || 'Unknown error';
+      const errorMessage = err?.response?.data?.message || err.message || 'Unknown error';
       setError(errorMessage);
       callbacks?.onError?.(new Error(errorMessage));
     }
   };
 
-  return { getGroups, status, error, data };
+  const refetch = async () => {
+    if (lastParamsRef.current) {
+      await getGroups(lastParamsRef.current);
+    }
+  };
+
+  return { getGroups, refetch, status, error, data };
 };
