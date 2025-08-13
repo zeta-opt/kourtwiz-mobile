@@ -106,25 +106,26 @@ const PreferredPlacesModal = ({
     }
   }, [coords]);
 
-  // Update place list when new nearby data loads
-  useEffect(() => {
-  if (nearbyPlaces && coords) {
-    const preferredIds = new Set(
-      preferredPlaces?.map((p) => p.id) ?? []
-    );
+  // Trigger new fetch on page change
+useEffect(() => {
+  if (!isSearching && coords) {
+    refetch();
+  }
+}, [page, coords, isSearching]);
 
-    const preferredNames = new Set(
-      preferredPlaces?.map((p) => p.name.toLowerCase()) ?? []
-    );
+// Update place list when new data loads
+useEffect(() => {
+  if (nearbyPlaces && coords) {
+    const preferredIds = new Set(preferredPlaces?.map(p => p.id) ?? []);
+    const preferredNames = new Set(preferredPlaces?.map(p => p.name.toLowerCase()) ?? []);
 
     const newPlaces: CombinedPlace[] = nearbyPlaces
-      .filter(
-        (court) =>
-          typeof court.Name === 'string' &&
-          !preferredIds.has(court.id) &&
-          !preferredNames.has(court.Name.toLowerCase())
+      .filter(court =>
+        typeof court.Name === 'string' &&
+        !preferredIds.has(court.id) &&
+        !preferredNames.has(court.Name.toLowerCase())
       )
-      .map((court) => ({
+      .map(court => ({
         id: court.id || court.Name,
         name: court.Name,
         isPreferred: false,
@@ -132,19 +133,9 @@ const PreferredPlacesModal = ({
         distance: court.distance,
       }));
 
-    setPlaces((prev) => {
-      // Remove any duplicates already present
-      const existingIds = new Set(prev.map((p) => p.id));
-      const uniqueNewPlaces = newPlaces.filter((p) => !existingIds.has(p.id));
-
-      const combined = [...prev, ...uniqueNewPlaces];
-
-      if (uniqueNewPlaces.length < 20 || newPlaces.length === 0) {
-        setHasMore(false);
-      }
-
-      return combined;
-    });
+    setHasMore(newPlaces.length >= 20); // check per page, not total list
+    setPlaces(prev => [...prev, ...newPlaces.filter(p => !prev.some(x => x.id === p.id))]);
+    setIsFetchingMore(false);
   }
 }, [nearbyPlaces]);
 
@@ -173,7 +164,7 @@ const PreferredPlacesModal = ({
     (locationPermissionGranted && nearbyStatus === 'loading' && !coords);
 
   const loadMore = () => {
-    if (!isSearching && !isFetching && hasMore && !isFetchingMore) {
+    if (!isFetching && hasMore && !isFetchingMore) {
       setIsFetchingMore(true);
       setPage((prev) => prev + 1);
       setTimeout(() => {
