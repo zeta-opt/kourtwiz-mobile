@@ -30,6 +30,7 @@ const mergedEvents = [
   ...(eventsForSelectedDate?.incomingPlayerFinderRequests ?? []).map(e => ({ ...e, type: 'incoming' })),
   ...(eventsForSelectedDate?.initiatedPlayerFinderRequests ?? []).map(e => ({ ...e, type: 'outgoing' })),
 ];
+
   const handlePress = (event: any) => {
   try {
     if (event.type === 'incoming') {
@@ -91,7 +92,7 @@ const mergedEvents = [
           renderItem={({ item }) => {
             let locationName = 'Unknown Location';
             if (item.type === 'available') {
-              locationName = item.allCourts?.[0]?.name || 'Unknown Location';
+              locationName = item.allCourts?.Name || 'Unknown Location';
             } else if (item.type === 'incoming' || item.type === 'outgoing') {
               locationName = item.placeToPlay || 'Unknown Location';
             }
@@ -107,7 +108,7 @@ const mergedEvents = [
             return (
               <TouchableOpacity onPress={() => handlePress(item)}>
                 <View style={styles.eventCard}>
-                  <Text style={styles.eventTitle}>{item.eventName || item.name || 'Event Name'}</Text>
+                  <Text style={styles.eventTitle}>{item.eventName || 'Event Name'}</Text>
                   <Text style={styles.eventLocation}>{locationName}</Text>
                   <Text style={styles.eventTime}>
                     {format(start, 'h:mm a')} - {format(end, 'h:mm a')}
