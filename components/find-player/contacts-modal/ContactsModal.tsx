@@ -5,13 +5,12 @@ import {
   Alert,
   FlatList,
   Linking,
+  Pressable,
   StyleSheet,
   View,
-  Pressable,
 } from 'react-native';
 import {
   Button,
-  Checkbox,
   Divider,
   IconButton,
   Modal,
@@ -54,7 +53,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
     useState<Contact[]>(selectedContacts);
   const [loading, setLoading] = useState(false);
   const normalizePhoneNumber = (phone: string) => {
-    return phone.replace(/\D/g, ''); 
+    return phone.replace(/\D/g, '');
   };
 
   useEffect(() => {
@@ -180,6 +179,22 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
     contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const CustomCheckbox = ({
+    isSelected,
+    onPress,
+  }: {
+    isSelected: boolean;
+    onPress: () => void;
+  }) => (
+    <Pressable onPress={onPress} style={styles.customCheckbox}>
+      <View
+        style={[styles.checkboxBox, isSelected && styles.checkboxBoxSelected]}
+      >
+        {isSelected && <Text style={styles.checkmark}>✓</Text>}
+      </View>
+    </Pressable>
+  );
+
   const renderContact = ({ item }: { item: DeviceContact }) => {
     const isSelected = isContactSelected(item);
 
@@ -189,7 +204,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
         onPress={() => handleToggleContact(item)}
         style={({ pressed }) => [
           styles.contactCard,
-          pressed && { backgroundColor: '#f0f0f0' }
+          pressed && { backgroundColor: '#f0f0f0' },
         ]}
       >
         <View style={styles.contactContent}>
@@ -199,10 +214,9 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
               {getContactDisplayNumber(item)}
             </Text>
           </View>
-          <Checkbox
-            status={isSelected ? 'checked' : 'unchecked'}
+          <CustomCheckbox
+            isSelected={isSelected}
             onPress={() => handleToggleContact(item)}
-            color='#2C7E88'
           />
         </View>
       </Pressable>
@@ -347,6 +361,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#777',
     marginTop: 2,
+  },
+  customCheckbox: {
+    padding: 4,
+  },
+  checkboxBox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#999999',
+    borderRadius: 4,
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxBoxSelected: {
+    backgroundColor: '#2C7E88',
+    borderColor: '#2C7E88',
+  },
+  checkmark: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 
   listItem: {
