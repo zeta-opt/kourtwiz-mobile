@@ -31,6 +31,7 @@ export default function CreateGroup({
   setPlayers,
   groupName,
   setGroupName,
+  onGroupCreated,
 }: {
   onClose: () => void;
   onAddPlayers: () => void; 
@@ -38,6 +39,7 @@ export default function CreateGroup({
   setPlayers: (players: Player[]) => void; 
   groupName: string;
   setGroupName: (name: string) => void;
+  onGroupCreated?: () => void;
 }) {
     const { user } = useSelector((state: RootState) => state.auth);
     const { createGroup, status, error } = useCreateGroup();
@@ -83,6 +85,7 @@ export default function CreateGroup({
         callbacks: {
           onSuccess: () => {
             alert("Group created successfully!");
+            onGroupCreated?.();
             onClose();
           },
           onError: (err) => {
