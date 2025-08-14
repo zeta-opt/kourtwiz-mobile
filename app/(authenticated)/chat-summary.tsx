@@ -43,7 +43,8 @@ const { requestId, id: groupId } = useLocalSearchParams<{ requestId?: string; id
   const loading = isGroupChat ? groupStatus === 'loading' : pfLoading;
   const error = isGroupChat ? groupError : pfError;
   const title = isGroupChat ? groupData?.name : pfData?.[0]?.placeToPlay;
-  const commentId = isGroupChat ? groupData?.id : pfData?.[0]?.requestId;
+  const commentId = isGroupChat ? groupId : pfData?.[0]?.requestId;
+  
 
   const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
 

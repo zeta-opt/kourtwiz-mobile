@@ -61,6 +61,7 @@ export default function NewMessages() {
   const { user } = useSelector((state: RootState) => state.auth);
   const { data: allMessages, status } = useGetAllComments({ userId: user?.userId ?? '' });
   const joinMutation = useJoinIWantToPlay();
+  // console.log('All messages:', allMessages);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
@@ -88,9 +89,13 @@ export default function NewMessages() {
       }
     } 
     
-    if (msg.eventType === 'GroupEvent') {
-      return; // for now, do nothing
-    } 
+    // if (msg.eventType === 'GroupEvent') {
+    //     router.push({
+    //     pathname: '/(authenticated)/chat-summary',
+    //     params: { id: msg.requestId },
+    //   });
+    //   return; // for now, do nothing
+    // } 
     
     // default case: other event types
     router.replace({
@@ -102,9 +107,9 @@ export default function NewMessages() {
   const handleJoin = async (msg: Comment) => {
     // Guard to ensure this only runs for IWantToPlayEvent
     if (msg.eventType === 'GroupEvent' || msg.eventType !== 'IWantToPlayEvent') {
-        router.replace({
+        router.push({
           pathname: '/(authenticated)/chat-summary',
-          params: { requestId: msg.requestId },
+          params: { id: msg.requestId },
         });
         return;
       }

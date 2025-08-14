@@ -136,7 +136,7 @@ export default function CreateGroup({
           </View>
 
           {/* Add Player */}
-            <Text style={styles.label}>Add Player</Text>
+            <Text style={styles.label}>Add Members</Text>
               <View style={styles.addRow}>
 
                 <TouchableOpacity

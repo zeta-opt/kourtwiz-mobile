@@ -291,16 +291,16 @@ const EditProfile = () => {
         />
 
         <Text style={styles.label}>Date Of Birth</Text>
-        <TouchableOpacity
-          style={styles.dateInput}
-          onPress={() => setShowDatePicker(true)}
+        <View
+          style={[styles.dateInput,styles.readOnlyInput]}
+          // onPress={() => setShowDatePicker(true)}
         >
           <Text style={userData.dateOfBirth ? styles.dateText : styles.placeholderText}>
             {userData.dateOfBirth || 'Enter Date of birth'}
           </Text>
-          <Ionicons name="calendar" size={20} color="#8C8C8C" />
-        </TouchableOpacity>
-        {showDatePicker && (
+          {/* <Ionicons name="calendar" size={20} color="#8C8C8C" /> */}
+        </View>
+        {/* {showDatePicker && (
           <DateTimePicker
             value={userData.dateOfBirth ? new Date(userData.dateOfBirth) : new Date()}
             mode="date"
@@ -308,7 +308,7 @@ const EditProfile = () => {
             onChange={handleDateChange}
             maximumDate={new Date()}
           />
-        )}
+        )} */}
 
         <Text style={styles.label}>Gender</Text>
         <View style={styles.genderContainer}>
