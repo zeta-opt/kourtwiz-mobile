@@ -53,7 +53,11 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
     useState<Contact[]>(selectedContacts);
   const [loading, setLoading] = useState(false);
   const normalizePhoneNumber = (phone: string) => {
-    return phone.replace(/\D/g, '');
+    const cleaned = phone
+    .trim()
+    .replace(/[^\d+]/g, '')       
+    .replace(/(?!^)\+/g, '');     
+  return cleaned;
   };
 
   useEffect(() => {
@@ -131,7 +135,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
 
     return {
       contactName: deviceContact.name,
-      contactPhoneNumber: phoneNumber,
+      contactPhoneNumber: normalizePhoneNumber(phoneNumber),
     };
   };
 
