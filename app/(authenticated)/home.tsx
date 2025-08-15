@@ -135,6 +135,19 @@ const Dashboard = () => {
       refetchOpenPlay(); 
     }
   }, [isFocused]);
+const getInviteTimestamp = (invite) => {
+  if (invite.dateTimeMs) {
+    return Number(invite.dateTimeMs);
+  }
+  if (Array.isArray(invite.playTime)) {
+    
+    const [year, month, day, hour = 0, minute = 0] = invite.playTime;
+    return new Date(year, month - 1, day, hour, minute).getTime();
+  }
+  return 0;
+};
+
+
   useEffect(() => {
     const loadUser = async () => {
       const token = await getToken();
@@ -315,7 +328,9 @@ const Dashboard = () => {
                       No incoming invitations
                     </Text>
                   ) : (
-                    allInvites.map((invite) => (
+                   [...allInvites]
+                    .sort((a, b) => getInviteTimestamp(a) - getInviteTimestamp(b))
+                    .map((invite) => (
                       <InvitationCard
                         key={invite.id}
                         invite={invite}
@@ -332,20 +347,31 @@ const Dashboard = () => {
                   outgoingInvites.length === 0 ? (
                     <Text style={styles.noInvitesText}>No sent invitations</Text>
                   ) : (
-                    outgoingInvites.map((invite) => (
-                      <OutgoingInviteCardItem 
-                      key={invite.requestId} 
-                      invite={invite} 
-                      onViewPlayers={handleViewPlayers}/>
-                    ))
-                  )
+                    [...outgoingInvites]
+                      .sort((a, b) => Number(a.dateTimeMs) - Number(b.dateTimeMs))
+                      .map((invite) => (
+                        <OutgoingInviteCardItem
+                          key={invite.requestId}
+                          invite={invite}
+                          onViewPlayers={handleViewPlayers}
+                        />
+                      ))
+                    )
                 ) : (
-                  <OpenPlayCard data={openPlayInvites || []} refetch={refetch} />
+                  <OpenPlayCard
+                    data={[...openPlayInvites].sort(
+                      (a, b) => Number(a.dateTimeMs) - Number(b.dateTimeMs)
+                    )}
+                    refetch={refetch}
+                  />
                 )}
               </ScrollView>
             </LinearGradient>
           </View>
-        <View style={styles.playCalendarHeaderRow}>
+        
+          <FindplayerCard />
+
+          <View style={styles.playCalendarHeaderRow}>
           <Text style={styles.playCalendarHeader}>Play Calendar</Text>
           <TouchableOpacity onPress={() => router.push('/(authenticated)/play-calendar')}>
             <Text style={styles.viewAllText}>Play Calendar</Text>
@@ -366,7 +392,6 @@ const Dashboard = () => {
             )}
           </View>
 
-          <FindplayerCard />
 
           <Portal>
             <Dialog
