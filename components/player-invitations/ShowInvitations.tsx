@@ -112,10 +112,10 @@ const ShowInvitations = () => {
             }
           );
 
-          const total = res.data[0]?.playersNeeded || 1;
+          const total = res.data[0]?.playersNeeded +1 || 1;
           const accepted = res.data.filter(
             (p: any) => p.status === 'ACCEPTED'
-          ).length;
+          ).length+1;
 
           newCounts[invite.requestId] = { accepted, total };
         } catch (error) {
