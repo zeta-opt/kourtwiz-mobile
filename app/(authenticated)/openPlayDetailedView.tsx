@@ -26,6 +26,7 @@ export default function OpenPlayDetailedView() {
   // Fetch single play session details
   const { data, status, error, refetch } = useGetPlaySessionById(sessionId);
   const selectedPlay = data?.session || null;
+  console.log('Selected Play:', selectedPlay);
 
   const { joinPlaySession } = useMutateJoinPlay();
   const { withdraw } = useWithdrawFromPlay();
@@ -122,7 +123,7 @@ export default function OpenPlayDetailedView() {
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.push('/(authenticated)/home')}>
             <Ionicons name="chevron-back" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.title}>Open Play</Text>
@@ -214,6 +215,21 @@ export default function OpenPlayDetailedView() {
             <Text style={styles.playerNameDimmed}>No one on waitlist.</Text>
           )}
         </View>
+        <View style={styles.chatPreviewContainer}>
+            <Text style={styles.chatPreviewText}>Chat with players here...</Text>
+            <TouchableOpacity
+              style={styles.joinButton}
+              onPress={() =>
+                router.push({ pathname: '/(authenticated)/chat-summary', params: { sessionId } })
+              }
+              
+            >
+            
+
+              <Text style={styles.joinButtonText}>Join Chat</Text>
+            </TouchableOpacity>
+          </View>
+        
       </ScrollView>
 
       {/* Action Button */}
@@ -309,5 +325,32 @@ const styles = StyleSheet.create({
     color: '#999',
     marginLeft: 10,
     fontStyle: 'italic',
+  },
+  chatPreviewContainer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  chatPreviewText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+  },
+    joinButton: {
+    backgroundColor: '#007A7A',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  joinButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

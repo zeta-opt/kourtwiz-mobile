@@ -42,7 +42,7 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite,
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const year = dateObj.getFullYear();
 
-    const dateString = `${day}/${month}/${year}`;
+    const dateString = `${month}/${day}/${year}`;
     const timeString = dateObj.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',

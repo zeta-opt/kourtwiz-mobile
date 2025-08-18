@@ -54,7 +54,12 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
     hour: '2-digit',
     minute: '2-digit',
   });
-  const dateString = date.toLocaleDateString('en-GB');
+  const dateString = date.toLocaleDateString('en-US', {
+  month: '2-digit',
+  day: '2-digit',
+  year: 'numeric',
+});
+
 
   return (
     <TouchableOpacity
