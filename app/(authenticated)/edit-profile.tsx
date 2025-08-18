@@ -166,15 +166,21 @@ const EditProfile = () => {
 
   useEffect(() => {
     if (!originalData.email && !originalData.phoneNumber) return;
-    if (userData.email !== originalData.email) {
+
+    if (userData.email.trim() !== originalData.email.trim()) {
       setEmailVerified(false);
       setEmailEdited(true);
+    } else {
+      setEmailEdited(false);
     }
-    if (userData.phoneNumber !== originalData.phoneNumber) {
+
+    if (userData.phoneNumber.trim() !== originalData.phoneNumber.trim()) {
       setPhoneVerified(false);
       setPhoneEdited(true);
+    } else {
+      setPhoneEdited(false);
     }
-  }, [userData.email, userData.phoneNumber, originalData.email, originalData.phoneNumberlo]);
+  },[userData.email, userData.phoneNumber, originalData.email, originalData.phoneNumber]);
 
   const handleDateChange = (
     event: DateTimePickerEvent,
@@ -213,7 +219,6 @@ const EditProfile = () => {
       await validateEmailOtp(userData.email, emailOtp);
       setEmailVerified(true);
       setEmailOtpSent(false);
-      setOriginalData(prev => ({ ...prev, email: userData.email }));
       Alert.alert("Email verified successfully!");
     } catch (err) {
       Alert.alert("Error", "Invalid or expired OTP.");
@@ -241,7 +246,6 @@ const EditProfile = () => {
       await validatePhoneOtp(userData.phoneNumber, phoneOtp);
       setPhoneVerified(true);
       setPhoneOtpSent(false);
-      setOriginalData(prev => ({ ...prev, phoneNumber: userData.phoneNumber }));
       Alert.alert("Phone verified successfully!");
     } catch (err) {
       Alert.alert("Error", "Invalid or expired OTP.");
@@ -249,12 +253,12 @@ const EditProfile = () => {
   };
 
   const handleSave = async () => {
-    if (!emailVerified) {
-      Alert.alert("Please verify your new email before saving.");
+    if (emailEdited && !emailVerified) {
+      Alert.alert("Please verify your email before saving");
       return;
     }
-    if (!phoneVerified) {
-      Alert.alert("Please verify your new phone number before saving.");
+    if (phoneEdited && !phoneVerified) {
+      Alert.alert("Please verify your phone number before saving");
       return;
     }
 
