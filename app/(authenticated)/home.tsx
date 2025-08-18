@@ -98,7 +98,8 @@ const Dashboard = () => {
   const outgoingInvites = Object.values(groupedOutgoing);
   // console.log('Outgoing Invites:', outgoingInvites);
   const pendingOutCount = outgoingInvites.length;
-  const playCount = openPlayInvites?.length + initiatedData.length || 0;
+  const playCount = (openPlayInvites?.length || 0) + (initiatedData?.length || 0);
+
 
   const allInvites = invites ?? [];
   // console.log('All Invites:', allInvites);
