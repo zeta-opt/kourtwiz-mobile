@@ -55,17 +55,18 @@ const PlayCalendarCard = ({ invites }: { invites: any[] }) => {
   }
   return null;
 };
-  const now = new Date();
-now.setHours(0, 0, 0, 0);
 
-const filteredInvites = invites.filter((invite) => {
-  const dateObj = getDateObject(invite);
-  return dateObj && dateObj >= now;
-});
-  const sortedInvites = [...filteredInvites].sort((a, b) => {
+const now = new Date().setHours(0, 0, 0, 0);
+
+const sortedInvites = [...invites]
+  .filter(invite => {
+    const date = getDateObject(invite)?.getTime() || 0;
+    return date >= now;
+  })
+  .sort((a, b) => {
     const dateA = getDateObject(a)?.getTime() || 0;
     const dateB = getDateObject(b)?.getTime() || 0;
-    return dateA - dateB;
+    return dateB - dateA;
   });
 
   const renderInviteRow = (invite: any, index: number) => {
