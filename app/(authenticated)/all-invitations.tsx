@@ -28,7 +28,7 @@ import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPla
 
 const API_URL = 'https://api.vddette.com';
 
-const ShowInvitations = () => {
+const AllInvitations = () => {
     const { user } = useSelector((state: RootState) => state.auth);
     const userId = user?.userId;
     const { data: invites, refetch } = useGetInvitations({userId: userId,});
@@ -57,15 +57,20 @@ const ShowInvitations = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [locationMenuVisible, setLocationMenuVisible] = useState(false);
 
-  const getInviteDate = (invite: any) => {
-    if (!invite.playTime) return null;
-    const [year, month, day, hour, minute] = invite.playTime;
-    return new Date(year, month - 1, day, hour, minute);
-  };
-  const upcomingInvites = (invites ?? [])
+    const getInviteDate = (invite: any) => {
+        if (!invite.playTime) return null;
+        const [year, month, day, hour, minute] = invite.playTime;
+        return new Date(year, month - 1, day, hour, minute);
+    };
+    const upcomingInvites = (invites ?? [])
+        .filter((inv) => {
+        const eventDate = getInviteDate(inv);
+        return eventDate && eventDate >= new Date();
+        })
+    const outgoingInvites = (invitee ?? [])
     .filter((inv) => {
-      const eventDate = getInviteDate(inv);
-      return eventDate && eventDate >= new Date();
+        const eventDate = getInviteDate(inv);
+        return eventDate && eventDate >= new Date();
     })
 
     const showCommentDialog = (invite: any, action: 'accept' | 'reject') => {
@@ -152,6 +157,12 @@ const ShowInvitations = () => {
 
   const filteredInvites = filterInvitations(
     upcomingInvites,
+    selectedDate,
+    selectedTime,
+    selectedLocation
+  );
+  const filteredSentInvites = filterInvitations(
+    outgoingInvites,
     selectedDate,
     selectedTime,
     selectedLocation
@@ -286,10 +297,10 @@ const ShowInvitations = () => {
 
         {/* Outgoing Invitations */}
         <Text style={styles.sectionTitle}>Sent Invitations</Text>
-        {filteredInvites.length === 0 ? (
+        {filteredSentInvites.length === 0 ? (
             <Text style={styles.noData}>No outgoing invitations.</Text>
         ) : (
-            filteredInvites.map((invite, idx) => (
+            filteredSentInvites.map((invite, idx) => (
             <View key={`outgoing-${idx}`} style={styles.cardContainer}>
                 <OutgoingInviteCardItem
                 invite={{
@@ -505,7 +516,7 @@ const ShowInvitations = () => {
   );
 };
 
-export default ShowInvitations;
+export default AllInvitations;
 
 const styles = StyleSheet.create({
   filterRow: {
