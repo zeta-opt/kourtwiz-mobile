@@ -76,7 +76,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
         await withdrawFromWaitlist({ sessionId: id, userId });
         Toast.show({ type: 'success', text1: 'Withdrawn from waitlist', topOffset: 100 });
         refetch();
-        setRows(prev => prev.map(r => r.id === id ? { ...r, isWaitlisted: false } : r));
+        // setRows(prev => prev.map(r => r.id === id ? { ...r, isWaitlisted: false } : r));
       } catch (err) {
         Toast.show({
           type: 'error',
@@ -95,7 +95,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
         await withdraw({ sessionId: id, userId });
         Toast.show({ type: 'success', text1: 'Withdrawn from play', topOffset: 100 });
         refetch();
-        setRows(prev => prev.map(r => r.id === id ? { ...r, isRegistered: false, 'filled slots': Math.max(0, r['filled slots'] - 1) } : r));
+        // setRows(prev => prev.map(r => r.id === id ? { ...r, isRegistered: false, 'filled slots': Math.max(0, r['filled slots'] - 1) } : r));
       } catch (err) {
         Toast.show({
           type: 'error',
@@ -120,13 +120,13 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
             topOffset: 100,
           });
           refetch();
-          setRows(prev =>
-            prev.map(r =>
-              r.id === id
-                ? { ...r, isRegistered: !isFull, isWaitlisted: isFull, 'filled slots': !isFull ? r['filled slots'] + 1 : r['filled slots'] }
-                : r
-            )
-          );
+          // setRows(prev =>
+          //   prev.map(r =>
+          //     r.id === id
+          //       ? { ...r, isRegistered: !isFull, isWaitlisted: isFull, 'filled slots': !isFull ? r['filled slots'] + 1 : r['filled slots'] }
+          //       : r
+          //   )
+          // );
           setLoadingId(null);
         },
         onError: (error) => {
@@ -198,7 +198,11 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
         id: play.id,
         initiated: play.initiated || false,
         'event name': play.eventName?.split('_').join(' ').toLowerCase() || 'Unknown Event',
-        date: startDate.toLocaleDateString(),
+        date: startDate.toLocaleDateString('en-US', {
+          month: '2-digit',
+          day: '2-digit',
+          year: 'numeric',
+        }),
         time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         duration: play.durationMinutes,
         'skill level': play.skillLevel,

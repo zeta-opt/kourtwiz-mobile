@@ -7,44 +7,80 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Text, } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useGetPlayerFinderRequest} from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
+import { useGetPlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
 import { GetCommentPlayerFinder } from '@/components/find-players/comment-layout/GetCommentPlayerFinder';
 import { PostCommentPlayerFinder } from '@/components/find-players/comment-layout/PostCommentPlayerFinder';
 import { MaterialIcons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
 import { useGetGroupById } from '@/hooks/apis/groups/useGetGroupById';
+import { useGetPlaySessionById } from '@/hooks/apis/join-play/useGetPlaySessionById';
 
 export default function ChatSummaryPage() {
-const { requestId, id: groupId } = useLocalSearchParams<{ requestId?: string; id?: string }>();
+  const { requestId: reqId, id: grpId, sessionId: sessId } = useLocalSearchParams<{
+    requestId?: string;
+    id?: string;
+    sessionId?: string;
+  }>();
+
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId ?? '';
-  const isGroupChat = Boolean(groupId);
+
+  const isGroupChat = Boolean(grpId);
+  const isSessionChat = Boolean(sessId);
+ 
 
   const { data: pfData, loading: pfLoading, error: pfError } =
-    useGetPlayerFinderRequest(!isGroupChat ? requestId : undefined);
+    useGetPlayerFinderRequest(!isGroupChat && !isSessionChat ? reqId : undefined);
 
+  
   const {
     getGroup,
     status: groupStatus,
     error: groupError,
-    data: groupData
+    data: groupData,
   } = useGetGroupById();
 
   useEffect(() => {
-    if (isGroupChat && groupId) {
-      getGroup({ groupId });
+    if (isGroupChat && grpId) {
+      getGroup({ groupId: grpId });
     }
-  }, [isGroupChat, groupId]);
+  }, [isGroupChat, grpId]);
 
-  const loading = isGroupChat ? groupStatus === 'loading' : pfLoading;
-  const error = isGroupChat ? groupError : pfError;
-  const title = isGroupChat ? groupData?.name : pfData?.[0]?.placeToPlay;
-  const commentId = isGroupChat ? groupId : pfData?.[0]?.requestId;
+ 
+  const {
+    data: sessionData,
+    status: sessionStatus,
+    error: sessionError,
+  } = useGetPlaySessionById(isSessionChat ? (sessId as string) : undefined);
+
+  const loading = isGroupChat
+    ? groupStatus === 'loading'
+    : isSessionChat
+    ? sessionStatus === 'loading'
+    : pfLoading;
+
+  const error = isGroupChat
+    ? groupError
+    : isSessionChat
+    ? sessionError
+    : pfError;
+
+  const title = isGroupChat
+    ? groupData?.name
+    : isSessionChat
+    ? sessionData?.session?.eventName || 'Open Play'
+    : pfData?.[0]?.placeToPlay;
+
   
+  const commentId = isGroupChat
+    ? grpId
+    : isSessionChat
+    ? sessId
+    : pfData?.[0]?.requestId; 
 
   const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
 
@@ -66,30 +102,37 @@ const { requestId, id: groupId } = useLocalSearchParams<{ requestId?: string; id
 
   return (
     <View style={styles.page}>
+      
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => {
             if (isGroupChat) {
               router.replace('/groups');
+            } else if (isSessionChat) {
+              router.push({ pathname: '/(authenticated)/openPlayDetailedView', params: { sessionId:sessId } })
             } else {
               router.replace('/home');
             }
           }}
         >
-      <MaterialIcons name="arrow-back-ios" size={24} color="#fff" />
-      </TouchableOpacity>
-            {isGroupChat ? (
-              <TouchableOpacity onPress={() => router.push(`/group-info/${groupId}`)}>
-                <Text style={styles.headerTitle}>{title || 'Request'}</Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.headerTitle}>{title || 'Request'}</Text>
-            )}
-        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
-            <UserAvatar size={36} />
+          <MaterialIcons name="arrow-back-ios" size={24} color="#fff" />
+        </TouchableOpacity>
+
+        {isGroupChat ? (
+          <TouchableOpacity onPress={() => router.push(`/group-info/${grpId}`)}>
+            <Text style={styles.headerTitle}>{title || 'Request'}</Text>
           </TouchableOpacity>
-        </View>
-        <View style={styles.commentSection}>
+        ) : (
+          <Text style={styles.headerTitle}>{title || 'Request'}</Text>
+        )}
+
+        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+          <UserAvatar size={36} />
+        </TouchableOpacity>
+      </View>
+
+      
+      <View style={styles.commentSection}>
         <ScrollView style={styles.chatBox} keyboardShouldPersistTaps="handled">
           <GetCommentPlayerFinder
             requestId={commentId}
@@ -106,8 +149,7 @@ const { requestId, id: groupId } = useLocalSearchParams<{ requestId?: string; id
             />
           </View>
         )}
-        </View>
-      
+      </View>
     </View>
   );
 }
@@ -118,10 +160,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F6F8',
   },
   commentSection: {
-   flex: 1,
-  justifyContent: 'flex-end',
-  backgroundColor: '#E8F6F8',
-},
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: '#E8F6F8',
+  },
   header: {
     backgroundColor: '#007A7A',
     paddingTop: 48,
@@ -138,26 +180,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  profileImage: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  profilePlaceholder: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ccc',
-  },
   commentInputContainer: {
-  borderTopWidth: 1,
-  borderTopColor: '#ccc',
-  paddingHorizontal: 10,
-  paddingVertical: 6,
-  backgroundColor: '#fff',
-},
-  content: {
-    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#fff',
+  },
+  chatBox: {
+    flex: 1,
+    padding: 8,
+    backgroundColor: '#E8F6F8',
+    borderRadius: 12,
   },
   centered: {
     flex: 1,
@@ -181,12 +215,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: 'gray',
     marginBottom: 4,
-  },
-  chatBox: {
-   flex: 1,
-  padding: 8,
-  backgroundColor: '#E8F6F8',
-  borderRadius: 12,
   },
   backButton: {
     marginTop: 10,
