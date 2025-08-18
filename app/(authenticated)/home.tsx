@@ -329,6 +329,7 @@ const getInviteTimestamp = (invite) => {
                     </Text>
                   ) : (
                    [...allInvites]
+                    .filter(invite => getInviteTimestamp(invite) >= Date.now())
                     .sort((a, b) => getInviteTimestamp(a) - getInviteTimestamp(b))
                     .map((invite) => (
                       <InvitationCard
@@ -348,6 +349,7 @@ const getInviteTimestamp = (invite) => {
                     <Text style={styles.noInvitesText}>No sent invitations</Text>
                   ) : (
                     [...outgoingInvites]
+                      .filter(invite => Number(invite.dateTimeMs) >= Date.now())
                       .sort((a, b) => Number(a.dateTimeMs) - Number(b.dateTimeMs))
                       .map((invite) => (
                         <OutgoingInviteCardItem
@@ -359,9 +361,29 @@ const getInviteTimestamp = (invite) => {
                     )
                 ) : (
                   <OpenPlayCard
-                    data={[...openPlayInvites].sort(
-                      (a, b) => Number(a.dateTimeMs) - Number(b.dateTimeMs)
-                    )}
+                    data={
+                      (openPlayInvites || [])
+                        .map(play => {
+                          const startDate = new Date(
+                            play.startTime[0],
+                            play.startTime[1] - 1,
+                            play.startTime[2],
+                            play.startTime[3] || 0,
+                            play.startTime[4] || 0
+                          );
+                          return {
+                            ...play,
+                            dateTimeMs: startDate.getTime(),
+                            placeToPlay: play.allCourts?.Name || 'Unknown Court',
+                            eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
+                            accepted: play.registeredPlayers?.length ?? 0,
+                            playersNeeded: play.maxPlayers ?? 1,
+                            isWaitlisted: play.waitlistedPlayers?.includes(userId),
+                          };
+                        })
+                        .filter(play => play.dateTimeMs >= Date.now())
+                        .sort((a, b) => Number(a.dateTimeMs) - Number(b.dateTimeMs)
+                      )}
                     refetch={refetch}
                   />
                 )}

@@ -54,15 +54,19 @@ const OpenPlay = () => {
   }, [safePlays]);
 
   const filteredPlays = useMemo(() => {
-    // NEW: if no filters are set, show all plays
-    if (!selectedDate && !selectedTime && !selectedLocation) {
-      return safePlays;
-    }
+    const now = new Date();
 
-    return safePlays.filter((play: any) => {
+    // keep only upcoming events
+    const upcoming = safePlays.filter((play: any) => {
       const [year, month, day, hour = 0, minute = 0] = play.startTime || [];
       if (!year || !month || !day) return false;
+      const playDate = new Date(year, month - 1, day, hour, minute);
+      return playDate >= now; // future or ongoing only
+    });
 
+    // apply filters
+    const filtered = upcoming.filter((play: any) => {
+      const [year, month, day, hour = 0, minute = 0] = play.startTime || [];
       const playDate = new Date(year, month - 1, day, hour, minute);
 
       const matchDate =
@@ -80,6 +84,15 @@ const OpenPlay = () => {
         !selectedLocation || play.allCourts?.Name === selectedLocation;
 
       return matchDate && matchTime && matchLocation;
+    });
+
+    // sort ascending (earliest first)
+    return filtered.sort((a: any, b: any) => {
+      const [ay, am, ad, ah = 0, ami = 0] = a.startTime || [];
+      const [by, bm, bd, bh = 0, bmi = 0] = b.startTime || [];
+      const dateA = new Date(ay, am - 1, ad, ah, ami).getTime();
+      const dateB = new Date(by, bm - 1, bd, bh, bmi).getTime();
+      return dateA - dateB;
     });
   }, [safePlays, selectedDate, selectedTime, selectedLocation]);
 

@@ -103,14 +103,27 @@ const ShowSentInvitations = () => {
 
   const filteredInvites = useMemo(() => {
     const uniqueMap = new Map<string, Invite>();
-
     for (const inv of invites ?? []) {
-      if (inv.status !== 'WITHDRAWN' || !uniqueMap.has(inv.requestId)) {
+      if (!uniqueMap.has(inv.requestId)) {
         uniqueMap.set(inv.requestId, inv);
       }
     }
 
-    const uniqueInvites = Array.from(uniqueMap.values());
+    const now = new Date();
+
+    const getEventDate = (inv: Invite): Date =>
+      new Date(
+        inv.playTime[0],
+        inv.playTime[1] - 1,
+        inv.playTime[2],
+        inv.playTime[3] || 0,
+        inv.playTime[4] || 0
+      );
+
+    const uniqueInvites = Array.from(uniqueMap.values())
+      .filter((inv) => getEventDate(inv) >= now)
+      .sort((a, b) => getEventDate(a).getTime() - getEventDate(b).getTime());
+
     return filterInvitations(
       uniqueInvites,
       selectedDate,
@@ -236,32 +249,64 @@ const ShowSentInvitations = () => {
         {filteredInvites.length === 0 ? (
           <Text style={styles.noData}>No outgoing invites found.</Text>
         ) : (
-          filteredInvites.map((invite, idx) => (
-            <View key={idx} style={styles.cardContainer}>
-              <OutgoingInviteCardItem
-                invite={{
-                  requestId: invite.requestId,
-                  playTime: invite.playTime,
-                  placeToPlay: invite.placeToPlay,
-                  dateTimeMs: new Date(
-                    invite.playTime[0],
-                    invite.playTime[1] - 1,
-                    invite.playTime[2],
-                    invite.playTime[3] || 0,
-                    invite.playTime[4] || 0
-                  ).getTime(),
-                  accepted: playerCounts[invite.requestId]?.accepted ?? 0,
-                  playersNeeded:
-                    invite.playersNeeded ??
-                    playerCounts[invite.requestId]?.total ??
-                    0,
-                  status: invite.status,
-                }}
-                //disabled
-                onViewPlayers={handleViewPlayers}
-              />
-            </View>
-          ))
+          <>
+            {/* Active Invites */}
+            {filteredInvites
+              .filter(invite => invite.status !== "WITHDRAWN")
+              .map((invite, idx) => (
+                <View key={`active-${idx}`} style={styles.cardContainer}>
+                  <OutgoingInviteCardItem
+                    invite={{
+                      ...(invite as Invite),
+                      dateTimeMs: new Date(
+                        invite.playTime[0],
+                        invite.playTime[1] - 1,
+                        invite.playTime[2],
+                        invite.playTime[3] || 0,
+                        invite.playTime[4] || 0
+                      ).getTime(),
+                      accepted: playerCounts[invite.requestId]?.accepted ?? invite.accepted,
+                      playersNeeded: invite.playersNeeded ?? playerCounts[invite.requestId]?.total ?? 0,
+                    }}
+                    onViewPlayers={handleViewPlayers}
+                  />
+                </View>
+              ))}
+
+            {/* Withdrawn Section */}
+            {filteredInvites.some(inv => inv.status === "WITHDRAWN") && (
+              <>
+                <Text style={styles.withdrawnHeading}>Withdrawn Events</Text>
+                {filteredInvites
+                  .filter(invite => invite.status === "WITHDRAWN")
+                  .map((invite, idx) => (
+                    <View key={`withdrawn-${idx}`} style={styles.cardContainer}>
+                      <OutgoingInviteCardItem
+                        invite={{
+                          requestId: invite.requestId,
+                          playTime: invite.playTime,
+                          placeToPlay: invite.placeToPlay,
+                          dateTimeMs: new Date(
+                            invite.playTime[0],
+                            invite.playTime[1] - 1,
+                            invite.playTime[2],
+                            invite.playTime[3] || 0,
+                            invite.playTime[4] || 0
+                          ).getTime(),
+                          accepted: playerCounts[invite.requestId]?.accepted ?? 0,
+                          playersNeeded:
+                            invite.playersNeeded ??
+                            playerCounts[invite.requestId]?.total ??
+                            0,
+                          status: invite.status,
+                        }}
+                        onViewPlayers={handleViewPlayers}
+                      />
+                    </View>
+                  ))}
+              </>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -473,6 +518,13 @@ const styles = StyleSheet.create({
   scrollContainer: {
     padding: 16,
     paddingBottom: 24,
+  },
+  withdrawnHeading: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginVertical: 12,
+    paddingHorizontal: 8,
+    color: "#888"
   },
   noData: {
     marginTop: 20,

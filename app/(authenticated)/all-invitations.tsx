@@ -19,17 +19,22 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { clearAllFilters, filterInvitations } from '../home-page/filters';
-import PlayerDetailsModal from '../home-page/PlayerDetailsModal';
+import { clearAllFilters, filterInvitations } from '@/components/home-page/filters';
+import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
+import OutgoingInviteCardItem, { Invite } from '@/components/home-page/outgoingInvitationsCard';
+import OpenPlayCard from '@/components/home-page/openPlayCard';
+import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
+import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 
 const API_URL = 'https://api.vddette.com';
 
 const ShowInvitations = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
-
-  const { data: invites, refetch } = useGetInvitations({
-    userId: user?.userId,
-  });
+    const { user } = useSelector((state: RootState) => state.auth);
+    const userId = user?.userId;
+    const { data: invites, refetch } = useGetInvitations({userId: userId,});
+    const { data: invitee = [] } = useGetPlayerInvitationSent({inviteeEmail: user?.email}) as { data: Invite[] | null };
+    const openClubId = user?.currentActiveClubId || 'GLOBAL';
+    const { data: openPlayInvites, status , error, refetch:refetchOpenPlay } = useGetPlays(openClubId,userId);
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -62,22 +67,6 @@ const ShowInvitations = () => {
       const eventDate = getInviteDate(inv);
       return eventDate && eventDate >= new Date();
     })
-    
-  const activeInvites = upcomingInvites
-    .filter((inv) => inv.status !== "WITHDRAWN")
-    .sort((a, b) => {
-      const dateA = getInviteDate(a)?.getTime() ?? 0;
-      const dateB = getInviteDate(b)?.getTime() ?? 0;
-      return dateA - dateB;
-    });
-
-  const withdrawnInvites = upcomingInvites
-    .filter((inv) => inv.status === "WITHDRAWN")
-    .sort((a, b) => {
-      const dateA = getInviteDate(a)?.getTime() ?? 0;
-      const dateB = getInviteDate(b)?.getTime() ?? 0;
-      return dateA - dateB;
-    });
 
     const showCommentDialog = (invite: any, action: 'accept' | 'reject') => {
       setSelectedInvite(invite);
@@ -161,8 +150,8 @@ const ShowInvitations = () => {
     new Set((invites ?? []).map((inv) => inv.placeToPlay).filter(Boolean))
   );
 
-  const filteredActive = filterInvitations(
-    activeInvites,
+  const filteredInvites = filterInvitations(
+    upcomingInvites,
     selectedDate,
     selectedTime,
     selectedLocation
@@ -175,7 +164,6 @@ const ShowInvitations = () => {
       setSelectedLocation,
     });
   };
-  // const [playerCounts, setPlayerCounts] = useState<{ [key: string]: { accepted: number; total: number } }>({});
   const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
   const handleViewPlayers = async (requestId: string) => {
@@ -189,7 +177,6 @@ const ShowInvitations = () => {
         }
       );
       setSelectedPlayers(res.data);
-      //  console.log('Selected Players:', res.data);
       setPlayerDetailsVisible(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch player details');
@@ -198,7 +185,7 @@ const ShowInvitations = () => {
 
   return (
     <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
-      <TopBarWithChips active='incoming' />
+      <TopBarWithChips active='all' />
       <View style={styles.filterRow}>
         <Button
           mode='outlined'
@@ -277,48 +264,88 @@ const ShowInvitations = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {filteredActive.length === 0 && withdrawnInvites.length === 0 ? (
-          <Text style={styles.noData}>No invitations to show.</Text>
+        {/* Incoming Invitations */}
+        <Text style={styles.sectionTitle}>Incoming Invitations</Text>
+        {filteredInvites.length === 0 ? (
+            <Text style={styles.noData}>No incoming invitations.</Text>
         ) : (
-          <>
-            {/* Active Invites */}
-            {filteredActive.map((invite) => (
-              <View key={invite.id} style={styles.cardContainer}>
+            filteredInvites.map((invite) => (
+            <View key={`incoming-${invite.id}`} style={styles.cardContainer}>
                 <InvitationCard
-                  invite={invite}
-                  onAccept={() => showCommentDialog(invite, 'accept')}
-                  onReject={() => showCommentDialog(invite, 'reject')}
-                  loading={loadingId === invite.id}
-                  totalPlayers={playerCounts[invite.requestId]?.total ?? 1}
-                  acceptedPlayers={playerCounts[invite.requestId]?.accepted ?? 0}
-                  onViewPlayers={handleViewPlayers}
+                invite={invite}
+                onAccept={() => showCommentDialog(invite, 'accept')}
+                onReject={() => showCommentDialog(invite, 'reject')}
+                loading={loadingId === invite.id}
+                totalPlayers={playerCounts[invite.requestId]?.total ?? 1}
+                acceptedPlayers={playerCounts[invite.requestId]?.accepted ?? 0}
+                onViewPlayers={handleViewPlayers}
                 />
-              </View>
-            ))}
-
-            {withdrawnInvites.length > 0 && (
-              <View style={{ marginTop: 24, marginBottom: 8 }}>
-                <Text style={styles.withdrawnHeading}>
-                  Withdrawn Events
-                </Text>
-              </View>
-            )}
-
-            {/* Withdrawn Invites */}
-            {withdrawnInvites.map((invite) => (
-              <View key={invite.id} style={styles.cardContainer}>
-                <InvitationCard
-                  invite={invite}
-                  loading={loadingId === invite.id}
-                  totalPlayers={playerCounts[invite.requestId]?.total ?? 1}
-                  acceptedPlayers={playerCounts[invite.requestId]?.accepted ?? 0}
-                  onViewPlayers={handleViewPlayers}
-                />
-              </View>
-            ))}
-          </>
+            </View>
+            ))
         )}
-      </ScrollView>
+
+        {/* Outgoing Invitations */}
+        <Text style={styles.sectionTitle}>Sent Invitations</Text>
+        {filteredInvites.length === 0 ? (
+            <Text style={styles.noData}>No outgoing invitations.</Text>
+        ) : (
+            filteredInvites.map((invite, idx) => (
+            <View key={`outgoing-${idx}`} style={styles.cardContainer}>
+                <OutgoingInviteCardItem
+                invite={{
+                    ...(invite as Invite),
+                    dateTimeMs: new Date(
+                    invite.playTime[0],
+                    invite.playTime[1] - 1,
+                    invite.playTime[2],
+                    invite.playTime[3] || 0,
+                    invite.playTime[4] || 0
+                    ).getTime(),
+                    accepted: playerCounts[invite.requestId]?.accepted ?? invite.accepted,
+                    playersNeeded:
+                    invite.playersNeeded ??
+                    playerCounts[invite.requestId]?.total ??
+                    0,
+                }}
+                onViewPlayers={handleViewPlayers}
+                />
+            </View>
+            ))
+        )}
+
+        {/* Open Play Invitations */}
+        <Text style={styles.sectionTitle}>Open Play Requests</Text>
+        {(!openPlayInvites || openPlayInvites.length === 0) ? (
+            <Text style={styles.noData}>No open play requests.</Text>
+        ) : (
+            <OpenPlayCard
+            data={(openPlayInvites || [])
+                .map((play) => {
+                const startDate = new Date(
+                    play.startTime[0],
+                    play.startTime[1] - 1,
+                    play.startTime[2],
+                    play.startTime[3] || 0,
+                    play.startTime[4] || 0
+                );
+                return {
+                    ...play,
+                    dateTimeMs: startDate.getTime(),
+                    placeToPlay: play.allCourts?.Name || 'Unknown Court',
+                    eventName:
+                    play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
+                    accepted: play.registeredPlayers?.length ?? 0,
+                    playersNeeded: play.maxPlayers ?? 1,
+                    isWaitlisted: play.waitlistedPlayers?.includes(userId),
+                };
+                })
+                .filter((play) => play.dateTimeMs >= Date.now())
+                .sort((a, b) => Number(a.dateTimeMs) - Number(b.dateTimeMs))}
+            refetch={refetch}
+            />
+        )}
+
+        </ScrollView>
 
       {/* iOS Date Picker Modal */}
       {Platform.OS === 'ios' && showDatePicker && (
@@ -550,13 +577,14 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 16,
   },
-  withdrawnHeading: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginVertical: 2,
-    paddingHorizontal: 8,
-    color: "#888"
-  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+    paddingHorizontal: 16,
+    margin: 16,
+    letterSpacing: 0.2,
+    },
   noData: {
     marginTop: 20,
     textAlign: 'center',
