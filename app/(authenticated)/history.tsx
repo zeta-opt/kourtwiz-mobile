@@ -74,14 +74,14 @@ const HistoryPage = () => {
         const grouped: Record<string, any[]> = {};
     
         combined.forEach(inv => {
-        const dateStr = moment(toDate(inv.playTime)).format('DD/MM/YYYY');
+        const dateStr = moment(toDate(inv.playTime)).format('MM/DD/YYYY');
         if (!grouped[dateStr]) grouped[dateStr] = [];
         grouped[dateStr].push(inv);
         });
     
         return Object.entries(grouped)
         .sort((a, b) =>
-            moment(a[0], 'DD/MM/YYYY').isAfter(moment(b[0], 'DD/MM/YYYY')) ? -1 : 1
+            moment(a[0], 'DD/MM/YYYY').isAfter(moment(b[0], 'MM/DD/YYYY')) ? -1 : 1
         )
         .map(([date, invites]) => ({ date, invites }));
     }, [incomingInvitations, outgoingInvitations]);
@@ -137,7 +137,7 @@ const HistoryPage = () => {
                         <View style={styles.cardInfo}>
                             <MaterialCommunityIcons name="calendar" size={16} color='gray' style={{ marginRight: 8 }} />
                             <Text style={styles.subText}>
-                                {moment(toDate(inv.playTime)).format('DD/MM/YYYY')}
+                                {moment(toDate(inv.playTime)).format('MM/DD/YYYY')}
                             </Text>
                         </View>
                         <View style={styles.cardInfo}>
