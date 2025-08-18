@@ -3,9 +3,11 @@ import Constants from 'expo-constants';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { login, setProfileImage } from '../../../store/authSlice';
+import { useRouter } from 'expo-router';
 
 export const useFetchUser = () => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const [status, setStatus] = useState<
     'idle' | 'loading' | 'success' | 'error'
   >('idle');
@@ -22,8 +24,11 @@ export const useFetchUser = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      if (!response.ok) throw new Error('Failed to fetch user data');
+      
+      if (!response.ok){ 
+        router.replace('/login');
+        throw new Error('Failed to fetch user data')
+      };
 
       const userData = await response.json();
       dispatch(login({ user: userData, token }));
