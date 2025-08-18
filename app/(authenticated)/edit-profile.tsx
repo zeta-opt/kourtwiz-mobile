@@ -20,8 +20,13 @@ import UserAvatar from '@/assets/UserAvatar';
 import * as ImagePicker from 'expo-image-picker';
 import { Avatar } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
-import { setProfileImage as setProfileImageAction } from '@/store/authSlice';
-
+import { logout, setProfileImage as setProfileImageAction } from '@/store/authSlice';
+import {
+  sendEmailOtp,
+  sendPhoneOtp,
+  validateEmailOtp,
+  validatePhoneOtp,
+} from "@/components/signup/api/api";
 
 const GENDER_OPTIONS = ['Male', 'Female', 'NIL'];
 
@@ -29,6 +34,7 @@ const EditProfile = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
+
   const [userId, setUserId] = useState('');
   const [userData, setUserData] = useState({
     name: '',
@@ -45,8 +51,23 @@ const EditProfile = () => {
     skillLevel: 0,
   });
 
+  const [originalData, setOriginalData] = useState({
+    email: '',
+    phoneNumber: '',
+  });
+
   const [showDatePicker, setShowDatePicker] = useState(false);
   const { updateUserById} = useUpdateUserById();
+  
+  const [emailVerified, setEmailVerified] = useState(true);
+  const [phoneVerified, setPhoneVerified] = useState(true);
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [emailEdited, setEmailEdited] = useState(false);
+  const [phoneEdited, setPhoneEdited] = useState(false);
+  const [emailOtp, setEmailOtp] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -82,17 +103,26 @@ const EditProfile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        let token = await getToken();
+        const token = await getToken();
 
         const meRes = await fetch(`${BASE_URL}/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+          },
         });
 
         if (!meRes.ok) throw new Error('Failed to get user');
         const meData = await meRes.json();
         setUserId(meData.userId);
 
-        const profileRes = await fetch(`${BASE_URL}/users/${meData.userId}`);
+        const profileRes = await fetch(`${BASE_URL}/users/${meData.userId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+          },
+        });
+
         if (!profileRes.ok) throw new Error('Failed to fetch full profile');
 
         const profileData = await profileRes.json();
@@ -117,6 +147,11 @@ const EditProfile = () => {
           skillLevel: profileData.playerDetails?.personalRating ?? 0,
         });
 
+        setOriginalData({
+          email: profileData.email || '',
+          phoneNumber: profileData.phoneNumber || '',
+        });
+
         dispatch(setProfileImageAction(profileData.profilePicture));
         setProfileImage(profileData.profilePicture);
 
@@ -128,6 +163,24 @@ const EditProfile = () => {
 
     fetchUserData();
   }, [BASE_URL]);
+
+  useEffect(() => {
+    if (!originalData.email && !originalData.phoneNumber) return;
+
+    if (userData.email.trim() !== originalData.email.trim()) {
+      setEmailVerified(false);
+      setEmailEdited(true);
+    } else {
+      setEmailEdited(false);
+    }
+
+    if (userData.phoneNumber.trim() !== originalData.phoneNumber.trim()) {
+      setPhoneVerified(false);
+      setPhoneEdited(true);
+    } else {
+      setPhoneEdited(false);
+    }
+  },[userData.email, userData.phoneNumber, originalData.email, originalData.phoneNumber]);
 
   const handleDateChange = (
     event: DateTimePickerEvent,
@@ -141,7 +194,74 @@ const EditProfile = () => {
     }
   };
 
+  // Email OTP send function (with validation like VerifyStep)
+  const handleSendEmailOtp = async () => {
+    if (!userData.email || !/^\S+@\S+\.\S+$/.test(userData.email)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address.");
+      return;
+    }
+    try {
+      await sendEmailOtp(userData.email);
+      setEmailOtpSent(true);
+      Alert.alert("OTP Sent", "Check your email for the verification code.");
+    } catch (err) {
+      Alert.alert("Error", "Failed to send OTP. Please try again.");
+    }
+  };
+
+  // Email OTP verify function
+  const handleVerifyEmailOtp = async () => {
+    if (!emailOtp) {
+      Alert.alert("Enter OTP", "Please enter the OTP sent to your email.");
+      return;
+    }
+    try {
+      await validateEmailOtp(userData.email, emailOtp);
+      setEmailVerified(true);
+      setEmailOtpSent(false);
+      Alert.alert("Email verified successfully!");
+    } catch (err) {
+      Alert.alert("Error", "Invalid or expired OTP.");
+    }
+  };
+
+  // Phone OTP send function (with validation like VerifyStep)
+  const handleSendPhoneOtp = async () => {
+    try {
+      await sendPhoneOtp(userData.phoneNumber);
+      setPhoneOtpSent(true);
+      Alert.alert("OTP Sent", "Check your phone for the verification code.");
+    } catch (err) {
+      Alert.alert("Error", "Failed to send OTP. Please try again.");
+    }
+  };
+
+  // Phone OTP verify function
+  const handleVerifyPhoneOtp = async () => {
+    if (!phoneOtp) {
+      Alert.alert("Enter OTP", "Please enter the OTP sent to your phone.");
+      return;
+    }
+    try {
+      await validatePhoneOtp(userData.phoneNumber, phoneOtp);
+      setPhoneVerified(true);
+      setPhoneOtpSent(false);
+      Alert.alert("Phone verified successfully!");
+    } catch (err) {
+      Alert.alert("Error", "Invalid or expired OTP.");
+    }
+  };
+
   const handleSave = async () => {
+    if (emailEdited && !emailVerified) {
+      Alert.alert("Please verify your email before saving");
+      return;
+    }
+    if (phoneEdited && !phoneVerified) {
+      Alert.alert("Please verify your phone number before saving");
+      return;
+    }
+
     try {
       const token = await getToken();
   
@@ -155,8 +275,8 @@ const EditProfile = () => {
       const meData = await meRes.json();
       const userId = meData.userId;
 
-      const dobParts = userData.dateOfBirth.split('-'); // e.g. ["2003", "07", "19"]
-      const formattedDOB = [parseInt(dobParts[0]), parseInt(dobParts[1]), parseInt(dobParts[2])]; // [2003, 7, 19]
+      const dobParts = userData.dateOfBirth.split('-');
+      const formattedDOB = [parseInt(dobParts[0]), parseInt(dobParts[1]), parseInt(dobParts[2])];
 
       // Step 2: Construct payload
       const payload = {
@@ -177,16 +297,40 @@ const EditProfile = () => {
         },
       };
 
+      console.log(payload)
       // Step 3: PUT request to update user profile
       await updateUserById(userId, payload);
+      console.log(payload)
+
+      setOriginalData({
+        email: userData.email,
+        phoneNumber: userData.phoneNumber,
+      });
   
-      Alert.alert('Success', 'Your profile has been updated!');
-      router.replace('/(authenticated)/profile');
+      if (emailEdited || phoneEdited) {
+        Alert.alert(
+          "Login Required",
+          "You have to login again since you have changed your email ID or phone number.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                dispatch(logout());
+                router.replace("/");
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert("Success", "Your profile has been updated!");
+        router.replace("/(authenticated)/profile");
+      }
+
     } catch (err) {
       console.error('Error updating profile:', err);
       Alert.alert('Error', 'Failed to update profile. Please try again.');
     }
-  }; 
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
@@ -242,12 +386,48 @@ const EditProfile = () => {
           onChangeText={(text) => setUserData({ ...userData, name: text })}
         />
 
+        {/* Email Verification */}
         <Text style={styles.label}>Email Id</Text>
-        <TextInput
-          style={[styles.input, styles.readOnlyInput]}
-          value={userData.email}
-          editable={false}
-        />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={userData.email}
+            onChangeText={(text) => {
+              setUserData({ ...userData, email: text });
+              setEmailVerified(false);
+              setEmailOtpSent(false);
+              setEmailOtp("");
+            }}
+            placeholder="Enter Email"
+            keyboardType="email-address"
+          />
+
+          {userData.email !== originalData.email && !emailVerified && (
+            <>
+              {!emailOtpSent ? (
+                <TouchableOpacity style={styles.verifyBtn} onPress={handleSendEmailOtp}>
+                  <Text style={styles.verifyBtnText}>Send OTP</Text>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TextInput
+                    style={[styles.input, { flex: 1, marginLeft: 8 }]}
+                    placeholder="Enter OTP"
+                    value={emailOtp}
+                    onChangeText={setEmailOtp}
+                    keyboardType="number-pad"
+                  />
+                  <TouchableOpacity style={styles.verifyBtn} onPress={handleVerifyEmailOtp}>
+                    <Text style={styles.verifyBtnText}>Verify</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.verifyBtn, { marginLeft: 5 }]} onPress={handleSendEmailOtp}>
+                    <Text style={styles.verifyBtnText}>Resend</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </>
+          )}
+        </View>
 
         <Text style={styles.label}>Street Address</Text>
         <TextInput
@@ -333,13 +513,48 @@ const EditProfile = () => {
           ))}
         </View>
 
+        {/* Phone Verification */}
         <Text style={styles.label}>Phone No</Text>
-        <TextInput
-          style={[styles.input, styles.readOnlyInput]}
-          value={userData.phoneNumber}
-          editable={false}
-          keyboardType="phone-pad"
-        />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={userData.phoneNumber}
+            onChangeText={(text) => {
+              setUserData({ ...userData, phoneNumber: text });
+              setPhoneVerified(false);
+              setPhoneOtpSent(false);
+              setPhoneOtp("");
+            }}
+            placeholder="Enter Phone"
+            keyboardType="phone-pad"
+          />
+
+            {userData.phoneNumber !== originalData.phoneNumber && !phoneVerified && (
+              <>
+                {!phoneOtpSent ? (
+                  <TouchableOpacity style={styles.verifyBtn} onPress={handleSendPhoneOtp}>
+                    <Text style={styles.verifyBtnText}>Send OTP</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <TextInput
+                      style={[styles.input, { flex: 1, marginLeft: 8 }]}
+                      placeholder="Enter OTP"
+                      value={phoneOtp}
+                      onChangeText={setPhoneOtp}
+                      keyboardType="number-pad"
+                    />
+                    <TouchableOpacity style={styles.verifyBtn} onPress={handleVerifyPhoneOtp}>
+                      <Text style={styles.verifyBtnText}>Verify</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.verifyBtn, { marginLeft: 5 }]} onPress={handleSendPhoneOtp}>
+                      <Text style={styles.verifyBtnText}>Resend</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
+            )}
+          </View>
 
         <Text style={styles.label}>Minimum Skill Level</Text>
         <View style={styles.sliderContainer}>
@@ -537,5 +752,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     letterSpacing: 1,
+  },
+  verifyBtn: {
+    marginLeft: 8,
+    backgroundColor: '#2F7C83',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  verifyBtnText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

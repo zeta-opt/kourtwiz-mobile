@@ -22,11 +22,9 @@ export const useUpdateUserById = () => {
       const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
       const token = await getToken();
 
-      const { email, phoneNumber, ...safeUserData } = userData;
-
       const response = await axios.put(
         `${BASE_URL}/users/${userId}`,
-        safeUserData,
+        userData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
