@@ -37,7 +37,7 @@ import {
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux'; // ADD useDispatch
 
-const API_URL = 'http://44.216.113.234:8080';
+const API_URL = 'https://api.vddette.com';
 
 interface Invite {
   id: number;
