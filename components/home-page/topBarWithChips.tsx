@@ -46,7 +46,7 @@ const InvitationTopBar = ({
       <View style={styles.chipRow}>
         <TouchableOpacity
           style={[styles.chip, active === 'all' && styles.activeChip]}
-          onPress={() => router.replace('/home')}
+          onPress={() => router.replace('/(authenticated)/all-invitations')}
         >
           <Text style={[styles.chipText, active === 'all' && styles.activeChipText]}>All</Text>
         </TouchableOpacity>
