@@ -8,7 +8,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, TouchableWithoutFeedback, View as RNView, View, } from 'react-native';
 import {
   Button,
@@ -29,12 +29,12 @@ import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPla
 const API_URL = 'https://api.vddette.com';
 
 const AllInvitations = () => {
-    const { user } = useSelector((state: RootState) => state.auth);
-    const userId = user?.userId;
-    const { data: invites, refetch } = useGetInvitations({userId: userId,});
-    const { data: invitee = [] } = useGetPlayerInvitationSent({inviteeEmail: user?.email}) as { data: Invite[] | null };
-    const openClubId = user?.currentActiveClubId || 'GLOBAL';
-    const { data: openPlayInvites, status , error, refetch:refetchOpenPlay } = useGetPlays(openClubId,userId);
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userId = user?.userId;
+  const { data: invites, refetch } = useGetInvitations({userId: userId,});
+  const { data: invitee = [] } = useGetPlayerInvitationSent({inviteeEmail: user?.email}) as { data: Invite[] | null };
+  const openClubId = user?.currentActiveClubId || 'GLOBAL';
+  const { data: openPlayInvites, } = useGetPlays(openClubId,userId);
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -57,28 +57,52 @@ const AllInvitations = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [locationMenuVisible, setLocationMenuVisible] = useState(false);
 
-    const getInviteDate = (invite: any) => {
-        if (!invite.playTime) return null;
-        const [year, month, day, hour, minute] = invite.playTime;
-        return new Date(year, month - 1, day, hour, minute);
-    };
-    const upcomingInvites = (invites ?? [])
-        .filter((inv) => {
-        const eventDate = getInviteDate(inv);
-        return eventDate && eventDate >= new Date();
-        })
-    const outgoingInvites = (invitee ?? [])
-    .filter((inv) => {
-        const eventDate = getInviteDate(inv);
-        return eventDate && eventDate >= new Date();
-    })
+  const getInviteDate = (invite: any) => {
+    if (!invite.playTime) return null;
+    const [year, month, day, hour, minute] = invite.playTime;
+    return new Date(year, month - 1, day, hour, minute);
+  };
 
-    const showCommentDialog = (invite: any, action: 'accept' | 'reject') => {
-      setSelectedInvite(invite);
-      setSelectedAction(action);
-      setDialogVisible(true);
-      setComment('');
-    };
+  const upcomingInvites = useMemo(() => {
+    return (invites ?? [])
+      .filter((inv) => {
+        const eventDate = getInviteDate(inv);
+        return (
+          eventDate &&
+          eventDate >= new Date() &&
+          inv.status !== "WITHDRAWN"
+        );
+      })
+      .sort((a, b) => {
+        const dateA = getInviteDate(a) as Date;
+        const dateB = getInviteDate(b) as Date;
+        return dateA.getTime() - dateB.getTime();
+      });
+  }, [invites]);
+
+  const outgoingInvites = useMemo(() => {
+    return (invitee ?? [])
+      .filter((inv) => {
+        const eventDate = getInviteDate(inv);
+        return (
+          eventDate &&
+          eventDate >= new Date() &&
+          inv.status !== "WITHDRAWN"
+        );
+      })
+      .sort((a, b) => {
+        const dateA = getInviteDate(a) as Date;
+        const dateB = getInviteDate(b) as Date;
+        return dateA.getTime() - dateB.getTime();
+      });
+  }, [invitee]);
+
+  const showCommentDialog = (invite: any, action: 'accept' | 'reject') => {
+    setSelectedInvite(invite);
+    setSelectedAction(action);
+    setDialogVisible(true);
+    setComment('');
+  };
 
   const handleDialogSubmit = async () => {
     if (!selectedInvite || !selectedAction) return;
@@ -120,9 +144,11 @@ const AllInvitations = () => {
 
   useEffect(() => {
     const fetchCounts = async () => {
-      const newCounts: { [key: string]: { accepted: number; total: number } } =
-        {};
-      for (const invite of invites ?? []) {
+      const newCounts: { [key: string]: { accepted: number; total: number } } = {};
+
+      const allInvites = [...(invites ?? []), ...(invitee ?? [])];
+
+      for (const invite of allInvites) {
         try {
           const token = await getToken();
           const res = await axios.get(
@@ -133,36 +159,42 @@ const AllInvitations = () => {
             }
           );
 
-          const total = res.data[0]?.playersNeeded +1 || 1;
-          const accepted = res.data.filter(
-            (p: any) => p.status === 'ACCEPTED'
-          ).length+1;
+          const isOutgoing = (invitee ?? []).some(i => i.requestId === invite.requestId);
+
+          const accepted = isOutgoing
+            ? res.data.filter((p: any) => p.status === "ACCEPTED").length
+            : res.data.filter((p: any) => p.status === "ACCEPTED").length + 1;
+
+          const total = isOutgoing
+            ? res.data[0]?.playersNeeded || 0
+            : (res.data[0]?.playersNeeded || 0) + 1;
 
           newCounts[invite.requestId] = { accepted, total };
         } catch (error) {
           newCounts[invite.requestId] = { accepted: 0, total: 1 };
         }
       }
+
       setPlayerCounts(newCounts);
     };
 
-    if (invites && invites.length > 0) {
+    if ((invites && invites.length > 0) || (invitee && invitee.length > 0)) {
       fetchCounts();
     }
-  }, [invites]);
+  }, [invites, invitee]);
 
   const uniqueLocations = Array.from(
     new Set((invites ?? []).map((inv) => inv.placeToPlay).filter(Boolean))
   );
 
   const filteredInvites = filterInvitations(
-    upcomingInvites,
+    upcomingInvites as Invite[],
     selectedDate,
     selectedTime,
     selectedLocation
   );
   const filteredSentInvites = filterInvitations(
-    outgoingInvites,
+    outgoingInvites as Invite[],
     selectedDate,
     selectedTime,
     selectedLocation
@@ -276,7 +308,7 @@ const AllInvitations = () => {
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Incoming Invitations */}
-        <Text style={styles.sectionTitle}>Incoming Invitations</Text>
+        <Text style={styles.sectionTitle}>Incoming PF</Text>
         {filteredInvites.length === 0 ? (
             <Text style={styles.noData}>No incoming invitations.</Text>
         ) : (
@@ -296,7 +328,7 @@ const AllInvitations = () => {
         )}
 
         {/* Outgoing Invitations */}
-        <Text style={styles.sectionTitle}>Sent Invitations</Text>
+        <Text style={styles.sectionTitle}>Sent Request</Text>
         {filteredSentInvites.length === 0 ? (
             <Text style={styles.noData}>No outgoing invitations.</Text>
         ) : (
@@ -313,10 +345,7 @@ const AllInvitations = () => {
                     invite.playTime[4] || 0
                     ).getTime(),
                     accepted: playerCounts[invite.requestId]?.accepted ?? invite.accepted,
-                    playersNeeded:
-                    invite.playersNeeded ??
-                    playerCounts[invite.requestId]?.total ??
-                    0,
+                    playersNeeded: invite.playersNeeded ?? playerCounts[invite.requestId]?.total ?? 0,
                 }}
                 onViewPlayers={handleViewPlayers}
                 />
@@ -325,7 +354,7 @@ const AllInvitations = () => {
         )}
 
         {/* Open Play Invitations */}
-        <Text style={styles.sectionTitle}>Open Play Requests</Text>
+        <Text style={styles.sectionTitle}>Open Play Request</Text>
         {(!openPlayInvites || openPlayInvites.length === 0) ? (
             <Text style={styles.noData}>No open play requests.</Text>
         ) : (
@@ -593,9 +622,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1f2937',
     paddingHorizontal: 16,
-    margin: 16,
-    letterSpacing: 0.2,
-    },
+    marginTop: 16,
+    marginBottom: 16,
+  },
   noData: {
     marginTop: 20,
     textAlign: 'center',
