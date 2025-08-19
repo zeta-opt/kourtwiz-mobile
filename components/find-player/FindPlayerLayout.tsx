@@ -26,6 +26,7 @@ import {
   LayoutChangeEvent,
   ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -236,6 +237,7 @@ const FindPlayerLayout = () => {
     });
     requestPlayerFinder({
       finderData: {
+        eventName,
         requestorId: userId,
         placeToPlay,
         playTime: toLocalISOString(playTime),
@@ -354,22 +356,15 @@ const FindPlayerLayout = () => {
         )}
 
         {/* Event Name Section */}
-        {/* <Text style={styles.sectionTitle}>Event Name</Text>
+        <Text style={styles.sectionTitle}>Event Name</Text>
         <View style={styles.dropdownRow}>
-          <Button
-            mode='outlined'
-            onPress={handleEventNameClick}
-            style={styles.dropdownButton}
-            contentStyle={styles.dropdownContent}
-            textColor='#2C7E88'
-          >
-            <View style={styles.buttonContent}>
-              <Text style={styles.buttonText} numberOfLines={1}>
-                {eventName || 'Enter Event Name'}
-              </Text>
-            </View>
-          </Button>
-        </View> */}
+          <TextInput
+            style={[styles.input]}
+            placeholder='Enter Event Name'
+            value={eventName}
+            onChangeText={setEventName}
+          />
+        </View>
 
         {/* Game Schedule Section - Using the new component */}
         <GameSchedulePicker
@@ -578,19 +573,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  inputGroup: {
-    marginBottom: 16,
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginRight: 8,
   },
-  inputLabel: {
-    marginBottom: 8,
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  textInput: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-  },
+
   sliderSection: {
     paddingHorizontal: 0,
     marginBottom: -48,
