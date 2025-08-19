@@ -78,13 +78,19 @@ export default function ChatSummaryPage() {
     ? sessionData?.session?.eventName || "Open Play"
     : isDirectChat
     ? directUserName
-    : pfData?.[0]?.placeToPlay;
-  
+    : pfData && pfData.length > 0
+    ? pfData[0].placeToPlay
+    : "Request";
+
   const commentId = isGroupChat
     ? grpId
     : isSessionChat
     ? sessId
-    : reqId; 
+    : isDirectChat
+    ? reqId
+    : pfData && pfData.length > 0
+    ? pfData?.[0]?.requestId
+    : undefined;
 
   const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
 

@@ -88,7 +88,8 @@ export default function NewMessages() {
         return; // stop here so we don't fall through
       }
     } 
-
+    
+    setModalVisible(false);
     router.replace({
       pathname: '/(authenticated)/chat-summary',
       params: { requestId: msg.requestId },
@@ -98,12 +99,13 @@ export default function NewMessages() {
   const handleJoin = async (msg: Comment) => {
     // Guard to ensure this only runs for IWantToPlayEvent
     if (msg.eventType === 'GroupEvent' || msg.eventType !== 'IWantToPlayEvent') {
-        router.push({
-          pathname: '/(authenticated)/chat-summary',
-          params: { id: msg.requestId },
-        });
-        return;
-      }
+      setModalVisible(false);
+      router.push({
+        pathname: '/(authenticated)/chat-summary',
+        params: { id: msg.requestId },
+      });
+      return;
+    }
 
     try {
       setJoiningSessionId(msg.requestId);
