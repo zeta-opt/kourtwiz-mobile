@@ -77,7 +77,7 @@ const sortedInvites = [...invites]
       invite.placeToPlay || invite.request?.placeToPlay || 'Unknown Location';
 
     const dateString = dateObj
-      ? dateObj.toLocaleDateString(undefined, {
+      ? dateObj.toLocaleDateString("en-US", {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',
