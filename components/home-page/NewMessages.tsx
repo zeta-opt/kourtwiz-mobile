@@ -98,7 +98,7 @@ export default function NewMessages() {
 
   const handleJoin = async (msg: Comment) => {
     // Guard to ensure this only runs for IWantToPlayEvent
-    if (msg.eventType === 'GroupEvent' || msg.eventType !== 'IWantToPlayEvent') {
+    if (msg.eventType === 'GroupEvent') {
       setModalVisible(false);
       router.push({
         pathname: '/(authenticated)/chat-summary',
@@ -106,7 +106,19 @@ export default function NewMessages() {
       });
       return;
     }
-
+    if (msg.eventType === 'PlayerFinderEvent') {
+    setModalVisible(false);
+    router.push({
+      pathname: '/(authenticated)/chat-summary',
+      params: {
+        
+        requestId: msg.requestId,
+        
+      },
+    });
+    return;
+  }
+  if (msg.eventType === 'IWantToPlayEvent') {
     try {
       setJoiningSessionId(msg.requestId);
 
@@ -137,6 +149,7 @@ export default function NewMessages() {
       setJoiningSessionId(null);
       alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
+  }
   };
 
   const renderMessageRow = (msg: Comment, isModal = false) => (
