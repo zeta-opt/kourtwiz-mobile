@@ -89,15 +89,7 @@ export default function NewMessages() {
       }
     } 
     
-    // if (msg.eventType === 'GroupEvent') {
-    //     router.push({
-    //     pathname: '/(authenticated)/chat-summary',
-    //     params: { id: msg.requestId },
-    //   });
-    //   return; // for now, do nothing
-    // } 
-    
-    // default case: other event types
+    setModalVisible(false);
     router.replace({
       pathname: '/(authenticated)/chat-summary',
       params: { requestId: msg.requestId },
@@ -107,12 +99,13 @@ export default function NewMessages() {
   const handleJoin = async (msg: Comment) => {
     // Guard to ensure this only runs for IWantToPlayEvent
     if (msg.eventType === 'GroupEvent' || msg.eventType !== 'IWantToPlayEvent') {
-        router.push({
-          pathname: '/(authenticated)/chat-summary',
-          params: { id: msg.requestId },
-        });
-        return;
-      }
+      setModalVisible(false);
+      router.push({
+        pathname: '/(authenticated)/chat-summary',
+        params: { id: msg.requestId },
+      });
+      return;
+    }
 
     try {
       setJoiningSessionId(msg.requestId);
@@ -123,7 +116,16 @@ export default function NewMessages() {
         callbacks: {
           onSuccess: () => {
             setJoiningSessionId(null);
-            // not routing after join for now
+            setModalVisible(false);
+            router.push({
+              pathname: '/(authenticated)/chat-summary',
+              params: {
+                directUserId: msg.userId,
+                directUserName: msg.userName,
+                requestId: msg.id,
+                initialMessage: msg.commentText,
+              },
+            });
           },
           onError: (error) => {
             setJoiningSessionId(null);
