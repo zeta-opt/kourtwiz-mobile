@@ -19,10 +19,13 @@ import { useGetGroupById } from '@/hooks/apis/groups/useGetGroupById';
 import { useGetPlaySessionById } from '@/hooks/apis/join-play/useGetPlaySessionById';
 
 export default function ChatSummaryPage() {
-  const { requestId: reqId, id: grpId, sessionId: sessId } = useLocalSearchParams<{
+  const { requestId: reqId, id: grpId, sessionId: sessId, directUserId, directUserName, initialMessage } = useLocalSearchParams<{
     requestId?: string;
     id?: string;
     sessionId?: string;
+    directUserId?: string;
+    directUserName?: string;
+    initialMessage?: string;
   }>();
 
   const router = useRouter();
@@ -31,7 +34,7 @@ export default function ChatSummaryPage() {
 
   const isGroupChat = Boolean(grpId);
   const isSessionChat = Boolean(sessId);
- 
+  const isDirectChat = Boolean(directUserId);
 
   const { data: pfData, loading: pfLoading, error: pfError } =
     useGetPlayerFinderRequest(!isGroupChat && !isSessionChat ? reqId : undefined);
@@ -72,15 +75,16 @@ export default function ChatSummaryPage() {
   const title = isGroupChat
     ? groupData?.name
     : isSessionChat
-    ? sessionData?.session?.eventName || 'Open Play'
+    ? sessionData?.session?.eventName || "Open Play"
+    : isDirectChat
+    ? directUserName
     : pfData?.[0]?.placeToPlay;
-
   
   const commentId = isGroupChat
     ? grpId
     : isSessionChat
     ? sessId
-    : pfData?.[0]?.requestId; 
+    : reqId; 
 
   const [refetchComments, setRefetchComments] = useState<() => void>(() => () => {});
 
@@ -120,10 +124,14 @@ export default function ChatSummaryPage() {
 
         {isGroupChat ? (
           <TouchableOpacity onPress={() => router.push(`/group-info/${grpId}`)}>
-            <Text style={styles.headerTitle}>{title || 'Request'}</Text>
+            <Text style={styles.headerTitle}>{title || "Request"}</Text>
+          </TouchableOpacity>
+        ) : isDirectChat ? (
+          <TouchableOpacity onPress={() => router.push(`/group-info/${directUserId}`)}>
+            <Text style={styles.headerTitle}>{title || "Chat"}</Text>
           </TouchableOpacity>
         ) : (
-          <Text style={styles.headerTitle}>{title || 'Request'}</Text>
+          <Text style={styles.headerTitle}>{title || "Request"}</Text>
         )}
 
         <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
@@ -131,8 +139,13 @@ export default function ChatSummaryPage() {
         </TouchableOpacity>
       </View>
 
-      
       <View style={styles.commentSection}>
+        {initialMessage && (
+          <View style={styles.originalMessageContainer}>
+            <Text style={styles.originalMessageText}>{initialMessage}</Text>
+          </View>
+        )}
+
         <ScrollView style={styles.chatBox} keyboardShouldPersistTaps="handled">
           <GetCommentPlayerFinder
             requestId={commentId}
@@ -203,6 +216,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
+  originalMessageContainer: {
+    backgroundColor: "#f1f1f1",
+    padding: 10,
+    margin: 10,
+    borderRadius: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    alignSelf: "flex-start",
+    maxWidth: "80%",
+  },
+  originalMessageText: {
+    fontSize: 14,
+    color: "#333",
+  },
+
   sectionLabel: {
     fontSize: 14,
     fontWeight: '500',

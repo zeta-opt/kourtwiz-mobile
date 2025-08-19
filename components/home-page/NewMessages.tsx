@@ -88,16 +88,7 @@ export default function NewMessages() {
         return; // stop here so we don't fall through
       }
     } 
-    
-    // if (msg.eventType === 'GroupEvent') {
-    //     router.push({
-    //     pathname: '/(authenticated)/chat-summary',
-    //     params: { id: msg.requestId },
-    //   });
-    //   return; // for now, do nothing
-    // } 
-    
-    // default case: other event types
+
     router.replace({
       pathname: '/(authenticated)/chat-summary',
       params: { requestId: msg.requestId },
@@ -123,7 +114,16 @@ export default function NewMessages() {
         callbacks: {
           onSuccess: () => {
             setJoiningSessionId(null);
-            // not routing after join for now
+            setModalVisible(false);
+            router.push({
+              pathname: '/(authenticated)/chat-summary',
+              params: {
+                directUserId: msg.userId,
+                directUserName: msg.userName,
+                requestId: msg.id,
+                initialMessage: msg.commentText,
+              },
+            });
           },
           onError: (error) => {
             setJoiningSessionId(null);
