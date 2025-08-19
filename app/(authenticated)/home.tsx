@@ -9,6 +9,7 @@ import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRe
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
+import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
@@ -66,6 +67,7 @@ const Dashboard = () => {
   const userId = user?.userId;
   const openClubId = user?.currentActiveClubId || 'GLOBAL';
   const { data: openPlayInvites, status , error, refetch:refetchOpenPlay } = useGetPlays(openClubId,userId);
+  const { data: initiatedPlays, refetch: refetchInitiatedPlays } = useGetInitiatedPlays(userId);
   
   // console.log('Open Play Invites:', openPlayInvites);
  
@@ -96,7 +98,7 @@ const Dashboard = () => {
   const outgoingInvites = Object.values(groupedOutgoing);
   // console.log('Outgoing Invites:', outgoingInvites);
   const pendingOutCount = outgoingInvites.length;
-  const playCount = openPlayInvites?.length || 0;
+  const playCount = (openPlayInvites?.length || 0)+ (initiatedPlays?.length || 0);
 
   const allInvites = invites ?? [];
   // console.log('All Invites:', allInvites);
