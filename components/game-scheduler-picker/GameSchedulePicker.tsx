@@ -104,7 +104,7 @@ const GameSchedulePicker: React.FC<GameSchedulePickerProps> = ({
                 ]}
               >
                 {selectedDate
-                  ? selectedDate.toLocaleDateString('en-GB')
+                  ? selectedDate.toLocaleDateString('en-US')
                   : 'DD/MM/YYYY'}
               </Text>
               <Icon

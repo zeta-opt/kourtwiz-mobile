@@ -161,10 +161,10 @@ export default function GroupsScreen() {
 
   // ---------- FIX: use unified logic for unread calculation ----------
   // Only consider a group unread when it *has a latest message* AND that message is newer than the last-read timestamp.
-  function groupHasUnread(item: any): boolean {
-    const latestMessageTime = getGroupLatestMessageTime(item);
+  function groupHasUnread(group: any): boolean {
+    const latestMessageTime = getGroupLatestMessageTime(group);
     if (!latestMessageTime) return false; // no messages -> nothing to be unread
-    const lastReadRaw = lastReadTimestamps[item.id];
+    const lastReadRaw = lastReadTimestamps[group.id];
     if (!lastReadRaw) return true; // there's a message but user never opened -> unread
     const lastReadDate = new Date(lastReadRaw);
     return latestMessageTime.getTime() > lastReadDate.getTime();
@@ -175,15 +175,16 @@ export default function GroupsScreen() {
     const q = (search || "").trim().toLowerCase();
     return (data ?? []).filter((item: any) => {
       // search match (name or latestMessage text)
-      const name = (item.name ?? "").toString().toLowerCase();
-      const latestMessageText = (item.latestMessage ?? "").toString().toLowerCase();
+      const group = item.group;
+      const name = (group.name ?? "").toString().toLowerCase();
+      const latestMessageText = (item.lastMessage?.commentText ?? "").toString().toLowerCase();
       const matchesSearch = !q || name.includes(q) || latestMessageText.includes(q);
       if (!matchesSearch) return false;
 
-      const unread = groupHasUnread(item);
+      const unread = groupHasUnread(group);
       if (filter === "read") return !unread;
       if (filter === "unread") return unread;
-      if (filter === "favorite") return favoriteGroups.includes(item.id);
+      if (filter === "favorite") return favoriteGroups.includes(group.id);
 
       return true;
     });
@@ -191,19 +192,24 @@ export default function GroupsScreen() {
 
   // ---------- RENDER ----------
   const renderItem = ({ item }: { item: any }) => {
-    const adminMember = item.members?.find((m: any) => m.userId === item.createdByUserId);
+    const group = item.group;
+     const lastMessage = item.lastMessage;
+    const adminMember = group.members?.find((m: any) => m.userId === group.createdByUserId);
     const adminName = adminMember?.name || "Admin";
 
-    const latestMessageTime = getGroupLatestMessageTime(item);
-    const lastReadAt = lastReadTimestamps[item.id];
+    const latestMessageTime = lastMessage
+    ? parseTimestamp(lastMessage.timestamp)
+    : parseTimestamp(group.updatedAt);
+    const lastMessageText = lastMessage?.commentText ?? "No new messages";
+    const lastReadAt = lastReadTimestamps[group.id];
     const lastReadDate = lastReadAt ? new Date(lastReadAt) : null;
     const hasMessages = Boolean(latestMessageTime);
     const isRead = hasMessages ? (lastReadDate ? latestMessageTime!.getTime() <= lastReadDate.getTime() : false) : true;
-    const isFavorite = favoriteGroups.includes(item.id);
+    const isFavorite = favoriteGroups.includes(group.id);
 
     let messagePreview = "No new messages";
     if (!hasMessages) {
-      messagePreview = item.createdByUserId && item.createdByUserId !== user?.userId
+      messagePreview = group.createdByUserId && group.createdByUserId !== user?.userId
         ? `${adminName} added you`
         : "You are the Admin";
     } else {
@@ -213,15 +219,15 @@ export default function GroupsScreen() {
     return (
       <TouchableOpacity
         style={styles.messageRow}
-        onPress={() => handleOpenChat(item.id, latestMessageTime)}
+        onPress={() => handleOpenChat(group.id, latestMessageTime)}
         onLongPress={() => toggleFavorite(item.id)}
       >
-        {item.avatarUrl ? (
-          <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+        {group.avatarUrl ? (
+          <Image source={{ uri: group.avatarUrl }} style={styles.avatar} />
         ) : (
           <View style={styles.initialsCircle}>
             <Text style={styles.initialsText}>
-              {(item.name || "")
+              {(group.name || "")
                 .split(' ')
                 .map((w: string) => w[0] || '')
                 .join('')
@@ -234,7 +240,7 @@ export default function GroupsScreen() {
         <View style={styles.messageContent}>
           <View style={styles.rowSpaceBetween}>
             <Text style={styles.name}>
-              {item.name}
+              {group.name}
               {isFavorite && (
                 <Ionicons
                   name="star"
@@ -245,11 +251,25 @@ export default function GroupsScreen() {
               )}
             </Text>
             <Text style={styles.time}>
-              {latestMessageTime ? latestMessageTime.toLocaleString() : (item.lastUpdated || '')}
+              {latestMessageTime ? latestMessageTime.toLocaleString() : (group.lastUpdated || '')}
             </Text>
           </View>
-
           <View style={styles.rowSpaceBetween}>
+          <Text
+          style={[styles.messageText, !isRead && styles.unreadText]}
+          numberOfLines={1}
+        >
+          {lastMessageText}
+        </Text>
+
+        {/* Unread badge */}
+        {!isRead && (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadBadgeText}>•</Text>
+          </View>
+        )}
+        </View>
+          {/* <View style={styles.rowSpaceBetween}>
             <Text
               style={[styles.messageText, !isRead && styles.unreadText]}
               numberOfLines={1}
@@ -262,7 +282,7 @@ export default function GroupsScreen() {
                 <Text style={styles.unreadBadgeText}>•</Text>
               </View>
             )}
-          </View>
+          </View> */}
         </View>
       </TouchableOpacity>
     );
@@ -364,7 +384,7 @@ export default function GroupsScreen() {
       {/* Message list */}
       <FlatList
         data={filteredData}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.group.id}
         renderItem={renderItem}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
         showsVerticalScrollIndicator={false}
