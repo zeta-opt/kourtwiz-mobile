@@ -161,39 +161,65 @@ export default function GroupsScreen() {
 
   // ---------- FIX: use unified logic for unread calculation ----------
   // Only consider a group unread when it *has a latest message* AND that message is newer than the last-read timestamp.
-  function groupHasUnread(group: any): boolean {
-    const latestMessageTime = getGroupLatestMessageTime(group);
-    if (!latestMessageTime) return false; // no messages -> nothing to be unread
-    const lastReadRaw = lastReadTimestamps[group.id];
-    if (!lastReadRaw) return true; // there's a message but user never opened -> unread
+  function getGroupLatestActivityTime(item: any): Date | null {
+    const lastMsgTs = parseTimestamp(item.lastMessage?.timestamp)?.getTime() ?? -Infinity;
+    const updatedTs = parseTimestamp(item.group?.updatedAt)?.getTime() ?? -Infinity;
+    const ts = Math.max(lastMsgTs, updatedTs);
+    return ts === -Infinity ? null : new Date(ts);
+  }
+
+  function groupHasUnread(item: any): boolean {
+    const latestActivity = getGroupLatestActivityTime(item);
+    if (!latestActivity) return false; // brand new group, no activity
+
+    const lastReadRaw = lastReadTimestamps[item.group.id];
+    if (!lastReadRaw) return true; // never opened -> unread
+
     const lastReadDate = new Date(lastReadRaw);
-    return latestMessageTime.getTime() > lastReadDate.getTime();
+    return latestActivity.getTime() > lastReadDate.getTime();
   }
 
   // Filtered data (memoized for perf)
   const filteredData = useMemo(() => {
     const q = (search || "").trim().toLowerCase();
     return (data ?? []).filter((item: any) => {
-      // search match (name or latestMessage text)
-      const group = item.group;
-      const name = (group.name ?? "").toString().toLowerCase();
-      const latestMessageText = (item.lastMessage?.commentText ?? "").toString().toLowerCase();
+      // search by group name or latest message
+      const name = (item.group?.name ?? "").toLowerCase();
+      const latestMessageText = (item.lastMessage?.commentText ?? "").toLowerCase();
       const matchesSearch = !q || name.includes(q) || latestMessageText.includes(q);
       if (!matchesSearch) return false;
 
-      const unread = groupHasUnread(group);
+      const unread = groupHasUnread(item);
+
       if (filter === "read") return !unread;
       if (filter === "unread") return unread;
-      if (filter === "favorite") return favoriteGroups.includes(group.id);
+      if (filter === "favorite") return favoriteGroups.includes(item.group.id);
 
       return true;
     });
   }, [data, search, filter, favoriteGroups, lastReadTimestamps]);
 
+  // newest activity (lastMessage OR updatedAt) first
+  const sortedData = useMemo(() => {
+    const arr = [...filteredData];
+    arr.sort((a, b) => {
+      const aLastMsg = parseTimestamp(a.lastMessage?.timestamp)?.getTime() ?? -Infinity;
+      const aUpdated = parseTimestamp(a.group?.updatedAt)?.getTime() ?? -Infinity;
+      const aTs = Math.max(aLastMsg, aUpdated);
+
+      const bLastMsg = parseTimestamp(b.lastMessage?.timestamp)?.getTime() ?? -Infinity;
+      const bUpdated = parseTimestamp(b.group?.updatedAt)?.getTime() ?? -Infinity;
+      const bTs = Math.max(bLastMsg, bUpdated);
+
+      return bTs - aTs; // newer activity first
+    });
+    return arr;
+  }, [filteredData]);
+
   // ---------- RENDER ----------
   const renderItem = ({ item }: { item: any }) => {
     const group = item.group;
-     const lastMessage = item.lastMessage;
+    const lastMessage = item.lastMessage;
     const adminMember = group.members?.find((m: any) => m.userId === group.createdByUserId);
     const adminName = adminMember?.name || "Admin";
 
@@ -255,12 +281,9 @@ export default function GroupsScreen() {
             </Text>
           </View>
           <View style={styles.rowSpaceBetween}>
-          <Text
-          style={[styles.messageText, !isRead && styles.unreadText]}
-          numberOfLines={1}
-        >
-          {lastMessageText}
-        </Text>
+          <Text style={[styles.messageText, !isRead && styles.unreadText]} numberOfLines={1}>
+            {lastMessageText}
+          </Text>
 
         {/* Unread badge */}
         {!isRead && (
@@ -383,7 +406,7 @@ export default function GroupsScreen() {
 
       {/* Message list */}
       <FlatList
-        data={filteredData}
+        data={sortedData}
         keyExtractor={(item) => item.group.id}
         renderItem={renderItem}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
