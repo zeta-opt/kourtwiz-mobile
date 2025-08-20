@@ -230,8 +230,8 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   const selectedLocalDeviceContacts = tempSelectedContacts.filter((c) =>
     deviceContacts.some(
       (d) =>
-        getContactDisplayNumber(d) === c.contactPhoneNumber &&
-        d.name === c.contactName
+        normalizePhoneNumber(getContactDisplayNumber(d)) ===
+        normalizePhoneNumber(c.contactPhoneNumber)
     )
   );
 
