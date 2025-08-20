@@ -1,17 +1,17 @@
-import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
+import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
-import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import { RootState } from '@/store';
-import React, { useEffect, useState } from 'react';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
-import { router } from 'expo-router';
 
 type PlayRow = {
   id: string;
@@ -47,21 +47,32 @@ const extractErrorMessage = (err: any): string => {
   );
 };
 
-const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch }) => {
+const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
+  cardStyle,
+  data,
+  refetch,
+}) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
 
   // Get initiated plays
-  const { data: initiatedData, status: initiatedStatus } = useGetInitiatedPlays(userId);
+  const { data: initiatedData, status: initiatedStatus } =
+    useGetInitiatedPlays(userId);
 
-  const { data: courtsData, status: courtsStatus } = useGetClubCourt({ clubId });
+  const { data: courtsData, status: courtsStatus } = useGetClubCourt({
+    clubId,
+  });
   const { joinPlaySession } = useMutateJoinPlay();
   const { withdraw } = useWithdrawFromPlay();
   const { withdrawFromWaitlist } = useWithdrawFromWaitlist();
 
   const [rows, setRows] = useState<PlayRow[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  // Track optimistic updates to prevent them from being overwritten
+  const optimisticUpdates = useRef<Map<string, Partial<PlayRow>>>(new Map());
+  const pendingActions = useRef<Set<string>>(new Set());
 
   const handleJoinPlay = async (
     id: string,
@@ -70,14 +81,37 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
     isWaitlisted: boolean
   ) => {
     setLoadingId(id);
+    pendingActions.current.add(id);
 
     if (isWaitlisted) {
+      // Optimistic update
+      const update = { isWaitlisted: false };
+      optimisticUpdates.current.set(id, update);
+      setRows((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, ...update } : r))
+      );
+
       try {
         await withdrawFromWaitlist({ sessionId: id, userId });
-        Toast.show({ type: 'success', text1: 'Withdrawn from waitlist', topOffset: 100 });
-        refetch();
-        // setRows(prev => prev.map(r => r.id === id ? { ...r, isWaitlisted: false } : r));
+        Toast.show({
+          type: 'success',
+          text1: 'Withdrawn from waitlist',
+          topOffset: 100,
+        });
+        // Don't clear optimistic update yet - wait for refetch
+        await refetch();
+        // Clear after refetch completes
+        setTimeout(() => {
+          optimisticUpdates.current.delete(id);
+          pendingActions.current.delete(id);
+        }, 1000);
       } catch (err) {
+        // Revert on error
+        optimisticUpdates.current.delete(id);
+        pendingActions.current.delete(id);
+        setRows((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, isWaitlisted: true } : r))
+        );
         Toast.show({
           type: 'error',
           text1: 'Failed to withdraw from waitlist',
@@ -91,12 +125,44 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
     }
 
     if (isRegistered) {
+      // Optimistic update
+      const currentRow = rows.find((r) => r.id === id)!;
+      const update = {
+        isRegistered: false,
+        'filled slots': Math.max(0, currentRow['filled slots'] - 1),
+      };
+      optimisticUpdates.current.set(id, update);
+      setRows((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, ...update } : r))
+      );
+
       try {
         await withdraw({ sessionId: id, userId });
-        Toast.show({ type: 'success', text1: 'Withdrawn from play', topOffset: 100 });
-        refetch();
-        // setRows(prev => prev.map(r => r.id === id ? { ...r, isRegistered: false, 'filled slots': Math.max(0, r['filled slots'] - 1) } : r));
+        Toast.show({
+          type: 'success',
+          text1: 'Withdrawn from play',
+          topOffset: 100,
+        });
+        await refetch();
+        setTimeout(() => {
+          optimisticUpdates.current.delete(id);
+          pendingActions.current.delete(id);
+        }, 1000);
       } catch (err) {
+        // Revert on error
+        optimisticUpdates.current.delete(id);
+        pendingActions.current.delete(id);
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  isRegistered: true,
+                  'filled slots': currentRow['filled slots'],
+                }
+              : r
+          )
+        );
         Toast.show({
           type: 'error',
           text1: 'Failed to withdraw',
@@ -109,28 +175,63 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
       return;
     }
 
+    // Joining play - optimistic update
+    const currentRow = rows.find((r) => r.id === id)!;
+    const newIsRegistered = !isFull;
+    const newIsWaitlisted = isFull;
+    const newFilledSlots = !isFull
+      ? currentRow['filled slots'] + 1
+      : currentRow['filled slots'];
+
+    const update = {
+      isRegistered: newIsRegistered,
+      isWaitlisted: newIsWaitlisted,
+      'filled slots': newFilledSlots,
+      isFull: newFilledSlots >= currentRow['max slots'],
+    };
+    optimisticUpdates.current.set(id, update);
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...update } : r)));
+
     await joinPlaySession({
       userId,
       sessionId: id,
       callbacks: {
-        onSuccess: () => {
+        onSuccess: async () => {
           Toast.show({
             type: 'success',
             text1: isFull ? 'Joined waitlist' : 'Joined play',
             topOffset: 100,
           });
-          refetch();
-          // setRows(prev =>
-          //   prev.map(r =>
-          //     r.id === id
-          //       ? { ...r, isRegistered: !isFull, isWaitlisted: isFull, 'filled slots': !isFull ? r['filled slots'] + 1 : r['filled slots'] }
-          //       : r
-          //   )
-          // );
+          await refetch();
+          setTimeout(() => {
+            optimisticUpdates.current.delete(id);
+            pendingActions.current.delete(id);
+          }, 1000);
           setLoadingId(null);
         },
         onError: (error) => {
-          Toast.show({ type: 'error', text1: 'Unable to join', text2: error.message, topOffset: 100 });
+          // Revert on error
+          optimisticUpdates.current.delete(id);
+          pendingActions.current.delete(id);
+          setRows((prev) =>
+            prev.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    isRegistered: false,
+                    isWaitlisted: false,
+                    'filled slots': currentRow['filled slots'],
+                    isFull: currentRow.isFull,
+                  }
+                : r
+            )
+          );
+          Toast.show({
+            type: 'error',
+            text1: 'Unable to join',
+            text2: error.message,
+            topOffset: 100,
+          });
           setLoadingId(null);
         },
       },
@@ -149,17 +250,20 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
   };
 
   useEffect(() => {
-    if (!data || (clubId !== 'GLOBAL' && (!courtsData || courtsData.length === 0))) {
+    if (
+      !data ||
+      (clubId !== 'GLOBAL' && (!courtsData || courtsData.length === 0))
+    ) {
       return;
     }
 
     // Merge and mark initiated plays
-    let allPlays = [...data.map(p => ({ ...p, initiated: false }))];
+    let allPlays = [...data.map((p) => ({ ...p, initiated: false }))];
     if (initiatedData && Array.isArray(initiatedData)) {
-      const existingIds = new Set(allPlays.map(p => p.id));
+      const existingIds = new Set(allPlays.map((p) => p.id));
       const extra = initiatedData
-        .filter(p => !existingIds.has(p.id))
-        .map(p => ({ ...p, initiated: true }));
+        .filter((p) => !existingIds.has(p.id))
+        .map((p) => ({ ...p, initiated: true }));
       allPlays = [...allPlays, ...extra];
     }
 
@@ -194,16 +298,20 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
       const filledSlots = registeredPlayers.length;
       const isFull = filledSlots >= play.maxPlayers + 1;
 
-      return {
+      const baseRow = {
         id: play.id,
         initiated: play.initiated || false,
-        'event name': play.eventName?.split('_').join(' ').toLowerCase() || 'Unknown Event',
+        'event name':
+          play.eventName?.split('_').join(' ').toLowerCase() || 'Unknown Event',
         date: startDate.toLocaleDateString('en-US', {
           month: '2-digit',
           day: '2-digit',
           year: 'numeric',
         }),
-        time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        time: startDate.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
         duration: play.durationMinutes,
         'skill level': play.skillLevel,
         court: courtName,
@@ -215,19 +323,33 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
         isRegistered,
         isWaitlisted,
       };
+
+      // Apply optimistic updates if they exist and action is still pending
+      if (
+        pendingActions.current.has(play.id) &&
+        optimisticUpdates.current.has(play.id)
+      ) {
+        return { ...baseRow, ...optimisticUpdates.current.get(play.id) };
+      }
+
+      return baseRow;
     });
 
     setRows(mappedRows);
   }, [data, initiatedData, courtsData, userId, clubId]);
 
   if (!clubId) {
-    return <Text style={styles.noDataText}>No open play sessions available</Text>;
+    return (
+      <Text style={styles.noDataText}>No open play sessions available</Text>
+    );
   }
   if (courtsStatus === 'loading' || initiatedStatus === 'loading') {
     return <LoaderScreen />;
   }
   if (rows.length === 0) {
-    return <Text style={styles.noDataText}>No open play sessions available</Text>;
+    return (
+      <Text style={styles.noDataText}>No open play sessions available</Text>
+    );
   }
 
   return (
@@ -243,7 +365,13 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
             });
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
             <Text style={styles.placeText} numberOfLines={1}>
               {row['event name']}
             </Text>
@@ -262,31 +390,57 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({ cardStyle, data, refetch })
             <Text style={styles.peopleText}>{row.court}</Text>
           </View>
           <View style={styles.rowBetween}>
-            <View style={[styles.statusBadge, { flexDirection: 'row', alignItems: 'center' }]}>
-              <MaterialIcons name="person" size={16} color="#2F7C83" style={{ marginRight: 4 }} />
+            <View
+              style={[
+                styles.statusBadge,
+                { flexDirection: 'row', alignItems: 'center' },
+              ]}
+            >
+              <MaterialIcons
+                name='person'
+                size={16}
+                color='#2F7C83'
+                style={{ marginRight: 4 }}
+              />
               <Text style={styles.statusBadgeText}>
                 {row['filled slots']}/{row['max slots']} Accepted
               </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginLeft: 10,
+                }}
+              >
                 <MaterialCommunityIcons
-                  name="wallet"
+                  name='wallet'
                   size={16}
-                  color="#2F7C83"
+                  color='#2F7C83'
                   style={{ marginRight: 4 }}
                 />
-                <Text style={styles.priceText}>${row.priceForPlay.toFixed(2)}</Text>
+                <Text style={styles.priceText}>
+                  ${row.priceForPlay.toFixed(2)}
+                </Text>
               </View>
             </View>
             <Button
-              mode="contained"
+              mode='contained'
               onPress={() =>
-                handleJoinPlay(row.id, row.isFull, row.isRegistered, row.isWaitlisted)
+                handleJoinPlay(
+                  row.id,
+                  row.isFull,
+                  row.isRegistered,
+                  row.isWaitlisted
+                )
               }
               style={[
                 styles.button,
                 row.isWaitlisted && styles.waitlistWithdrawButton,
                 row.isRegistered && styles.withdrawButton,
-                !row.isRegistered && row.isFull && !row.isWaitlisted && styles.joinWaitlistButton,
+                !row.isRegistered &&
+                  row.isFull &&
+                  !row.isWaitlisted &&
+                  styles.joinWaitlistButton,
               ]}
               loading={row.id === loadingId}
               contentStyle={[
