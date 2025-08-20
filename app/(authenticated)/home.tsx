@@ -66,8 +66,8 @@ const Dashboard = () => {
   const clubId = user?.currentActiveClubId;
   const userId = user?.userId;
   const openClubId = user?.currentActiveClubId || 'GLOBAL';
-  const { data: openPlayInvites, status , error, refetch:refetchOpenPlay } = useGetPlays(openClubId,userId);
-  const { data: initiatedPlays, refetch: refetchInitiatedPlays } = useGetInitiatedPlays(userId);
+  const { data: openPlayInvites, refetch:refetchOpenPlay } = useGetPlays(openClubId,userId);
+  const { data: initiatedPlays } = useGetInitiatedPlays(userId);
   
   // console.log('Open Play Invites:', openPlayInvites);
  
@@ -92,16 +92,71 @@ const Dashboard = () => {
   const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
 
+  const now = new Date();
+  const getInviteDate = (invite: any) => {
+    if (!invite.playTime) return null;
+    const [year, month, day, hour, minute] = invite.playTime;
+    return new Date(year, month - 1, day, hour, minute);
+  };
+
+  const incomingCount = (invites ?? []).filter((inv) => {
+    const eventDate = getInviteDate(inv);
+    return eventDate && eventDate >= now;
+  });
+
   const groupedOutgoing = groupInviteeByRequestId(
-    outgoingInvitesRaw?.filter((invite) => invite.status !== 'WITHDRAWN') || []
+    outgoingInvitesRaw?.filter((invite) => {
+      const eventDate = new Date(
+        invite.playTime[0],
+        invite.playTime[1] - 1,
+        invite.playTime[2],
+        invite.playTime[3] || 0,
+        invite.playTime[4] || 0
+      );
+      return invite.status !== "WITHDRAWN" && eventDate >= now;
+    }) || []
   );
   const outgoingInvites = Object.values(groupedOutgoing);
-  // console.log('Outgoing Invites:', outgoingInvites);
   const pendingOutCount = outgoingInvites.length;
-  const playCount = (openPlayInvites?.length || 0)+ (initiatedPlays?.length || 0);
+
+  const getPlayDate = (play: any) => {
+    if (!play.startTime) return null;
+    const [year, month, day, hour, minute] = play.startTime;
+    return new Date(year, month - 1, day, hour || 0, minute || 0);
+  };
+  const upcomingOpenPlays = (openPlayInvites || [])
+    .map((play) => {
+      const startDate = getPlayDate(play);
+      return {
+        ...play,
+        dateTimeMs: startDate?.getTime() ?? 0,
+        placeToPlay: play.allCourts?.Name || 'Unknown Court',
+        eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
+        accepted: play.registeredPlayers?.length ?? 0,
+        playersNeeded: play.maxPlayers ?? 1,
+        isWaitlisted: play.waitlistedPlayers?.includes(userId),
+      };
+    })
+    .filter((play) => play.dateTimeMs >= now);
+
+  const upcomingInitiatedPlays = (initiatedPlays || [])
+    .map((play) => {
+      const startDate = getPlayDate(play);
+      return {
+        ...play,
+        dateTimeMs: startDate?.getTime() ?? 0,
+        placeToPlay: play.allCourts?.Name || 'Unknown Court',
+        eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
+        accepted: play.registeredPlayers?.length ?? 0,
+        playersNeeded: play.maxPlayers ?? 1,
+        isWaitlisted: play.waitlistedPlayers?.includes(userId),
+      };
+    })
+    .filter((play) => play.dateTimeMs >= now);
+
+  const playCount = upcomingOpenPlays.length + upcomingInitiatedPlays.length;
 
   const allInvites = invites ?? [];
-  // console.log('All Invites:', allInvites);
   const playCalendarData = [
   ...(allInvites || []).map(invite => ({
     ...invite,
@@ -272,7 +327,7 @@ const getInviteTimestamp = (invite) => {
                   ]}
                   onPress={() => setActiveTab('INCOMING')}
                 >
-                  Incoming Request ({allInvites.length})
+                  Incoming Request ({incomingCount.length})
                 </Text>
                 <Text
                   style={[
@@ -363,29 +418,9 @@ const getInviteTimestamp = (invite) => {
                     )
                 ) : (
                   <OpenPlayCard
-                    data={
-                      (openPlayInvites || [])
-                        .map(play => {
-                          const startDate = new Date(
-                            play.startTime[0],
-                            play.startTime[1] - 1,
-                            play.startTime[2],
-                            play.startTime[3] || 0,
-                            play.startTime[4] || 0
-                          );
-                          return {
-                            ...play,
-                            dateTimeMs: startDate.getTime(),
-                            placeToPlay: play.allCourts?.Name || 'Unknown Court',
-                            eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
-                            accepted: play.registeredPlayers?.length ?? 0,
-                            playersNeeded: play.maxPlayers ?? 1,
-                            isWaitlisted: play.waitlistedPlayers?.includes(userId),
-                          };
-                        })
-                        .filter(play => play.dateTimeMs >= Date.now())
-                        .sort((a, b) => Number(a.dateTimeMs) - Number(b.dateTimeMs)
-                      )}
+                    data={[...upcomingOpenPlays, ...upcomingInitiatedPlays].sort(
+                      (a, b) => a.dateTimeMs - b.dateTimeMs
+                    )}
                     refetch={refetch}
                   />
                 )}
