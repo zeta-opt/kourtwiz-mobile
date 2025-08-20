@@ -372,8 +372,7 @@ const AllInvitations = () => {
                     ...play,
                     dateTimeMs: startDate.getTime(),
                     placeToPlay: play.allCourts?.Name || 'Unknown Court',
-                    eventName:
-                    play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
+                    eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
                     accepted: play.registeredPlayers?.length ?? 0,
                     playersNeeded: play.maxPlayers ?? 1,
                     isWaitlisted: play.waitlistedPlayers?.includes(userId),
@@ -384,8 +383,7 @@ const AllInvitations = () => {
             refetch={refetch}
             />
         )}
-
-        </ScrollView>
+      </ScrollView>
 
       {/* iOS Date Picker Modal */}
       {Platform.OS === 'ios' && showDatePicker && (
