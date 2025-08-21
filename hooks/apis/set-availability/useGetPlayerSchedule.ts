@@ -19,7 +19,7 @@ export const useGetPlayerSchedule = (userId?: string) => {
       const token = await getToken();
 
       const response = await axios.get(
-        `${BASE_URL}/player-calendar/schedule?userId=${userId}`,
+        `${BASE_URL}/player-calendar/all-events?userId=${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

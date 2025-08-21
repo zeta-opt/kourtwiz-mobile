@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { useSelector } from 'react-redux';
@@ -8,6 +8,8 @@ import { RootState } from '@/store';
 import { Ionicons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
 import { useGetPlayerEventsByDate } from '@/hooks/apis/set-availability/useGetPlayerEventsByDate';
+import { useGetPlayerSchedule } from '@/hooks/apis/set-availability/useGetPlayerSchedule';
+import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 
 export default function PlayCalendarPage() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -18,40 +20,152 @@ export default function PlayCalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string>(today);
 
   const { data: eventsForSelectedDate } = useGetPlayerEventsByDate(selectedDate, userId);
-  console.log('events by date', eventsForSelectedDate)
+  
+  const { data: schedule } = useGetPlayerSchedule(userId);
+  const { data: initiatedData, status: initiatedStatus } =
+      useGetInitiatedPlays(userId);
 
   const parseArrayToDate = (arr: number[]): Date => {
     if (!arr || arr.length < 3) return new Date('');
     const [year, month, day, hour = 0, minute = 0] = arr;
     return new Date(year, month - 1, day, hour, minute);
   };
+
+const uniqueInitiatedPlayerFinderRequests = (
+  eventsForSelectedDate?.initiatedPlayerFinderRequests ?? []
+).filter((req, index, self) =>
+  index === self.findIndex(r => r.requestId === req.requestId)
+);
+
 const mergedEvents = [
-  ...(eventsForSelectedDate?.eventsAvailable ?? []).map(e => ({ ...e, type: 'available' })),
-  ...(eventsForSelectedDate?.incomingPlayerFinderRequests ?? []).map(e => ({ ...e, type: 'incoming' })),
-  ...(eventsForSelectedDate?.initiatedPlayerFinderRequests ?? []).map(e => ({ ...e, type: 'outgoing' })),
+  ...(eventsForSelectedDate?.eventsAvailable ?? []).map(e => ({
+    ...e,
+    type: "available",
+    start: parseArrayToDate(e.startTime),
+    end: e.durationMinutes
+      ? new Date(parseArrayToDate(e.startTime)!.getTime() + e.durationMinutes * 60000)
+      : null,
+  })),
+  ...(eventsForSelectedDate?.incomingPlayerFinderRequests ?? []).map(e => ({
+    ...e,
+    type: "incoming",
+    start: parseArrayToDate(e.playTime),
+    end: parseArrayToDate(e.playEndTime),
+  })),
+  ...uniqueInitiatedPlayerFinderRequests
+    .filter(e => e.status !== "WITHDRAWN")
+    .map(e => ({
+      ...e,
+      type: "outgoing",
+      start: parseArrayToDate(e.playTime),
+      end: parseArrayToDate(e.playEndTime),
+    })),
+  ...(initiatedData ?? [])
+    .map(e => {
+      const start = parseArrayToDate(e.startTime);
+      return {
+        ...e,
+        type: "initiated",
+        start,
+        end: e.durationMinutes
+          ? new Date(start!.getTime() + e.durationMinutes * 60000)
+          : null,
+      };
+    })
+    .filter(e =>
+      e.start ? format(e.start, "yyyy-MM-dd") === selectedDate : false
+    ),
 ];
+
+
+const markedDates = useMemo(() => {
+  const marks: Record<string, any> = {};
+
+  if (schedule) {
+  const allEvents = [
+    ...(schedule?.eventsAvailable ?? []).map(e => ({ ...e, type: "eventAvailable" })),
+    ...(schedule?.eventsCreated ?? []).map(e => ({ ...e, type: "eventCreated" })),
+    ...(schedule?.incomingPlayerFinderRequests ?? []).map(e => ({ ...e, type: "incomingPlayerFinder" })),
+    ...(schedule?.initiatedPlayerFinderRequests ?? []).map(e => ({ ...e, type: "initiatedPlayerFinder" })),
+  ];
+
+  allEvents.forEach(event => {
+    const dateObj = parseArrayToDate(event.startTime ?? event.playTime);
+    if (!dateObj) return;
+
+    const date = format(dateObj, "yyyy-MM-dd");
+
+    let bgColor: string | null = null;
+
+    if (event.type === "eventAvailable" || event.type === "eventCreated") {
+      bgColor = "yellow";
+    } else if (event.type === "incomingPlayerFinder") {
+      if (event.status === "ACCEPTED") bgColor = "green";
+      else if (event.status === "DECLINED") bgColor = "red";
+      else bgColor = "yellow";
+    } else if (event.type === "initiatedPlayerFinder") {
+      if (event.status === "ACCEPTED") bgColor = "green";
+      else if (event.status === "DECLINED") bgColor = "red";
+      else if (event.status === "WITHDRAWN") bgColor = null;
+      else bgColor = "yellow";
+    }
+
+    if (bgColor) {
+      marks[date] = {
+        customStyles: {
+          container: {
+            backgroundColor: bgColor,
+            borderRadius: 4,
+          },
+          text: {
+            color: "white",
+            fontWeight: "bold",
+          },
+        },
+      };
+    }
+  });
+}
+
+if (selectedDate) {
+  marks[selectedDate] = {
+    customStyles: {
+      container: {
+        backgroundColor: "#00adf5",
+        borderRadius: 4,
+      },
+      text: {
+        color: "white",
+        fontWeight: "bold",
+      },
+    },
+  };
+}
+
+  return marks;
+}, [schedule, selectedDate]);
 
   const handlePress = (event: any) => {
   try {
-    if (event.type === 'incoming') {
+    if (event.type === "incoming") {
       router.push({
-        pathname: '/(authenticated)/myRequestsDetailedView',
+        pathname: "/(authenticated)/myRequestsDetailedView",
         params: { requestId: event.requestId },
       });
-    } else if (event.type === 'outgoing') {
+    } else if (event.type === "outgoing") {
       const encoded = encodeURIComponent(JSON.stringify(event));
       router.push({
-        pathname: '/(authenticated)/sentRequestsDetailedView',
+        pathname: "/(authenticated)/sentRequestsDetailedView",
         params: { data: encoded },
       });
-    } else if (event.type === 'available') {
+    } else if (event.type === "available" || event.type === "initiated") {
       router.push({
-        pathname: '/(authenticated)/openPlayDetailedView',
+        pathname: "/(authenticated)/openPlayDetailedView",
         params: { sessionId: event.id },
       });
     }
   } catch (err) {
-    console.error('Navigation error:', err);
+    console.error("Navigation error:", err);
   }
 };
 
@@ -74,12 +188,8 @@ const mergedEvents = [
       <View style={styles.container}>
         <Calendar
           onDayPress={(day) => setSelectedDate(day.dateString)}
-          markedDates={{
-            [selectedDate]: {
-              selected: true,
-              selectedColor: '#00adf5',
-            },
-          }}
+          markedDates={markedDates}
+          markingType="custom"
           style={styles.calendar}
         />
 
@@ -90,33 +200,29 @@ const mergedEvents = [
             <Text style={styles.noEvents}>No confirmed events for this date</Text>
           }
           renderItem={({ item }) => {
-            let locationName = 'Unknown Location';
-            if (item.type === 'available') {
-              locationName = item.allCourts?.Name || 'Unknown Location';
-            } else if (item.type === 'incoming' || item.type === 'outgoing') {
-              locationName = item.placeToPlay || 'Unknown Location';
-            }
-            let start, end;
-            if (item.type === 'available') {
-              start = parseArrayToDate(item.startTime);
-              end = new Date(start.getTime() + (item.durationMinutes ?? 0) * 60000);
-            } else {
-              start = parseArrayToDate(item.playTime);
-              end = parseArrayToDate(item.playEndTime);
+            let locationName = "Unknown Location";
+
+            if (item.type === "available" || item.type === "initiated") {
+              locationName = item.allCourts?.Name || "Unknown Location";
+            } else if (item.type === "incoming" || item.type === "outgoing") {
+              locationName = item.placeToPlay || "Unknown Location";
             }
 
             return (
               <TouchableOpacity onPress={() => handlePress(item)}>
                 <View style={styles.eventCard}>
-                  <Text style={styles.eventTitle}>{item.eventName || 'Event Name'}</Text>
+                  <Text style={styles.eventTitle}>{item.eventName || "Event Name"}</Text>
                   <Text style={styles.eventLocation}>{locationName}</Text>
-                  <Text style={styles.eventTime}>
-                    {format(start, 'h:mm a')} - {format(end, 'h:mm a')}
-                  </Text>
+                  {item.start && item.end && (
+                    <Text style={styles.eventTime}>
+                      {format(item.start, "h:mm a")} - {format(item.end, "h:mm a")}
+                    </Text>
+                  )}
                 </View>
               </TouchableOpacity>
             );
           }}
+
         />
 
       </View>
@@ -131,7 +237,7 @@ const mergedEvents = [
         <TouchableOpacity
           onPress={() => router.push('/(authenticated)/player-invitations?type=incoming')}>
           <Text style={styles.navText}>Inbox</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> 
       </View>
     </View>
   );
