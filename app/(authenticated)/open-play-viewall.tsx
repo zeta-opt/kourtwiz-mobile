@@ -18,7 +18,7 @@ const OpenPlay = () => {
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
 
-  const { data: plays, refetch } = useGetPlays(clubId, userId);
+  const { data: plays, refetch } = useGetPlays('GLOBAL', userId);
   const { data: initiatedData } = useGetInitiatedPlays(userId);
 
   // merge and mark initiated
@@ -47,8 +47,8 @@ const OpenPlay = () => {
     return Array.from(
       new Set(
         safePlays
-          .map((p: any) => p.allCourts?.Name)
-          .filter((name: any): name is string => typeof name === 'string')
+          .map(p => p.allCourts?.Name)
+          .filter((name): name is string => typeof name === 'string')
       )
     );
   }, [safePlays]);

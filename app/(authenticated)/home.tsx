@@ -67,10 +67,7 @@ const Dashboard = () => {
   const clubId = user?.currentActiveClubId;
   const userId = user?.userId;
   const openClubId = user?.currentActiveClubId || 'GLOBAL';
-  const { data: openPlayInvites, refetch: refetchOpenPlay } = useGetPlays(
-    openClubId,
-    userId
-  );
+  const { data: openPlayInvites, refetch:refetchOpenPlay } = useGetPlays('GLOBAL',userId);
   const { data: initiatedPlays } = useGetInitiatedPlays(userId);
 
   // console.log('Open Play Invites:', openPlayInvites);
@@ -150,6 +147,7 @@ const Dashboard = () => {
       return {
         ...play,
         dateTimeMs: startDate?.getTime() ?? 0,
+        initiated: true,  
         placeToPlay: play.allCourts?.Name || 'Unknown Court',
         eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
         accepted: play.registeredPlayers?.length ?? 0,
