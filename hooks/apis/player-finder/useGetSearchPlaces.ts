@@ -10,6 +10,7 @@ type UseGetSearchPlacesReturn = {
 };
 
 type Params = {
+  userId?: string;
   lat: number;
   lng: number;
   maxDistanceInKm?: number;
@@ -18,6 +19,7 @@ type Params = {
 };
 
 export const useGetSearchPlaces = ({
+  userId,
   lat,
   lng,
   maxDistanceInKm,
@@ -46,6 +48,7 @@ export const useGetSearchPlaces = ({
               Accept: '*/*',
             },
             params: {
+              userId,
               lat,
               lng,
               maxDistanceInKm,

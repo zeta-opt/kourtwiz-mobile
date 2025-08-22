@@ -14,6 +14,8 @@ import {
 import { z } from 'zod';
 import { useSignup } from '../SignupContext';
 import Constants from 'expo-constants';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 const schema = z.object({
   zip: z.string().min(5, 'ZIP code is required'),
@@ -39,7 +41,8 @@ const AddressStep = ({
     name?: string;
     Name?: string;
   };
-  
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userId = user?.userId;
   const [nearbyPlaces, setNearbyPlaces] = useState<Place[]>([]);
   const [selectedPlaces, setSelectedPlaces] = useState<string[]>([]);
   const [showPlaces, setShowPlaces] = useState(false);
@@ -69,6 +72,7 @@ const AddressStep = ({
   const fetchNearbyPlaces = async () => {
     try {
       const params = new URLSearchParams({
+        userId,
         address,
         city,
         state,

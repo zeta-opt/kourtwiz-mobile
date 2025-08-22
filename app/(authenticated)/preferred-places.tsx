@@ -72,6 +72,7 @@ export default function PreferredPlacesScreen() {
   
       // Build the query only once
       const queryParams = new URLSearchParams({
+        userId: user?.userId ?? '',
         address: profile.address || '6 Parkwood Lane',
         city: profile.city || 'Mendham',
         state: profile.state || 'New Jersey',

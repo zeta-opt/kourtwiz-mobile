@@ -1,4 +1,5 @@
 import { useGetSearchPlaces } from '@/hooks/apis/player-finder/useGetSearchPlaces';
+import { RootState } from '@/store';
 import { setPlaceToPlay } from '@/store/playerFinderSlice';
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
@@ -9,7 +10,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Button, Card, Modal, Portal, Text } from 'react-native-paper';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 type Props = {
   visible: boolean;
@@ -21,6 +22,7 @@ const SearchPlacesModal = ({ visible, handleClose }: Props) => {
   const [query, setQuery] = useState('');
   type Coordinates = { lat: number; lng: number } | null;
   const [coords, setCoords] = useState<Coordinates>(null);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   // Fetch user location on mount
   useEffect(() => {
@@ -55,6 +57,7 @@ const SearchPlacesModal = ({ visible, handleClose }: Props) => {
     status,
     refetch,
   } = useGetSearchPlaces({
+    userId: user?.userId,
     lat: coords?.lat ?? 0,
     lng: coords?.lng ?? 0,
     maxDistanceInKm: 50,

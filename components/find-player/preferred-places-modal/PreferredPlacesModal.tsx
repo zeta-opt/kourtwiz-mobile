@@ -80,6 +80,7 @@ const PreferredPlacesModal = ({
     refetch,
     isFetching,
   } = useGetSearchPlaces({
+    userId: user?.userId,
     lat: coords?.lat ?? 0,
     lng: coords?.lng ?? 0,
     maxDistanceInKm: 30,
