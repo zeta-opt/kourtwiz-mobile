@@ -84,7 +84,6 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
     pendingActions.current.add(id);
 
     if (isWaitlisted) {
-      // Optimistic update
       const update = { isWaitlisted: false };
       optimisticUpdates.current.set(id, update);
       setRows((prev) =>
@@ -98,15 +97,12 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
           text1: 'Withdrawn from waitlist',
           topOffset: 100,
         });
-        // Don't clear optimistic update yet - wait for refetch
         await refetch();
-        // Clear after refetch completes
         setTimeout(() => {
           optimisticUpdates.current.delete(id);
           pendingActions.current.delete(id);
         }, 1000);
       } catch (err) {
-        // Revert on error
         optimisticUpdates.current.delete(id);
         pendingActions.current.delete(id);
         setRows((prev) =>
@@ -125,7 +121,6 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
     }
 
     if (isRegistered) {
-      // Optimistic update
       const currentRow = rows.find((r) => r.id === id)!;
       const update = {
         isRegistered: false,
@@ -149,7 +144,6 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
           pendingActions.current.delete(id);
         }, 1000);
       } catch (err) {
-        // Revert on error
         optimisticUpdates.current.delete(id);
         pendingActions.current.delete(id);
         setRows((prev) =>
@@ -210,7 +204,6 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
           setLoadingId(null);
         },
         onError: (error) => {
-          // Revert on error
           optimisticUpdates.current.delete(id);
           pendingActions.current.delete(id);
           setRows((prev) =>
@@ -257,13 +250,28 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
       return;
     }
 
-    // Merge and mark initiated plays
-    let allPlays = [...data.map((p) => ({ ...p, initiated: false }))];
+    console.log('Data plays count:', data.length);
+    console.log('Initiated plays count:', initiatedData?.length ?? 0);
+
+    let allPlays = data.map((p) => ({ ...p, initiated: false }));
+
     if (initiatedData && Array.isArray(initiatedData)) {
       const existingIds = new Set(allPlays.map((p) => p.id));
+      console.log('Existing ids count:', existingIds.size);
+
+      // Mark existing plays as initiated if they are in initiatedData
+      allPlays = allPlays.map((p) => ({
+        ...p,
+        initiated: initiatedData.some((ip) => ip.id === p.id) || false,
+      }));
+
+      // Add initiated plays missing from allPlays
       const extra = initiatedData
         .filter((p) => !existingIds.has(p.id))
         .map((p) => ({ ...p, initiated: true }));
+
+      console.log('Initiated plays new entries count:', extra.length);
+
       allPlays = [...allPlays, ...extra];
     }
 
@@ -324,7 +332,6 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
         isWaitlisted,
       };
 
-      // Apply optimistic updates if they exist and action is still pending
       if (
         pendingActions.current.has(play.id) &&
         optimisticUpdates.current.has(play.id)
@@ -397,9 +404,9 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
               ]}
             >
               <MaterialIcons
-                name='person'
+                name="person"
                 size={16}
-                color='#2F7C83'
+                color="#2F7C83"
                 style={{ marginRight: 4 }}
               />
               <Text style={styles.statusBadgeText}>
@@ -413,9 +420,9 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                 }}
               >
                 <MaterialCommunityIcons
-                  name='wallet'
+                  name="wallet"
                   size={16}
-                  color='#2F7C83'
+                  color="#2F7C83"
                   style={{ marginRight: 4 }}
                 />
                 <Text style={styles.priceText}>
@@ -424,7 +431,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
               </View>
             </View>
             <Button
-              mode='contained'
+              mode="contained"
               onPress={() =>
                 handleJoinPlay(
                   row.id,
@@ -447,10 +454,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                 styles.buttonContent,
                 row.isWaitlisted && styles.longTextContent,
               ]}
-              labelStyle={[
-                styles.buttonLabel,
-                row.isWaitlisted && styles.longTextLabel,
-              ]}
+              labelStyle={[styles.buttonLabel, row.isWaitlisted && styles.longTextLabel]}
             >
               {buttonMessage(row.isRegistered, row.isWaitlisted, row.isFull)}
             </Button>
