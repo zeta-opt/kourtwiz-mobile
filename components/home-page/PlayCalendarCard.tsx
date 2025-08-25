@@ -135,8 +135,8 @@ const sortedInvites = [...invites]
         <View style={{ flex: 1 }}>
           <View style={styles.rowTop}>
             <Text style={styles.title}>{eventName}</Text>
-            {renderStatusBadge(statusText)}
           </View>
+
           <Text style={styles.subtitle}>
             {dateString} | {place}
           </Text>
@@ -150,10 +150,27 @@ const sortedInvites = [...invites]
   };
 
   return (
-    <View style={styles.container}>
-      {sortedInvites.map((invite, index) => renderInviteRow(invite, index))}
-    </View>
-  );
+  <View style={styles.container}>
+    {sortedInvites
+      .filter(invite => {
+        let statusText = 'Unknown';
+        if (invite.type === 'incoming') {
+          statusText = invite.status || 'N/A';
+        } else {
+          const accepted = invite.accepted ?? 0;
+          const playersNeeded = invite.playersNeeded ?? 1;
+          const isFull = accepted >= playersNeeded;
+          statusText = invite.isWaitlisted
+            ? 'WAITLISTED'
+            : isFull
+            ? 'ACCEPTED'
+            : 'PENDING';
+        }
+        return statusText.toLowerCase() === 'accepted';
+      })
+      .map((invite, index) => renderInviteRow(invite, index))}
+  </View>
+);
 };
 
 export default PlayCalendarCard;

@@ -179,7 +179,7 @@ if (selectedDate) {
           <Ionicons name="arrow-back" size={24} color="#cce5e3" />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
-          <Text style={styles.title}>Set Availability</Text>
+          <Text style={styles.title}>Play Calendar</Text>
         </View>
         <UserAvatar size={30} />
       </View>

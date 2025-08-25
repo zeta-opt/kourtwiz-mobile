@@ -1,4 +1,5 @@
 import UserAvatar from '@/assets/UserAvatar';
+import { RootState } from '@/store';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
@@ -19,9 +20,12 @@ import {
   Text,
   TextInput,
 } from 'react-native-paper';
+import { useSelector } from 'react-redux';
 
 const AddPlace = () => {
   const router = useRouter();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userId = user?.userId;
 
   // State management
   const [placeName, setPlaceName] = useState('');
@@ -31,6 +35,7 @@ const AddPlace = () => {
     'permanent'
   );
   const [numberOfCourts, setNumberOfCourts] = useState('1');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
   const [membershipRequired, setMembershipRequired] = useState<
@@ -109,6 +114,8 @@ const AddPlace = () => {
         Lighting: lightsAvailable ? 'Available' : 'Not Available',
         isRestRoomAvailable: restroom,
         isCarParkingAvailable: parking,
+        creatorId:userId,
+        isPrivate: isPrivate,
       },
     };
 
@@ -349,8 +356,15 @@ const AddPlace = () => {
               color='#2C7E88'
             />
           </View>
+
+          <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>Is Private</Text>
+          <Switch value={isPrivate} onValueChange={setIsPrivate} color="#2C7E88" />
         </View>
 
+        </View>
+
+        
         {/* Submit Button */}
         <View style={styles.actionButtonContainer}>
           <Button

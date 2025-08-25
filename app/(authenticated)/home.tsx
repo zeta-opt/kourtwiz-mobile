@@ -455,7 +455,7 @@ const Dashboard = () => {
           <FindplayerCard />
 
           <View style={styles.playCalendarHeaderRow}>
-            <Text style={styles.playCalendarHeader}>Play Calendar</Text>
+            <Text style={styles.playCalendarHeader}>Play Events</Text>
             <TouchableOpacity
               onPress={() => router.push('/(authenticated)/play-calendar')}
             >
