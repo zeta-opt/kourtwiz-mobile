@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   TouchableWithoutFeedback,
   Keyboard,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -16,91 +17,114 @@ import UserAvatar from '@/assets/UserAvatar';
 import { useCreateIWantToPlay } from '@/hooks/apis/iwanttoplay/useCreateIWantToPlay';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
 
+type SendOption =
+  | 'broadcast'
+  | 'preferred'
+  | { type: 'group'; groupId: string; groupName: string; members: any[] }
+  | null;
 
 const IWantToPlayScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [location, setLocation] = useState('');
   const [message, setMessage] = useState('');
   const [locationError, setLocationError] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedSendTo, setSelectedSendTo] = useState<SendOption>(null);
+
   const { createIWantToPlay } = useCreateIWantToPlay();
+  const { getGroups, data: groupsData, status } = useGetGroupsByPhoneNumber();
 
-  const isValidLocation = (text: string) => {
-    return /^[a-zA-Z0-9]/.test(text);
-  };  
+  // fetch groups on mount
+  useEffect(() => {
+    if (user?.phoneNumber) {
+      getGroups({ phoneNumber: user.phoneNumber });
+    }
+  }, [user?.phoneNumber]);
 
-  const onBroadcastPress = async () => {
+  const isValidLocation = (text: string) => /^[a-zA-Z0-9]/.test(text);
+
+  const onSendPress = async () => {
     if (!location.trim() || !message.trim() || locationError) {
       Alert.alert('Invalid Input', 'Please fix all fields before submitting.');
       return;
     }
-  
-    try {
-      const response = await createIWantToPlay({
-        userId: user?.userId,
-        currentLocation: location,
-        message,
-        preferredPlayers: null,
-      });
-  
-      console.log('Broadcast successful', response);
-      Alert.alert('Success', 'Broadcast sent to all players.');
-      setMessage('');
-      setLocation('');
-      router.push('/(authenticated)/home');
-    } catch (error) {
-      console.error('Broadcast failed', error);
-      Alert.alert('Error', 'Failed to send broadcast.');
-    }
-  };
-  
-  const onPreferredPlayerPress = async () => {
-    if (!location.trim() || !message.trim() || locationError) {
-      Alert.alert('Invalid Input', 'Please fix all fields before submitting.');
-      return;
-    }
-  
-    const preferredPlayers = user?.playerDetails?.preferToPlayWith;
-  
-    if (!preferredPlayers || preferredPlayers.length === 0) {
-      router.push('/preferred-players');
-      return;
-    }
-  
-    try {
-      const response = await createIWantToPlay({
-        userId: user?.userId,
-        currentLocation: location,
-        message,
-        preferredPlayers: preferredPlayers,
-      });
 
-      console.log('Message Sent to preferred players successful', response);
-      Alert.alert('Message sent to preferred players Successfully');
+    try {
+      if (selectedSendTo === 'broadcast') {
+        // Broadcast to All
+        await createIWantToPlay({
+          userId: user?.userId,
+          currentLocation: location,
+          message,
+          preferredPlayers: null,
+        });
+        Alert.alert('Success', 'Broadcast sent to all players.');
+      } else if (selectedSendTo === 'preferred') {
+        // Preferred Players
+        const preferredPlayers = user?.playerDetails?.preferToPlayWith;
+        if (!preferredPlayers || preferredPlayers.length === 0) {
+          router.push('/preferred-players');
+          return;
+        }
+        await createIWantToPlay({
+          userId: user?.userId,
+          currentLocation: location,
+          message,
+          preferredPlayers,
+        });
+        Alert.alert('Success', 'Message sent to preferred players.');
+      } else if (selectedSendTo && selectedSendTo.type === 'group') {
+        // Group Selected
+        const groupMembers = selectedSendTo.members.map((m) => ({
+          userId: m.userId,
+          contactName: m.name,
+          contactPhoneNumber: m.phoneNumber,
+        }));
+
+        await createIWantToPlay({
+          userId: user?.userId,
+          currentLocation: location,
+          message,
+          preferredPlayers: groupMembers,
+        });
+
+        Alert.alert('Success', `Message sent to group: ${selectedSendTo.groupName}`);
+      } else {
+        Alert.alert('Select recipient', 'Please choose whom to send first.');
+        return;
+      }
+
+      // Reset
       setMessage('');
       setLocation('');
+      setSelectedSendTo(null);
       router.push('/(authenticated)/home');
     } catch (error) {
-      console.error('Error sending message to preferred players:', error);
+      console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message.');
     }
-  };  
-  
-  console.log('Sending to API:', {
-    userId: user?.userId,
-    currentLocation: location,
-    message,
-    preferredPlayers: user?.playerDetails?.preferToPlayWith || null,
-  });
+  };
+
+  // Dropdown display text
+  const getSelectedLabel = () => {
+    if (selectedSendTo === 'broadcast') return 'Broadcast to All';
+    if (selectedSendTo === 'preferred') return 'Preferred Players';
+    if (selectedSendTo && selectedSendTo.type === 'group')
+      return `Group: ${selectedSendTo.groupName}`;
+    return 'Select whom to send';
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={{ flex: 1 }}>
+          {/* HEADER */}
           <View style={styles.header}>
             <TouchableOpacity
-                onPress={() => router.replace('/(authenticated)/home')}
-                style={styles.backButton}
+              onPress={() => router.replace('/(authenticated)/home')}
+              style={styles.backButton}
             >
               <Ionicons name="arrow-back" size={24} color="#cce5e3" />
             </TouchableOpacity>
@@ -111,7 +135,9 @@ const IWantToPlayScreen = () => {
             <UserAvatar size={30} />
           </View>
 
+          {/* CARD */}
           <View style={styles.card}>
+            {/* LOCATION */}
             <Text style={styles.label}>Current Location</Text>
             <View style={styles.inputRow}>
               <TextInput
@@ -120,65 +146,120 @@ const IWantToPlayScreen = () => {
                 value={location}
                 onChangeText={(text) => {
                   setLocation(text);
-              
-                  if (!isValidLocation(text)) {
-                    setLocationError('invalid location entered');
-                  } else {
-                    setLocationError('');
-                  }
+                  if (!isValidLocation(text)) setLocationError('invalid location entered');
+                  else setLocationError('');
                 }}
-                style={[styles.input, {flex:1,}]}
+                style={[styles.input, { flex: 1 }]}
               />
-              <Ionicons name="location-outline" size={20} color="#000" style={{marginLeft: 8,}}/>
+              <Ionicons name="location-outline" size={20} color="#000" style={{ marginLeft: 8 }} />
             </View>
             {locationError !== '' && (
-                <Text style={{ color: 'red', margin: 4 }}>{locationError}</Text>
-              )}
+              <Text style={{ color: 'red', margin: 4 }}>{locationError}</Text>
+            )}
 
+            {/* MESSAGE */}
             <Text style={[styles.label, { marginTop: 20 }]}>Enter Message</Text>
-              <TextInput
-                placeholder="Enter Message"
-                placeholderTextColor="#999"
-                value={message}
-                onChangeText={(text) => {
-                  if (text.length <= 500) {
-                    setMessage(text);
-                  }
-                }}            
-                multiline
-                numberOfLines={4}
-                style={styles.messageInput}
-                textAlignVertical="top"
-                scrollEnabled={true}
-              />
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                {message.length >= 500 && (
-                  <Text style={{ color: 'red' }}>
-                    Message limit reached (500 characters)
-                  </Text>
-                )}
-                <Text style={{ color: '#999' }}>{message.length} / 500</Text>
-              </View>
-
-            <View style= {styles.buttonsContainer}>
-              <TouchableOpacity
-                onPress={onBroadcastPress}
-                style={[styles.button, {marginTop:20, backgroundColor: 'transparent',}]}
-              >
-                <Text style={[ styles.outlinedButtonText]}>
-                  Broadcast to All
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={onPreferredPlayerPress}
-                style={[styles.button, {backgroundColor: '#2F7C83',}]}
-              >
-                <Text style={[styles.filledButtonText]}>
-                  Preferred Player
-                </Text>
-              </TouchableOpacity>
+            <TextInput
+              placeholder="Enter Message"
+              placeholderTextColor="#999"
+              value={message}
+              onChangeText={(text) => {
+                if (text.length <= 500) setMessage(text);
+              }}
+              multiline
+              numberOfLines={4}
+              style={styles.messageInput}
+              textAlignVertical="top"
+              scrollEnabled
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+              {message.length >= 500 && (
+                <Text style={{ color: 'red' }}>Message limit reached (500 characters)</Text>
+              )}
+              <Text style={{ color: '#999' }}>{message.length} / 500</Text>
             </View>
+
+            {/* DROPDOWN */}
+            <Text style={[styles.label, { marginTop: 20 }]}>Send To</Text>
+            <View style={styles.dropdownWrapper}>
+              <TouchableOpacity
+                style={styles.dropdownInput}
+                activeOpacity={0.8}
+                onPress={() => setIsDropdownOpen((v) => !v)}
+              >
+                <Text style={{ color: selectedSendTo ? '#000' : '#999', fontSize: 14 }}>
+                  {getSelectedLabel()}
+                </Text>
+                <Ionicons
+                  name={isDropdownOpen ? 'chevron-up-outline' : 'chevron-down-outline'}
+                  size={18}
+                  color="#000"
+                />
+              </TouchableOpacity>
+
+              {isDropdownOpen && (
+                <View style={styles.dropdownList}>
+                  <ScrollView
+                    style={{ maxHeight: 250 }}
+                    nestedScrollEnabled={true}
+                  >
+                    {/* Built-in options */}
+                    <TouchableOpacity
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setSelectedSendTo('broadcast');
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>Broadcast to All</Text>
+                    </TouchableOpacity>
+                    <View style={styles.dropdownDivider} />
+
+                    <TouchableOpacity
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setSelectedSendTo('preferred');
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>Preferred Players</Text>
+                    </TouchableOpacity>
+
+                    {/* Groups from API */}
+                    {status === 'success' &&
+                      groupsData?.map((groupObj: any) => {
+                        const group = groupObj.group;
+                        return (
+                          <View key={group.id}>
+                            <View style={styles.dropdownDivider} />
+                            <TouchableOpacity
+                              style={styles.dropdownItem}
+                              onPress={() => {
+                                setSelectedSendTo({
+                                  type: 'group',
+                                  groupId: group.id,
+                                  groupName: group.name,
+                                  members: group.members,
+                                });
+                                setIsDropdownOpen(false);
+                              }}
+                            >
+                              <Text style={styles.dropdownItemText}>{group.name}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
+            {/* SEND BUTTON */}
+            {selectedSendTo && (
+              <TouchableOpacity onPress={onSendPress} style={styles.sendButton} activeOpacity={0.9}>
+                <Text style={styles.sendButtonText}>Send</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -186,51 +267,17 @@ const IWantToPlayScreen = () => {
   );
 };
 
-// Colors from the design
+// Styling same as before...
 const primaryColor = '#2F7C83';
 const white = '#fff';
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: primaryColor,
-    paddingTop: 25,
-  },
-  header: {
-    flexDirection: 'row',
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  backButton: {
-    paddingRight: 10,
-    paddingVertical: 5,
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  title: {
-    color: white,
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  subtitle: {
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  profilePicContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: white,
-  },
-  profilePic: {
-    width: '100%',
-    height: '100%',
-  },
+  container: { flex: 1, backgroundColor: primaryColor, paddingTop: 25 },
+  header: { flexDirection: 'row', paddingHorizontal: 15, paddingVertical: 15, alignItems: 'center' },
+  backButton: { paddingRight: 10, paddingVertical: 5 },
+  headerTextContainer: { flex: 1 },
+  title: { color: white, fontSize: 18, fontWeight: '600' },
+  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 4 },
   card: {
     flex: 1,
     backgroundColor: white,
@@ -238,13 +285,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 25,
     paddingTop: 25,
     paddingHorizontal: 20,
-    // paddingBottom: 40,
   },
-  label: {
-    fontSize: 14,
-    color: '#000',
-    fontWeight: '500',
-  },
+  label: { fontSize: 14, color: '#000', fontWeight: '500' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -255,11 +297,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 45,
   },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: '#000',
-  },
+  input: { flex: 1, fontSize: 14, color: '#000' },
   messageInput: {
     height: 300,
     borderColor: '#bbb',
@@ -271,36 +309,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000',
   },
-  buttonsContainer: { 
+  dropdownInput: {
+    height: 45,
+    borderColor: '#bbb',
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dropdownWrapper: {
+    position: 'relative',
+  },
+  dropdownList: {
     position: 'absolute',
-    bottom: 0,
+    top: 55,
     left: 0,
     right: 0,
-    paddingHorizontal: 12, 
-    paddingBottom: 4, 
-    paddingTop: 5, 
-    borderTopWidth: 1,
-    borderColor: '#eee',
-  },
-  button: {
+    maxHeight: 150,
+    borderColor: '#bbb',
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    zIndex: 1000, // keep above other content
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },  
+  dropdownItem: { paddingVertical: 12, paddingHorizontal: 12 },
+  dropdownItemText: { color: '#000', fontSize: 14 },
+  dropdownDivider: { height: 1, backgroundColor: '#eee' },
+  sendButton: {
     height: 45,
     borderRadius: 25,
-    borderColor: '#2F7C83',
-    borderWidth: 1,
-    marginBottom: 12,
+    backgroundColor: primaryColor,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 16,
   },
-  outlinedButtonText: {
-    color: '#2F7C83',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  filledButtonText: {
-    color: white,
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  sendButtonText: { color: white, fontSize: 14, fontWeight: '600' },
 });
 
 export default IWantToPlayScreen;
