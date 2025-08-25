@@ -2,7 +2,7 @@ import UserAvatar from '@/assets/UserAvatar';
 import { RootState } from '@/store';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   Alert,
@@ -24,8 +24,12 @@ import { useSelector } from 'react-redux';
 
 const AddPlace = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
+
+  // Get the source route from params
+  const source = params.source as string;
 
   // State management
   const [placeName, setPlaceName] = useState('');
@@ -114,7 +118,7 @@ const AddPlace = () => {
         Lighting: lightsAvailable ? 'Available' : 'Not Available',
         isRestRoomAvailable: restroom,
         isCarParkingAvailable: parking,
-        creatorId:userId,
+        creatorId: userId,
         isPrivate: isPrivate,
       },
     };
@@ -126,14 +130,27 @@ const AddPlace = () => {
       {
         text: 'OK',
         onPress: () => {
-          // Pass the place data back to the create event form
-          router.replace({
-            pathname: '/(authenticated)/create-event',
-            params: {
-              newPlace: JSON.stringify(placeData.allCourts),
-              placeName: placeData.allCourts.Name,
-            },
-          });
+          // Route back based on source
+          if (source === 'find-player') {
+            router.replace({
+              pathname: '/(authenticated)/find-player',
+              params: {
+                newPlace: JSON.stringify(placeData.allCourts),
+                placeName: placeData.allCourts.Name,
+              },
+            });
+          } else if (source === 'create-event') {
+            router.replace({
+              pathname: '/(authenticated)/create-event',
+              params: {
+                newPlace: JSON.stringify(placeData.allCourts),
+                placeName: placeData.allCourts.Name,
+              },
+            });
+          } else {
+            // Default fallback - go back
+            router.back();
+          }
         },
       },
     ]);
@@ -358,13 +375,15 @@ const AddPlace = () => {
           </View>
 
           <View style={styles.toggleRow}>
-          <Text style={styles.toggleLabel}>Is Private</Text>
-          <Switch value={isPrivate} onValueChange={setIsPrivate} color="#2C7E88" />
+            <Text style={styles.toggleLabel}>Is Private</Text>
+            <Switch
+              value={isPrivate}
+              onValueChange={setIsPrivate}
+              color='#2C7E88'
+            />
+          </View>
         </View>
 
-        </View>
-
-        
         {/* Submit Button */}
         <View style={styles.actionButtonContainer}>
           <Button

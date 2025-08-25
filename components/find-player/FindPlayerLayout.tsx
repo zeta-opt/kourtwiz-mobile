@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import * as Contacts from 'expo-contacts';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -30,7 +30,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Button, Dialog, Icon, Portal, Text } from 'react-native-paper';
+import {
+  Button,
+  Dialog,
+  Icon,
+  IconButton,
+  Portal,
+  Text,
+} from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PlayerCountDropdown from '../player-count/PlayerCountDropdown';
@@ -39,9 +46,41 @@ import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelec
 import ContactsModal from './contacts-modal/ContactsModal';
 import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
 
+// Define the PlaceToSave type based on the payload structure
+interface PlaceToSave {
+  id?: string;
+  netType: string;
+  noOfCourts: number;
+  openingTime: string;
+  closingTime: string;
+  isFree: boolean;
+  membership: string;
+  isRestRoomAvailable: boolean;
+  isCarParkingAvailable: boolean;
+  creatorId: string;
+  isPrivate: boolean;
+  geoLocation?: {
+    x: number;
+    y: number;
+    type: string;
+    coordinates: number[];
+  };
+  SN?: number;
+  Access?: string;
+  'Court Purpose'?: string;
+  'Court Type'?: string;
+  Latitude?: number;
+  Lighting: string;
+  Location: string;
+  Longitude?: number;
+  Name: string;
+  'Booking Link'?: string;
+}
+
 const FindPlayerLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const params = useLocalSearchParams();
 
   // Get user from Redux
   const { user } = useSelector((state: RootState) => state.auth);
@@ -61,6 +100,9 @@ const FindPlayerLayout = () => {
   const [conflictDialogVisible, setConflictDialogVisible] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  // Add state for placeToSave
+  const [placeToSave, setPlaceToSave] = useState<PlaceToSave | null>(null);
+
   // Add the hook for player finder
   const { requestPlayerFinder, status: finderStatus } =
     useRequestPlayerFinder();
@@ -68,7 +110,6 @@ const FindPlayerLayout = () => {
   const preferredContacts = useSelector(
     (state: RootState) => state.playerFinder.preferredContacts
   );
-  console.log(preferredContacts);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState<
     boolean | null
   >(null);
@@ -76,6 +117,38 @@ const FindPlayerLayout = () => {
   const { preferredPlaceModal } = useSelector((state: RootState) => state.ui);
   const { preferredPlayersModal } = useSelector((state: RootState) => state.ui);
   const { placeToPlay } = useSelector((state: RootState) => state.playerFinder);
+
+  // Handle data from AddPlace when returning
+  useEffect(() => {
+    if (params.newPlace && params.placeName) {
+      try {
+        const newPlaceData = JSON.parse(params.newPlace as string);
+
+        // Transform the data to match PlaceToSave structure
+        const transformedPlace: PlaceToSave = {
+          Name: newPlaceData.Name,
+          Location: newPlaceData.Location,
+          'Court Type': newPlaceData['Court Type'],
+          netType: newPlaceData.netType,
+          noOfCourts: newPlaceData.noOfCourts,
+          openingTime: newPlaceData.openingTime,
+          closingTime: newPlaceData.closingTime,
+          isFree: newPlaceData.isFree,
+          membership: newPlaceData.membership,
+          Lighting: newPlaceData.Lighting,
+          isRestRoomAvailable: newPlaceData.isRestRoomAvailable,
+          isCarParkingAvailable: newPlaceData.isCarParkingAvailable,
+          creatorId: newPlaceData.creatorId,
+          isPrivate: newPlaceData.isPrivate,
+        };
+
+        setPlaceToSave(transformedPlace);
+        setClubName(params.placeName as string);
+      } catch (error) {
+        console.error('Error parsing new place data:', error);
+      }
+    }
+  }, [params.newPlace, params.placeName]);
 
   // Check location permission status on mount
   useEffect(() => {
@@ -120,6 +193,13 @@ const FindPlayerLayout = () => {
       setLocationPermissionGranted(true);
       dispatch(openPreferredPlaceModal());
     }
+  };
+
+  const handleAddPlace = () => {
+    router.push({
+      pathname: '/(authenticated)/add-place',
+      params: { source: 'find-player' },
+    });
   };
 
   const showPreferredPlayers = () => {
@@ -199,9 +279,11 @@ const FindPlayerLayout = () => {
     // You can implement functionality here when needed
   };
 
-  // Add the handleSubmit function
   const handleSubmit = async () => {
-    if (!placeToPlay) {
+    // Determine the place to play - either from AddPlace or from preferred places
+    const finalPlaceToPlay = placeToSave ? placeToSave.Name : placeToPlay;
+
+    if (!finalPlaceToPlay) {
       Alert.alert('Missing Information', 'Please select a place to play.');
       return;
     }
@@ -226,30 +308,30 @@ const FindPlayerLayout = () => {
       finalEndTime = new Date(playTime.getTime() + 2 * 60 * 60 * 1000);
     }
 
-    console.log({
-      requestorId: userId,
-      placeToPlay,
-      playTime: toLocalISOString(playTime),
-      playEndTime: toLocalISOString(finalEndTime),
-      playersNeeded: playerCount,
-      skillRating: skillLevel,
-      preferredContacts,
-    });
-    requestPlayerFinder({
+    const requestData = {
       finderData: {
         eventName,
         requestorId: userId,
-        placeToPlay,
+        placeToPlay: finalPlaceToPlay,
         playTime: toLocalISOString(playTime),
         playEndTime: toLocalISOString(finalEndTime),
         playersNeeded: playerCount,
         skillRating: skillLevel,
         preferredContacts,
       },
+      // Include placeToSave if it exists (from AddPlace)
+      ...(placeToSave && { placeToSave }),
+    };
+
+    console.log('Request Data:', requestData);
+
+    requestPlayerFinder({
+      finderData: requestData.finderData,
+      placeToSave: requestData.placeToSave,
       callbacks: {
         onSuccess: () => {
           dispatch(resetPlayerFinderData());
-          dispatch(triggerInvitationsRefetch()); // Add this line
+          dispatch(triggerInvitationsRefetch());
           setSubmitted(true);
 
           // Show success message
@@ -267,9 +349,11 @@ const FindPlayerLayout = () => {
                   setSkillLevel(user?.playerDetails?.personalRating ?? 3);
                   setPlayerCount(1);
                   setSubmitted(false);
+                  setPlaceToSave(null);
+                  setClubName('');
 
                   setTimeout(() => {
-                    router.back();
+                    router.replace('/(authenticated)/home');
                   }, 100);
                 },
               },
@@ -282,6 +366,7 @@ const FindPlayerLayout = () => {
       },
     });
   };
+
   const sliderWidth = useRef(0);
   const animatedValue = useRef(new Animated.Value(skillLevel)).current;
   const [sliderPos, setSliderPos] = useState(0);
@@ -331,13 +416,21 @@ const FindPlayerLayout = () => {
           >
             <View style={styles.buttonContent}>
               <Text style={styles.buttonText} numberOfLines={1}>
-                {placeToPlay || 'Enter Place Name'}
+                {clubName || placeToPlay || 'Enter Place Name'}
               </Text>
               <View style={styles.iconContainer}>
                 <Icon source='chevron-down' size={20} />
               </View>
             </View>
           </Button>
+
+          <IconButton
+            icon='plus'
+            size={24}
+            iconColor='white'
+            onPress={handleAddPlace}
+            style={styles.disabledPlus}
+          />
 
           <PreferredPlacesModal
             visible={preferredPlaceModal}
@@ -557,7 +650,7 @@ const styles = StyleSheet.create({
   },
   disabledPlus: {
     backgroundColor: '#2C7E88',
-    marginTop: 8,
+    marginTop: 0,
     borderRadius: 8,
     opacity: 1,
   },

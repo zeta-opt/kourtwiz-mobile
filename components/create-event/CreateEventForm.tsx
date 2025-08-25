@@ -43,8 +43,8 @@ import PreferredPlacesModal from '../find-player/preferred-places-modal/Preferre
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
-import StatusModal from './components/StatusModal';
 import RepeatPicker from './components/RepeatPicker';
+import StatusModal from './components/StatusModal';
 
 const CreateEventForm = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -114,7 +114,7 @@ const CreateEventForm = () => {
     date: false,
     startTime: false,
     endTime: false,
-    repeat : false,
+    repeat: false,
     repeatEndDate: false,
   });
 
@@ -162,10 +162,10 @@ const CreateEventForm = () => {
       eventName: false,
       placeToPlay: false,
       date: false,
-      maxPlayers :false,
+      maxPlayers: false,
       startTime: false,
       endTime: false,
-      repeat:false,
+      repeat: false,
       repeatEndDate: false,
     });
   };
@@ -325,7 +325,10 @@ const CreateEventForm = () => {
   };
 
   const handleAddPlace = () => {
-    router.push('/(authenticated)/add-place');
+    router.push({
+      pathname: '/(authenticated)/add-place',
+      params: { source: 'create-event' },
+    });
   };
 
   const handleCustomApply = () => {
@@ -524,7 +527,7 @@ const CreateEventForm = () => {
             <TextInput
               style={[
                 styles.input,
-                errors.eventName && { borderColor: 'red', borderWidth: 1 }
+                errors.eventName && { borderColor: 'red', borderWidth: 1 },
               ]}
               placeholder='Enter Event Name'
               value={eventName}
@@ -541,7 +544,10 @@ const CreateEventForm = () => {
                 <TextInput
                   style={[
                     styles.input,
-                    errors.placeToPlay && { borderColor: 'red', borderWidth: 1 }
+                    errors.placeToPlay && {
+                      borderColor: 'red',
+                      borderWidth: 1,
+                    },
                   ]}
                   placeholder='Enter Place Name'
                   value={displayPlaceName}
@@ -581,13 +587,24 @@ const CreateEventForm = () => {
               errors={{
                 selectedDate: errors.date,
                 startTime: errors.startTime,
-                endTime: errors.endTime
+                endTime: errors.endTime,
               }}
             />
 
             <Text style={styles.label}>Repeat Event *</Text>
-            <View style={[errors.repeat && { borderColor: 'red', borderWidth: 1, borderRadius: 5 }]}>
-              <RepeatPicker repeat={repeat} handleRepeatChange={handleRepeatChange} />
+            <View
+              style={[
+                errors.repeat && {
+                  borderColor: 'red',
+                  borderWidth: 1,
+                  borderRadius: 5,
+                },
+              ]}
+            >
+              <RepeatPicker
+                repeat={repeat}
+                handleRepeatChange={handleRepeatChange}
+              />
             </View>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Repeat End Date *</Text>
@@ -598,7 +615,10 @@ const CreateEventForm = () => {
                   styles.roundedButton,
                   styles.whiteButton,
                   styles.blackBorder,
-                  errors.repeatEndDate && { borderColor: 'red', borderWidth: 1 }
+                  errors.repeatEndDate && {
+                    borderColor: 'red',
+                    borderWidth: 1,
+                  },
                 ]}
                 onPress={() => setShowRepeatEndDatePicker(true)}
                 contentStyle={styles.fullWidth}
@@ -619,11 +639,9 @@ const CreateEventForm = () => {
                     size={20}
                     color={repeatEndDate ? '#000' : '#9F9F9F'}
                   />
-
                 </View>
               </Button>
             </View>
-
 
             {showRepeatEndDatePicker && (
               <DateTimePickerModal
@@ -685,14 +703,13 @@ const CreateEventForm = () => {
                 <TextInput
                   style={[
                     styles.input,
-                    errors.maxPlayers && { borderColor: 'red', borderWidth: 1 }
+                    errors.maxPlayers && { borderColor: 'red', borderWidth: 1 },
                   ]}
                   placeholder='Enter Max Players'
                   value={maxPlayers}
                   onChangeText={setMaxPlayers}
                   keyboardType='numeric'
                 />
-
               </View>
             </View>
 
