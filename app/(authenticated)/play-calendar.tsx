@@ -299,6 +299,7 @@ export default function PlayCalendarPage() {
 
           <FlatList
             data={mergedEvents}
+            style={styles.smc}
             keyExtractor={(item, index) => `${item.id || item.requestId}-${index}`}
             ListEmptyComponent={
               <Text style={styles.noEvents}>No confirmed events for this date</Text>
@@ -444,6 +445,10 @@ const styles = StyleSheet.create({
     color: '#0077cc',
     fontWeight: '500',
   },
+  smc:{
+    padding:10,
+  },
+  
   calendar: {
     borderRadius: 12,
     margin: 16,
