@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { useSelector } from 'react-redux';
@@ -42,11 +42,11 @@ export default function PlayCalendarPage() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const [selectedDate, setSelectedDate] = useState<string>(today);
 
-  const { data: eventsForSelectedDate } = useGetPlayerEventsByDate(selectedDate, userId);
+  const { data: eventsForSelectedDate, refetch  } = useGetPlayerEventsByDate(selectedDate, userId);
   const { data: schedule } = useGetPlayerSchedule(userId);
   const { data: initiatedData } = useGetInitiatedPlays(userId);
 
-  const { cancelInvitation, status: cancelStatus, error: cancelerror } = useCancelInvitation();
+  const { cancelInvitation, status: cancelStatus, error:cancelerror } = useCancelInvitation(refetch);
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -58,21 +58,53 @@ export default function PlayCalendarPage() {
   const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
 
-  // Filter initiated plays by selectedDate
- // Updated initiated plays filter - filter before map
-const initiatedPlaysForSelectedDate = (initiatedData ?? [])
-  .filter(e => Array.isArray(e.startTime) && isSameDay(e.startTime, selectedDate))
-  .map(e => ({
-    ...e,
-    type: "available",
-    start: parseArrayToDate(e.startTime),
-    end: e.durationMinutes
-      ? new Date(parseArrayToDate(e.startTime).getTime() + e.durationMinutes * 60000)
-      : null,
-  }));
+  // fetch accepted/total counts for all invites
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!eventsForSelectedDate) return;
+      const newCounts: { [key: string]: { accepted: number; total: number } } = {};
 
-console.log('eventsForSelectedDate:', eventsForSelectedDate);
-console.log('initiatedPlaysForSelectedDate:', initiatedPlaysForSelectedDate);
+      const allRequests = [
+        ...(eventsForSelectedDate.incomingPlayerFinderRequests ?? []),
+        ...(eventsForSelectedDate.initiatedPlayerFinderRequests ?? []),
+      ];
+
+      for (const req of allRequests) {
+        try {
+          const token = await getToken();
+          const res = await axios.get(
+            `${API_URL}/api/player-tracker/tracker/request`,
+            {
+              params: { requestId: req.requestId },
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          const total = res.data[0]?.playersNeeded + 1 || 1;
+          const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length + 1;
+          newCounts[req.requestId] = { accepted, total };
+        } catch (error) {
+          newCounts[req.requestId] = { accepted: 0, total: 1 };
+        }
+      }
+
+      setPlayerCounts(newCounts);
+    };
+
+    fetchCounts();
+  }, [eventsForSelectedDate]);
+
+  // Filter initiated plays by selectedDate
+  const initiatedPlaysForSelectedDate = (initiatedData ?? [])
+    .filter(e => Array.isArray(e.startTime) && isSameDay(e.startTime, selectedDate))
+    .map(e => ({
+      ...e,
+      type: "available",
+      start: parseArrayToDate(e.startTime),
+      end: e.durationMinutes
+        ? new Date(parseArrayToDate(e.startTime).getTime() + e.durationMinutes * 60000)
+        : null,
+    }));
+
   // Filter available events
   const availableEventsForSelectedDate = (eventsForSelectedDate?.eventsAvailable ?? [])
     .map(e => ({
@@ -93,14 +125,19 @@ console.log('initiatedPlaysForSelectedDate:', initiatedPlaysForSelectedDate);
   );
 
   const outgoingRequests = uniqueInitiatedPlayerFinderRequests
-    .filter(e => e.status !== "WITHDRAWN")
-    .map(e => ({
-      ...e,
-      type: "outgoing",
-      start: parseArrayToDate(e.playTime),
-      end: parseArrayToDate(e.playEndTime),
-    }))
-    .filter(e => isSameDay(e.playTime, selectedDate));
+  .filter(e => e.status !== "WITHDRAWN")
+  .map(e => ({
+    ...e,
+    type: "outgoing",
+    start: e.start || parseArrayToDate(e.playTime),
+    end: e.end || parseArrayToDate(e.playEndTime),
+    accepted: Math.max((playerCounts[e.requestId]?.accepted ?? 1) - 1, 0),
+    totalPlayers: playerCounts[e.requestId]?.total ?? e.playersNeeded ?? 1,
+    dateTimeMs: e.start ? e.start.getTime() : (parseArrayToDate(e.playTime)?.getTime() || 0),
+  }))
+  .filter(e => isSameDay(e.playTime, selectedDate));
+
+
 
   const incomingRequests = (eventsForSelectedDate?.incomingPlayerFinderRequests ?? [])
     .map(e => ({
@@ -108,17 +145,18 @@ console.log('initiatedPlaysForSelectedDate:', initiatedPlaysForSelectedDate);
       type: "incoming",
       start: parseArrayToDate(e.playTime),
       end: parseArrayToDate(e.playEndTime),
+      accepted: playerCounts[e.requestId]?.accepted ?? 0,
+      totalPlayers: playerCounts[e.requestId]?.total ?? 1,
     }))
     .filter(e => isSameDay(e.playTime, selectedDate));
-
+    
   // Merge all events
   const mergedEvents = [
     ...availableEventsForSelectedDate,
     ...incomingRequests,
     ...outgoingRequests,
-    //  ...initiatedPlaysForSelectedDate,
+    ...initiatedPlaysForSelectedDate,
   ];
-  console.log('Merged Events:', mergedEvents);
 
   // Calendar marking logic
   const markedDates = useMemo(() => {
@@ -131,7 +169,6 @@ console.log('initiatedPlaysForSelectedDate:', initiatedPlaysForSelectedDate);
         ...(schedule?.initiatedPlayerFinderRequests ?? []).map(e => ({ ...e, type: "initiatedPlayerFinder" })),
       ];
       allEvents.forEach(event => {
-        // Use startTime or playTime accordingly
         const dateArr = event.startTime ?? event.playTime;
         if (!dateArr) return;
         const date = format(parseArrayToDate(dateArr), "yyyy-MM-dd");
@@ -198,6 +235,7 @@ console.log('initiatedPlaysForSelectedDate:', initiatedPlaysForSelectedDate);
         const response = await fetch(url);
         if (response.status === 200) {
           Alert.alert('Success', `Invitation ${selectedAction}ed`);
+          await refetch();
         } else {
           const errorText = await response.text();
           Alert.alert('Error', errorText || `Failed to ${selectedAction} invitation.`);
@@ -275,29 +313,29 @@ console.log('initiatedPlaysForSelectedDate:', initiatedPlaysForSelectedDate);
                     onReject={() => showCommentDialog(item, 'reject')}
                     onCancel={() => showCommentDialog(item, 'cancel')}
                     loading={loadingId === item.id}
-                    totalPlayers={playerCounts[item.requestId]?.total ?? 1}
-                    acceptedPlayers={playerCounts[item.requestId]?.accepted ?? 0}
+                    totalPlayers={item.totalPlayers}
+                    acceptedPlayers={item.accepted}
                     onViewPlayers={() => handleViewPlayers(item.requestId)}
                   />
                 );
               } else if (item.type === "outgoing") {
+                console.log('Rendering outgoing invite:', item);
                 return (
                   <OutgoingInviteCardItem
                     key={item.requestId}
                     invite={item}
+                    // totalPlayers={item.totalPlayers}
+                    // acceptedPlayers={item.accepted}
                     onViewPlayers={() => handleViewPlayers(item.requestId)}
                   />
                 );
               } else if (item.type === "available") {
-                console.log('Rendering OpenPlayCard for item:', item);
                 return (
                   <OpenPlayCard
                     data={[item]}
                     refetch={() => { }}
                   />
-                  
                 );
-                
               } else {
                 return (
                   <View style={styles.eventCard}>

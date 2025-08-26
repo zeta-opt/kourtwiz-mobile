@@ -272,7 +272,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
 
       console.log('Initiated plays new entries count:', extra.length);
 
-      allPlays = [...allPlays, ...extra];
+      allPlays = [...allPlays];
     }
 
     const courtMap: Record<string, string> = {};
