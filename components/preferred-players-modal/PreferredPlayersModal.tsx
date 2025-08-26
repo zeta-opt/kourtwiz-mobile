@@ -2,6 +2,7 @@ import { useGetRegisteredPlayers } from '@/hooks/apis/player-finder/useGetRegist
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 import * as Contacts from 'expo-contacts';
 import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
+import CreateGroup, { Player } from '../groups/CreateGroup';
 import { RootState } from '@/store';
 import React, { useEffect, useState } from 'react';
 import {
@@ -18,12 +19,14 @@ import {
 import { Button, Checkbox, Searchbar, Chip } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSelector } from 'react-redux';
+import ContactsModal from '../find-player/contacts-modal/ContactsModal';
 
 export interface Contact {
   contactName: string;
   contactPhoneNumber: string;
 }
 
+/* PreferredPlayersModal props same as before */
 interface PreferredPlayersModalProps {
   visible: boolean;
   onClose: () => void;
@@ -48,61 +51,88 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [deviceContacts, setDeviceContacts] = useState<Contact[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
-  // Normalize numbers
-  const normalizePhoneNumber = (phone: string) => {
-    return phone.trim().replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '');
-  };
-  const [tempSelectedPlayers, setTempSelectedPlayers] = useState<Contact[]>([]);
-  const [tempSelectedGroupIds, setTempSelectedGroupIds] = useState<string[]>([]);
-  const [activeChip, setActiveChip] = useState<'selected' | 'registered' | 'preferred' | 'contacts' | 'groups'>('registered');
 
-  // Get user ID from Redux store
+  // CreateGroup + contacts states
+  const [modalVisible, setModalVisible] = useState(false); // CreateGroup modal
+  const [contactsModalVisible, setContactsModalVisible] = useState(false); // Contacts overlay
+  const [players, setPlayers] = useState<Player[]>([]); // players for CreateGroup
+  const [groupName, setGroupName] = useState('');
+
+  // Normalizers
+  const normalizePhoneNumber = (phone = '') =>
+    String(phone || '').trim().replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '');
+  const normalizeName = (n = '') => String(n || '').trim().toLowerCase();
+
+  const normalizeContact = (c: any): Contact => ({
+    contactName: c.contactName ?? c.name ?? '',
+    contactPhoneNumber: c.contactPhoneNumber ?? c.phoneNumber ?? '',
+  });
+
+  const [tempSelectedPlayers, setTempSelectedPlayers] = useState<Contact[]>([]);
+  const [tempSelectedGroupIds, setTempSelectedGroupIds] = useState<string[]>(
+    []
+  );
+  const [activeChip, setActiveChip] = useState<
+    'selected' | 'registered' | 'preferred' | 'contacts' | 'groups'
+  >('registered');
+
+  // Current user
   const user = useSelector((state: RootState) => state.auth?.user);
   const userId = useSelector((state: RootState) => state.auth?.user?.id || '');
   const currentUserPhone = normalizePhoneNumber(user?.phoneNumber || '');
-  const currentUserName = user?.name?.toLowerCase?.() || '';
-  const { getGroups, data: groupsData, status: groupsStatus } = useGetGroupsByPhoneNumber();
+  const currentUserName = normalizeName(user?.name || '');
+
+  const { getGroups, data: groupsData, status: groupsStatus, refetch } =
+    useGetGroupsByPhoneNumber();
 
   interface Group {
     id: string;
     groupName: string;
     members: { name?: string; phoneNumber?: string }[];
     membersCount: number;
-  }  
-  
+  }
+
+  /* --------- Load Device Contacts (exclude current user if name OR phone matches) --------- */
   const loadDeviceContacts = async () => {
     setLoadingContacts(true);
     try {
       const { status } = await Contacts.getPermissionsAsync();
-      if (status !== 'granted') return;
-  
+      if (status !== 'granted') {
+        setLoadingContacts(false);
+        return;
+      }
+
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
         sort: Contacts.SortTypes.FirstName,
       });
-  
-      const transformed: Contact[] = data
+
+      const transformed: Contact[] = (data || [])
         .filter((c) => c.name && c.phoneNumbers?.length)
         .map((c) => ({
           contactName: c.name,
           contactPhoneNumber: normalizePhoneNumber(
             c.phoneNumbers?.[0]?.number ?? c.id ?? ''
           ),
-        }));
-  
+        }))
+        .filter((c) => {
+          const nameMatches = normalizeName(c.contactName) === currentUserName;
+          const phoneMatches =
+            normalizePhoneNumber(c.contactPhoneNumber) === currentUserPhone;
+          // EXCLUDE if EITHER name or phone matches current user
+          return !(nameMatches || phoneMatches);
+        });
+
       setDeviceContacts(transformed);
     } catch (err) {
       console.error('Error loading contacts:', err);
     } finally {
       setLoadingContacts(false);
     }
-  };  
+  };
 
-  // Load on modal open
   useEffect(() => {
-    if (visible) {
-      loadDeviceContacts();
-    }
+    if (visible) loadDeviceContacts();
   }, [visible]);
 
   useEffect(() => {
@@ -111,26 +141,25 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     }
   }, [user?.phoneNumber]);
 
-  // Fetch full user details (we'll read preferToPlayWith from playerDetails)
+  // userDetails for preferred players
   const { data: userDetails, status: userStatus } = useGetUserDetails({
     userId,
     enabled: visible,
   });
 
-  // Fetch registered players
-  const {
-    data: registeredPlayers,
-    status: registeredStatus,
-  } = useGetRegisteredPlayers({
-    enabled: visible,
-  });
+  // registered players
+  const { data: registeredPlayers, status: registeredStatus } =
+    useGetRegisteredPlayers({ enabled: visible });
 
   useEffect(() => {
-    if (visible) {
-      setTempSelectedPlayers(selectedPlayers);
+    if (visible) setTempSelectedPlayers(selectedPlayers || []);
+    else {
+      setTempSelectedPlayers([]);
+      setTempSelectedGroupIds([]);
     }
   }, [visible, selectedPlayers]);
 
+  /* --------- Toggle single player (exclude current user if name OR phone matches) --------- */
   const handleTogglePlayer = (player: Contact) => {
     if (!player.contactPhoneNumber) return;
 
@@ -144,64 +173,79 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
       setTempSelectedPlayers((prev) =>
         prev.filter((p) => p.contactPhoneNumber !== player.contactPhoneNumber)
       );
-    } else {
-      setTempSelectedPlayers((prev) => [...prev, player]);
+      return;
     }
+
+    // Exclude current user if name OR phone matches
+    const nameMatch = normalizeName(player.contactName) === currentUserName;
+    const phoneMatch =
+      normalizePhoneNumber(player.contactPhoneNumber) === currentUserPhone;
+    if (nameMatch || phoneMatch) return;
+
+    setTempSelectedPlayers((prev) => [...prev, player]);
   };
 
+  /* --------- Save - final filter excludes current user (if name OR phone matches) --------- */
   const handleSave = () => {
-    onSelectPlayers(
-      tempSelectedPlayers.filter((p) => p.contactName !== user.name)
-    );
+    const filtered = tempSelectedPlayers.filter((p) => {
+      const nameMatches = normalizeName(p.contactName) === currentUserName;
+      const phoneMatches =
+        normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
+      return !(nameMatches || phoneMatches);
+    });
+
+    onSelectPlayers(filtered);
     onClose();
-  }; 
+  };
 
   const handleCancel = () => {
     setTempSelectedPlayers(selectedPlayers);
     onClose();
   };
 
-  const isPlayerSelected = (player: Contact) => {
-    return tempSelectedPlayers.some(
+  const isPlayerSelected = (player: Contact) =>
+    tempSelectedPlayers.some(
       (p) =>
         p.contactPhoneNumber === player.contactPhoneNumber &&
         p.contactName === player.contactName
     );
-  };
 
-  // Safely extract the preferToPlayWith array from userDetails
-  const preferToPlayWith = Array.isArray(userDetails?.playerDetails?.preferToPlayWith)
+  /* --------- Preferred players from API (normalize + exclude current user by name OR phone) --------- */
+  const preferToPlayWith = Array.isArray(
+    userDetails?.playerDetails?.preferToPlayWith
+  )
     ? userDetails.playerDetails.preferToPlayWith
     : [];
 
-  const preferredPlayersAsContacts: Contact[] = preferToPlayWith.map(
-    (player: any, index: number) => {
+  const preferredPlayersAsContacts: Contact[] = preferToPlayWith
+    .map((player: any, index: number) => {
       const name = player?.contactName || player?.name || `Preferred ${index + 1}`;
       const phone = normalizePhoneNumber(
         player?.contactPhoneNumber || player?.phoneNumber || `preferred-${index}`
       );
       return { contactName: String(name), contactPhoneNumber: String(phone) };
-    }
-  );
-
-  // Convert registered players to Contact objects
-  const registeredPlayersAsContacts: Contact[] = (registeredPlayers || []).map(
-    (player) => ({
-      contactName: player.name || '',
-      contactPhoneNumber:
-        player.phoneNumber || player.id || `registered-${player.id}`,
     })
-  );
+    .filter((p) => {
+      const nameMatches = normalizeName(p.contactName) === currentUserName;
+      const phoneMatches = normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
+      // exclude if name OR phone matches current user
+      return !(nameMatches || phoneMatches);
+    });
 
-  useEffect(() => {
-    if (visible) {
-      setTempSelectedPlayers(selectedPlayers);
-    } else {
-      setTempSelectedPlayers([]);
-      setTempSelectedGroupIds([]);
-    }
-  }, [visible, selectedPlayers]); 
+  /* --------- Registered players (normalize + exclude current user by OR) --------- */
+  const registeredPlayersAsContacts: Contact[] = (registeredPlayers || [])
+    .map((player) => ({
+      contactName: player?.name || '',
+      contactPhoneNumber:
+        player?.phoneNumber || player?.id || `registered-${player?.id}`,
+    }))
+    .filter((p) => {
+      const nameMatches = normalizeName(p.contactName) === currentUserName;
+      const phoneMatches = normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
+      return !(nameMatches || phoneMatches);
+    });
 
+  /* --------- Searching and filtering ---------- */
   const q = searchQuery.trim().toLowerCase();
 
   const filteredPreferredPlayers = preferredPlayersAsContacts.filter((p) => {
@@ -220,8 +264,9 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     const name = c.contactName?.toLowerCase() ?? '';
     const phone = (c.contactPhoneNumber ?? '').toLowerCase();
     return name.includes(q) || phone.includes(q);
-  }); 
+  });
 
+  /* --------- Groups (normalized mapping) ---------- */
   const normalizedGroups: Group[] = (groupsData || []).map((item: any, i: number) => {
     const group = item.group ?? {};
     return {
@@ -230,72 +275,80 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
       members: Array.isArray(group.members) ? group.members : [],
       membersCount: Array.isArray(group.members) ? group.members.length : 0,
     };
-  });  
-  
-  const filteredGroups = normalizedGroups.filter((g) =>
-    (g.groupName || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );  
+  });
 
-  // Combine and filter all players
+  const filteredGroups = normalizedGroups.filter((g) =>
+    (g.groupName || '').toLowerCase().includes(q)
+  );
+
   const anyFiltered =
     filteredRegisteredPlayers.length > 0 ||
     filteredPreferredPlayers.length > 0 ||
     filteredContacts.length > 0 ||
     filteredGroups.length > 0;
 
-
+  /* --------- Group add/remove: exclude current user by OR; de-dupe using normalized keys ---------- */
   const isGroupSelected = (group: Group) => tempSelectedGroupIds.includes(group.id);
 
   const handleToggleGroup = (group: Group) => {
     if (!group?.id) return;
-  
+
     const isAlreadySelected = tempSelectedGroupIds.includes(group.id);
-  
+
     if (isAlreadySelected) {
-      // Remove group ID
+      // remove group id
       setTempSelectedGroupIds((prev) => prev.filter((id) => id !== group.id));
-  
-      // Remove group members from selected players
+
+      // remove any players that match this group's members (match by name OR phone)
       setTempSelectedPlayers((prev) =>
         prev.filter(
           (p) =>
-            !group.members.some(
-              (m) =>
-                m.phoneNumber === p.contactPhoneNumber &&
-                m.name === p.contactName
-            )
+            !group.members.some((m) => {
+              const pmPhone = normalizePhoneNumber(m.phoneNumber || '');
+              const pmName = normalizeName(m.name || '');
+              const pPhone = normalizePhoneNumber(p.contactPhoneNumber || '');
+              const pName = normalizeName(p.contactName || '');
+              return pmPhone === pPhone || pmName === pName;
+            })
         )
       );
-    } else {
-      // Add group ID
-      setTempSelectedGroupIds((prev) => [...prev, group.id]);
-  
-      // ✅ Normalize members to Contact[], but skip current user
-      const incoming: Contact[] = group.members
-        .filter((m) => m.name !== user?.username) // exclude current user
-        .map((m) => ({
-          contactName: m.name || "Unknown",
-          contactPhoneNumber: m.phoneNumber || "",
-        }));
-  
-      // De-dupe based on phoneNumber + name
-      setTempSelectedPlayers((prev) => {
-        const seen = new Set(
-          prev.map((p) => p.contactPhoneNumber || p.contactName)
-        );
-        return [
-          ...prev,
-          ...incoming.filter((p) => {
-            const key = p.contactPhoneNumber || p.contactName;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          }),
-        ];
-      });
+      return;
     }
-  };    
 
+    // Add group
+    setTempSelectedGroupIds((prev) => [...prev, group.id]);
+
+    // incoming contacts from group; exclude current user if name OR phone matches
+    const incoming: Contact[] = (group.members || [])
+      .map((m) => ({
+        contactName: m.name || 'Unknown',
+        contactPhoneNumber: m.phoneNumber || '',
+      }))
+      .filter((p) => {
+        const nameMatches = normalizeName(p.contactName) === currentUserName;
+        const phoneMatches = normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
+        return !(nameMatches || phoneMatches);
+      });
+
+    // de-dupe using normalized composite key
+    setTempSelectedPlayers((prev) => {
+      const seen = new Set(
+        prev.map((p) => `${normalizePhoneNumber(p.contactPhoneNumber)}|${normalizeName(p.contactName)}`)
+      );
+
+      return [
+        ...prev,
+        ...incoming.filter((p) => {
+          const key = `${normalizePhoneNumber(p.contactPhoneNumber)}|${normalizeName(p.contactName)}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }),
+      ];
+    });
+  };
+
+  // Render helpers (unchanged style)
   const renderPlayer = (player: Contact, index: number, source?: string) => (
     <TouchableOpacity
       key={`${player.contactPhoneNumber || index}-${index}`}
@@ -317,7 +370,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
         color="#2C7E88"
       />
     </TouchableOpacity>
-  );  
+  );
 
   const renderGroup = (group: Group, index: number) => (
     <TouchableOpacity
@@ -340,18 +393,21 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
         color="#2C7E88"
       />
     </TouchableOpacity>
-  );  
-  
+  );
+    
   const isLoading = userStatus === 'loading' || registeredStatus === 'loading';
   const hasError = userStatus === 'error' || registeredStatus === 'error';
 
+  /* ---------- RENDER ---------- */
   return (
+    <>
+    {/* Preferred Players top-level modal */}
     <Modal
-      animationType='slide'
+      animationType="slide"
       transparent={false}
       visible={visible}
       onRequestClose={handleCancel}
-      presentationStyle='fullScreen'
+      presentationStyle="fullScreen"
     >
       <SafeAreaView style={styles.container}>
         {/* Header */}
@@ -438,7 +494,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
                   <View style={styles.section}>
                     <RNText style={styles.sectionTitle}>SELECTED PLAYERS</RNText>
                     {tempSelectedPlayers.map((player, index) =>
-                      renderPlayer(player, index, 'selected')
+                      renderPlayer(player, index)
                     )}
                   </View>
                 ) : (
@@ -505,24 +561,95 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
 
         {/* Footer */}
         <View style={styles.footer}>
-          <View style={styles.selectedInfo}>
-            <RNText style={styles.selectedCount}>
-              {tempSelectedPlayers.length} player
-              {tempSelectedPlayers.length !== 1 ? 's' : ''} selected
-            </RNText>
+            <View style={styles.selectedInfo}>
+              <RNText style={styles.selectedCount}>
+                {tempSelectedPlayers.length} player
+                {tempSelectedPlayers.length !== 1 ? 's' : ''} selected
+              </RNText>
+            </View>
+
+            {/* Open CreateGroup modal (keeps this PreferredPlayersModal open) */}
+            <Button
+              mode="contained"
+              onPress={() => setModalVisible(true)}
+              style={styles.groupButton}
+              labelStyle={styles.groupButtonLabel}
+              contentStyle={styles.groupButtonContent}
+            >
+              Create New Group
+            </Button>
+
+            <Button
+              mode="contained"
+              onPress={handleSave}
+              style={styles.addButton}
+              labelStyle={styles.addButtonLabel}
+              contentStyle={styles.addButtonContent}
+            >
+              Add Players
+            </Button>
           </View>
-          <Button
-            mode='contained'
-            onPress={handleSave}
-            style={styles.addButton}
-            labelStyle={styles.addButtonLabel}
-            contentStyle={styles.addButtonContent}
-          >
-            Add Players
-          </Button>
-        </View>
-      </SafeAreaView>
-    </Modal>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Create Group modal — rendered outside the top-level PreferredPlayersModal modal */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+        presentationStyle="fullScreen"
+      >
+        <CreateGroup
+          onClose={() => {
+            setModalVisible(false);
+          }}
+          // IMPORTANT: do NOT close CreateGroup when opening contacts.
+          onAddPlayers={() => {
+            setModalVisible(false);
+            onClose();
+            setContactsModalVisible(true);
+          }}
+          groupName={groupName}
+          setGroupName={setGroupName}
+          players={players}
+          setPlayers={setPlayers}
+          onGroupCreated={() => {
+            // after group create, refetch and close create modal
+            refetch?.();
+            setModalVisible(false);
+          }}
+        />
+      </Modal>
+
+      {/* Contacts modal — rendered outside both modals */}
+      <ContactsModal
+        visible={contactsModalVisible}
+        onClose={() => {
+          // simply close contacts modal and return to CreateGroup
+          setContactsModalVisible(false);
+          setModalVisible(true);
+        }}
+        onSelectContacts={(selected) => {
+          const normalized = selected.map(normalizeContact);
+
+          // setPlayers for CreateGroup only (no parent selectedPlayers)
+          setPlayers(
+            normalized.map((p, index) => ({
+              id: `${p.contactPhoneNumber}-${index}`,
+              name: p.contactName,
+              phoneNumber: p.contactPhoneNumber,
+            }))
+          );
+
+          setContactsModalVisible(false);
+          setModalVisible(true);
+        }}
+        selectedContacts={players.map((player) => ({
+          contactName: player.name,
+          contactPhoneNumber: player.phoneNumber,
+        }))}
+      />
+    </>
   );
 };
 
@@ -696,16 +823,31 @@ const styles = StyleSheet.create({
   activeChipText: {
     color: '#fff',
   },  
-  addButton: {
-    borderRadius: 8,
+  groupButton: {
+    borderRadius: 30,
     backgroundColor: '#2C7E88',
+  },
+  groupButtonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  groupButtonContent: {
+    paddingVertical: 4,
+  },
+  addButton: {
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#2C7E88',
   },
   addButtonLabel: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#2C7E88',
   },
   addButtonContent: {
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
 });
 
