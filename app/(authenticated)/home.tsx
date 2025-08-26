@@ -35,7 +35,8 @@ import {
   Portal,
   TextInput,
 } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux'; // ADD useDispatch
+import { useDispatch, useSelector } from 'react-redux';
+import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite'; // NEW
 
 const API_URL = 'http://44.216.113.234:8080';
 
@@ -57,9 +58,11 @@ const Dashboard = () => {
   const router = useRouter();
   const isFocused = useIsFocused();
 
+
   const { data: invites, refetch } = useGetInvitations({
     userId: user?.userId,
   });
+    const { cancelInvitation, status: cancelStatus, error:cancelerror } = useCancelInvitation(refetch);
   const { data: outgoingInvitesRaw, refetch: refetchOutgoing } =
     useGetPlayerInvitationSent({
       inviteeEmail: user?.email,
@@ -70,9 +73,6 @@ const Dashboard = () => {
   const { data: openPlayInvites, refetch:refetchOpenPlay } = useGetPlays('GLOBAL',userId);
   const { data: initiatedPlays } = useGetInitiatedPlays(userId);
 
-  // console.log('Open Play Invites:', openPlayInvites);
-
-  // ADD THIS LINE - Get the refetch trigger from Redux
   const shouldRefetchInvitations = useSelector(
     (state: RootState) => state.refetch.shouldRefetchInvitations
   );
@@ -85,7 +85,7 @@ const Dashboard = () => {
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
   const [selectedAction, setSelectedAction] = useState<
-    'accept' | 'reject' | null
+    'accept' | 'reject' | 'cancel' | null
   >(null);
 
   const [playerCounts, setPlayerCounts] = useState<{
@@ -190,6 +190,7 @@ const Dashboard = () => {
       };
     }),
   ];
+
   useEffect(() => {
     if (isFocused) {
       refetchOpenPlay();
@@ -214,7 +215,6 @@ const Dashboard = () => {
     loadUser();
   }, []);
 
-  // ADD THIS useEffect - This handles the refetch when triggered from FindPlayerLayout
   useEffect(() => {
     if (shouldRefetchInvitations) {
       refetchOutgoing();
@@ -224,8 +224,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchCounts = async () => {
-      const newCounts: { [key: string]: { accepted: number; total: number } } =
-        {};
+      const newCounts: { [key: string]: { accepted: number; total: number } } = {};
       for (const invite of allInvites) {
         try {
           const token = await getToken();
@@ -254,40 +253,50 @@ const Dashboard = () => {
     }
   }, [allInvites]);
 
-  const showCommentDialog = (invite: Invite, action: 'accept' | 'reject') => {
+  // updated for cancel
+  const showCommentDialog = (invite: Invite, action: 'accept' | 'reject' | 'cancel') => {
     setSelectedInvite(invite);
     setSelectedAction(action);
     setDialogVisible(true);
     setComment('');
   };
 
+  // updated for cancel
   const handleDialogSubmit = async () => {
     if (!selectedInvite || !selectedAction) return;
-
     try {
       setLoadingId(selectedInvite.id);
-      const baseUrl =
-        selectedAction === 'accept'
-          ? selectedInvite.acceptUrl
-          : selectedInvite.declineUrl;
-      const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
-      const response = await fetch(url);
-      if (response.status === 200) {
-        Alert.alert('Success', `Invitation ${selectedAction}ed`);
+      if (selectedAction === 'accept' || selectedAction === 'reject') {
+        const baseUrl =
+          selectedAction === 'accept'
+            ? selectedInvite.acceptUrl
+            : selectedInvite.declineUrl;
+        const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
+        const response = await fetch(url);
+        if (response.status === 200) {
+          Alert.alert('Success', `Invitation ${selectedAction}ed`);
+          refetch();
+        } else {
+          const errorText = await response.text();
+          Alert.alert(
+            'Error',
+            errorText || `Failed to ${selectedAction} invitation.`
+          );
+        }
+      } else if (selectedAction === 'cancel') {
+         const ok = await cancelInvitation(selectedInvite.requestId, userId, comment || '');
+        
+        if (ok) { 
+        Alert.alert('Success', 'Invitation cancelled');
         refetch();
+        
       } else {
-        const errorText = await response.text();
-        console.log('Error response:', errorText);
-        Alert.alert(
-          'Error',
-          `Failed to ${selectedAction} invitation. You may have another event at the same time.`
-        );
+        Alert.alert('Error', cancelerror || 'Failed to cancel invitation');
+      }
+        refetch();
       }
     } catch (e) {
-      Alert.alert(
-        'Error',
-        `Something went wrong while trying to ${selectedAction}`
-      );
+      Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
     } finally {
       setLoadingId(null);
       setDialogVisible(false);
@@ -305,7 +314,6 @@ const Dashboard = () => {
         }
       );
       setSelectedPlayers(res.data);
-      //  console.log('Selected Players:', res.data);
       setPlayerDetailsVisible(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch player details');
@@ -379,7 +387,6 @@ const Dashboard = () => {
                 </TouchableOpacity>
               ) : null}
             </View>
-
             <LinearGradient
               colors={['#E0F7FA', '#FFFFFF']}
               style={styles.inviteScrollContainer}
@@ -407,6 +414,7 @@ const Dashboard = () => {
                           invite={invite}
                           onAccept={() => showCommentDialog(invite, 'accept')}
                           onReject={() => showCommentDialog(invite, 'reject')}
+                          onCancel={() => showCommentDialog(invite, 'cancel')} // NEW
                           loading={loadingId === invite.id}
                           totalPlayers={
                             playerCounts[invite.requestId]?.total ?? 1
@@ -481,10 +489,15 @@ const Dashboard = () => {
               visible={dialogVisible}
               onDismiss={() => setDialogVisible(false)}
             >
-              <Dialog.Title>Add a message</Dialog.Title>
+              <Dialog.Title>
+                {selectedAction === 'cancel' ? 'Cancel Invitation' : 'Add a message'}
+              </Dialog.Title>
               <Dialog.Content>
                 <TextInput
-                  label='Comment (optional)'
+                  label={selectedAction === 'cancel'
+                    ? 'Cancel Reason (optional)'
+                    : 'Comment (optional)'
+                  }
                   value={comment}
                   onChangeText={setComment}
                   mode='outlined'
@@ -492,7 +505,9 @@ const Dashboard = () => {
               </Dialog.Content>
               <Dialog.Actions>
                 <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
-                <Button onPress={handleDialogSubmit}>Submit</Button>
+                <Button onPress={handleDialogSubmit} loading={cancelStatus === 'loading'}>
+                  Submit
+                </Button>
               </Dialog.Actions>
             </Dialog>
           </Portal>
@@ -525,6 +540,9 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+// ...styles remain unchanged
+
 
 const styles = StyleSheet.create({
   container: { padding: 20, flexGrow: 1 },
