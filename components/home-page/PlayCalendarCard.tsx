@@ -66,7 +66,7 @@ const sortedInvites = [...invites]
   .sort((a, b) => {
     const dateA = getDateObject(a)?.getTime() || 0;
     const dateB = getDateObject(b)?.getTime() || 0;
-    return dateB - dateA;
+    return dateA - dateB;
   });
 
   const renderInviteRow = (invite: any, index: number) => {
