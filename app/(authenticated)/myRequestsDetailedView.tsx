@@ -27,25 +27,34 @@ export default function MyRequestsDetailedView() {
 
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
-  const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | null>(null);
+  const [selectedAction, setSelectedAction] = useState<
+    'accept' | 'reject' | 'cancel' | null
+  >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loggedInUserId = useSelector((state: RootState) => state.auth.user.userId);
+  const loggedInUserId = useSelector(
+    (state: RootState) => state.auth.user.userId
+  );
+
   if (loading) return <ActivityIndicator size="large" style={styles.loader} />;
-  if (error || !data) return <Text style={styles.error}>Error loading data</Text>;
+  if (error || !data)
+    return <Text style={styles.error}>Error loading data</Text>;
 
   const myInvite = data?.find((invite: any) => invite.userId === loggedInUserId);
 
   const invite = data[0];
   const playTime = arrayToDate(invite?.playTime);
   const dateString = playTime.toLocaleDateString();
-  const timeString = playTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeString = playTime.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   const accepted = data.filter((p: any) => p.status === 'ACCEPTED').length + 1;
   const total = invite?.playersNeeded + 1 || 0;
   const location = invite?.placeToPlay || 'Not specified';
   const requesterName = invite?.inviteeName || 'Someone';
 
-  const handleAction = (action: 'accept' | 'reject') => {
+  const handleAction = (action: 'accept' | 'reject' | 'cancel') => {
     setSelectedAction(action);
     setComment('');
     setDialogVisible(true);
@@ -56,9 +65,15 @@ export default function MyRequestsDetailedView() {
 
     try {
       setIsSubmitting(true);
-      const baseUrl =
-        selectedAction === 'accept' ? invite.acceptUrl : invite.declineUrl;
-      const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
+
+      let url = '';
+      if (selectedAction === 'accept') {
+        url = `${invite.acceptUrl}&comments=${encodeURIComponent(comment)}`;
+      } else if (selectedAction === 'reject') {
+        url = `${invite.declineUrl}&comments=${encodeURIComponent(comment)}`;
+      } else if (selectedAction === 'cancel') {
+        url = `${invite.cancelUrl}&comments=${encodeURIComponent(comment)}`;
+      }
 
       const res = await fetch(url);
       if (res.status === 200) {
@@ -66,7 +81,10 @@ export default function MyRequestsDetailedView() {
         router.replace('/(authenticated)/home');
       } else {
         const msg = await res.text();
-        Alert.alert('Error', `Failed to ${selectedAction} invitation. ${msg}`);
+        Alert.alert(
+          'Error',
+          `Failed to ${selectedAction} invitation. ${msg}`
+        );
       }
     } catch (err) {
       Alert.alert('Error', 'Something went wrong');
@@ -78,25 +96,35 @@ export default function MyRequestsDetailedView() {
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>Incoming Request</Text>
-        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+        <TouchableOpacity
+          onPress={() => router.push('/(authenticated)/profile')}
+        >
           <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
 
+      {/* Body */}
       <View style={{ flex: 1 }}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={styles.subheading}>{requesterName} Invited To Play</Text>
+          <Text style={styles.subheading}>
+            {requesterName} Invited To Play
+          </Text>
 
           <View style={styles.card}>
             <View style={styles.row}>
               <View style={styles.column}>
                 <View style={styles.infoCard}>
-                  <FontAwesome5 name="calendar-alt" size={20} color="#2CA6A4" />
+                  <FontAwesome5
+                    name="calendar-alt"
+                    size={20}
+                    color="#2CA6A4"
+                  />
                 </View>
                 <Text style={styles.infoText}>{dateString}</Text>
               </View>
@@ -110,7 +138,9 @@ export default function MyRequestsDetailedView() {
                 <View style={styles.infoCard}>
                   <FontAwesome5 name="users" size={20} color="#2CA6A4" />
                 </View>
-                <Text style={styles.infoText}>{accepted}/{total} Accepted</Text>
+                <Text style={styles.infoText}>
+                  {accepted}/{total} Accepted
+                </Text>
               </View>
             </View>
 
@@ -123,11 +153,16 @@ export default function MyRequestsDetailedView() {
           </View>
 
           <View style={styles.chatPreviewContainer}>
-            <Text style={styles.chatPreviewText}>Chat with players here...</Text>
+            <Text style={styles.chatPreviewText}>
+              Chat with players here...
+            </Text>
             <TouchableOpacity
               style={styles.joinButton}
               onPress={() =>
-                router.push({ pathname: '/(authenticated)/chat-summary', params: { requestId } })
+                router.push({
+                  pathname: '/(authenticated)/chat-summary',
+                  params: { requestId },
+                })
               }
             >
               <Text style={styles.joinButtonText}>Join Chat</Text>
@@ -136,6 +171,7 @@ export default function MyRequestsDetailedView() {
         </ScrollView>
       </View>
 
+      {/* Bottom Actions */}
       {myInvite?.status === 'PENDING' && (
         <View style={styles.bottomButtonContainer}>
           <Button
@@ -159,8 +195,42 @@ export default function MyRequestsDetailedView() {
         </View>
       )}
 
+      {myInvite?.status === 'ACCEPTED' && (
+        <View style={styles.bottomButtonContainer}>
+          <Button
+            icon="cancel"
+            mode="outlined"
+            onPress={() => handleAction('cancel')}
+            loading={isSubmitting && selectedAction === 'cancel'}
+            style={styles.rejectBtn}
+          >
+            Cancel
+          </Button>
+        </View>
+      )}
+
+      {(myInvite?.status === 'CANCELLED' ||
+        myInvite?.status === 'DECLINED' ||
+        myInvite?.status === 'WITHDRAWN') && (
+        <View style={styles.bottomButtonContainer}>
+          <Button
+            icon="check"
+            mode="contained"
+            onPress={() => handleAction('accept')}
+            loading={isSubmitting && selectedAction === 'accept'}
+            style={styles.acceptBtn}
+          >
+            Accept Again
+          </Button>
+        </View>
+      )}
+
+      {/* Dialog */}
       <Portal>
-        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+        <Dialog
+          visible={dialogVisible}
+          onDismiss={() => setDialogVisible(false)}
+        >
           <Dialog.Title>Add a message</Dialog.Title>
           <Dialog.Content>
             <TextInput

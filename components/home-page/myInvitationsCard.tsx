@@ -24,6 +24,7 @@ interface InvitationCardProps {
   invite: Invite;
   onAccept: (invite: Invite) => Promise<void> | void;
   onReject: (invite: Invite) => Promise<void> | void;
+  onCancel: (invite: Invite) => Promise<void> | void; // NEW
   loading: boolean;
   totalPlayers: number;
   acceptedPlayers: number;
@@ -34,6 +35,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
   invite,
   onAccept,
   onReject,
+  onCancel,
   loading,
   totalPlayers,
   acceptedPlayers,
@@ -55,11 +57,10 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
     minute: '2-digit',
   });
   const dateString = date.toLocaleDateString('en-US', {
-  month: '2-digit',
-  day: '2-digit',
-  year: 'numeric',
-});
-
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric',
+  });
 
   return (
     <TouchableOpacity
@@ -67,7 +68,6 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
       activeOpacity={0.9}
       onPress={() => {
         try {
-          console.log('Navigating to request details:', invite.requestId);
           router.push({
             pathname: '/(authenticated)/myRequestsDetailedView',
             params: { requestId: invite.requestId },
@@ -92,10 +92,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
             />
             <TouchableOpacity
               style={styles.acceptedBox}
-              onPress={() => {
-                console.log('Viewing players for requestId:', invite.requestId);
-                onViewPlayers(invite.requestId);
-              }}
+              onPress={() => onViewPlayers(invite.requestId)}
             >
               <Text style={styles.acceptedTextSmall}>
                 {acceptedPlayers} / {totalPlayers} Accepted
@@ -107,10 +104,6 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
             style={styles.chatButton}
             onPress={() => {
               try {
-                console.log(
-                  'Navigating to incoming summary for:',
-                  invite.requestId
-                );
                 router.push({
                   pathname: '/(authenticated)/chat-summary',
                   params: { requestId: invite.requestId },
@@ -134,15 +127,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
         {invite.status === 'PENDING' ? (
           <>
             <TouchableOpacity
-              onPress={async () => {
-                try {
-                  console.log('Attempting to accept invite:', invite);
-                  await onAccept(invite);
-                  console.log('Invite accepted successfully:', invite.id);
-                } catch (err) {
-                  console.error('Error while accepting invite:', err);
-                }
-              }}
+              onPress={async () => { await onAccept(invite); }}
               disabled={loading}
             >
               <MaterialCommunityIcons
@@ -153,15 +138,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={async () => {
-                try {
-                  console.log('Attempting to reject invite:', invite);
-                  await onReject(invite);
-                  console.log('Invite rejected successfully:', invite.id);
-                } catch (err) {
-                  console.error('Error while rejecting invite:', err);
-                }
-              }}
+              onPress={async () => { await onReject(invite); }}
               disabled={loading}
             >
               <MaterialCommunityIcons
@@ -172,12 +149,30 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
             </TouchableOpacity>
           </>
         ) : invite.status === 'ACCEPTED' ? (
-          <Text style={styles.acceptedText}>✅ Accepted</Text>
-        ) : invite.status === 'DECLINED' ? (
-          <Text style={styles.rejectedText}>❌ Declined</Text>
+          <TouchableOpacity
+            onPress={async () => { await onCancel(invite); }}
+            disabled={loading}
+            style={styles.cancelButton}
+          >
+            {/* <MaterialCommunityIcons
+              name="cancel"
+              size={26}
+              color="#FF8C00"
+            /> */}
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
         ) : invite.status === 'WITHDRAWN' ? (
-          <Text style={styles.cancelledText}>🚫 Cancelled</Text>
+          <Text style={styles.cancelledText}>🚫 Withdrawn</Text>
+        ) : invite.status === 'DECLINED'|| invite.status === 'CANCELLED' ? (
+          <TouchableOpacity
+            onPress={async () => { await onAccept(invite); }}
+            disabled={loading}
+            style={styles.acceptButton}
+          >
+            <Text style={styles.acceptButtonText}>Accept</Text>
+          </TouchableOpacity>
         ) : null}
+
       </View>
 
       {loading && <ActivityIndicator style={styles.loading} size='small' />}
@@ -188,6 +183,34 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
 export default InvitationCard;
 
 const styles = StyleSheet.create({
+  cancelButton: {
+  backgroundColor: 'red',
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 6,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+cancelButtonText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 14,
+},
+acceptButton: {
+  backgroundColor: 'green',
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 6,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+acceptButtonText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 14,
+},
+
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',

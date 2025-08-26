@@ -27,6 +27,7 @@ export default function OpenPlayDetailedView() {
   const { data, status, error, refetch } = useGetPlaySessionById(sessionId);
   const selectedPlay = data?.session || null;
   console.log('Selected Play:', selectedPlay);
+  console.log('Data:', data);
 
   const { joinPlaySession } = useMutateJoinPlay();
   const { withdraw } = useWithdrawFromPlay();
@@ -219,15 +220,24 @@ export default function OpenPlayDetailedView() {
             <Text style={styles.chatPreviewText}>Chat with players here...</Text>
             <TouchableOpacity
               style={styles.joinButton}
-              onPress={() =>
-                router.push({ pathname: '/(authenticated)/chat-summary', params: { sessionId } })
-              }
-              
+              onPress={() => {
+                if (isRegistered) {
+                  router.push({ pathname: '/(authenticated)/chat-summary', params: { sessionId } });
+                } else {
+                  Toast.show({
+                    type: 'info',
+                    text1: 'Register required',
+                    text2: 'Register for the event to chat with players',
+                    topOffset: 100,
+                  });
+                }
+              }}
             >
-            
-
-              <Text style={styles.joinButtonText}>Join Chat</Text>
+              <Text style={styles.joinButtonText}>
+                {isRegistered ? 'Join Chat' : 'Register to Chat'}
+              </Text>
             </TouchableOpacity>
+
           </View>
         
       </ScrollView>

@@ -5,7 +5,7 @@ import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay'
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import { RootState } from '@/store';
-import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
@@ -429,6 +429,26 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                   ${row.priceForPlay.toFixed(2)}
                 </Text>
               </View>
+              <TouchableOpacity
+      style={styles.chatButton}
+      onPress={() => {
+        if (row.isRegistered) {
+          router.push({
+            pathname: '/(authenticated)/chat-summary',
+            params: { sessionId: row.id },
+          });
+        } else {
+          Toast.show({
+            type: 'info',
+            text1: 'Register to chat with players',
+            topOffset: 100,
+          });
+        }
+      }}
+    >
+      <FontAwesome5 name="comments" size={12} color="#fff" />
+
+    </TouchableOpacity>
             </View>
             <Button
               mode="contained"
@@ -526,6 +546,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingVertical: 20,
   },
+  chatButton: {
+  backgroundColor: '#2F7C83',
+  borderRadius: 20,
+  padding: 4,
+  marginLeft: 10,
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 32,
+},
+
   priceText: {
     fontSize: 12,
     fontWeight: '600',
