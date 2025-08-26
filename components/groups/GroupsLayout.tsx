@@ -245,7 +245,10 @@ export default function GroupsScreen() {
     return (
       <TouchableOpacity
         style={styles.messageRow}
-        onPress={() => handleOpenChat(group.id, latestMessageTime)}
+        onPress={() => 
+          router.replace({ pathname: '/(authenticated)/group-info/[id]', params: { id: group.id } })
+          // handleOpenChat(group.id, latestMessageTime)
+          }
         onLongPress={() => toggleFavorite(item.id)}
       >
         {group.avatarUrl ? (

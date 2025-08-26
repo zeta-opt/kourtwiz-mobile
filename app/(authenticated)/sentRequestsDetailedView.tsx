@@ -21,6 +21,7 @@ const statusColorMap: Record<string, string> = {
   PENDING: 'orange',
   DECLINED: 'red',
   WITHDRAWN: 'gray',
+  CANCELLED: 'brown',
 };
 
 const statusIconMap: Record<string, string> = {
@@ -28,6 +29,7 @@ const statusIconMap: Record<string, string> = {
   PENDING: 'clock',
   DECLINED: 'times-circle',
   WITHDRAWN: 'minus-circle',
+  CANCELLED: 'minus-circle',
 };
 
 function arrayToDate(arr: number[]): Date {

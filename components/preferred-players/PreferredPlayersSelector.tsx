@@ -23,7 +23,7 @@ const PreferredPlayersSelector: React.FC<PreferredPlayersSelectorProps> = ({
   return (
     <View style={styles.container}>
       <Text variant='titleMedium' style={styles.sectionTitle}>
-        Preferred Players
+        Select Players From Groups And Contacts
       </Text>
 
       <View style={styles.playersBoxContainer}>
@@ -57,12 +57,12 @@ const PreferredPlayersSelector: React.FC<PreferredPlayersSelectorProps> = ({
           </ScrollView>
         )}
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={onAddContact}
           style={styles.addFromContactsLink}
         >
           <Text style={styles.linkText}>Add Player from your Contacts</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
