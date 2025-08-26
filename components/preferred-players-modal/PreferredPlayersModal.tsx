@@ -82,8 +82,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   const currentUserPhone = normalizePhoneNumber(user?.phoneNumber || '');
   const currentUserName = normalizeName(user?.name || '');
 
-  const { getGroups, data: groupsData, status: groupsStatus, refetch } =
-    useGetGroupsByPhoneNumber();
+  const { getGroups, data: groupsData, status: groupsStatus, refetch } = useGetGroupsByPhoneNumber();
 
   interface Group {
     id: string;
@@ -146,10 +145,11 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     userId,
     enabled: visible,
   });
+  // console.log('User details:', userDetails);
+  // console.log('Preferred players:', preferredPlayers);
 
   // registered players
-  const { data: registeredPlayers, status: registeredStatus } =
-    useGetRegisteredPlayers({ enabled: visible });
+  const { data: registeredPlayers, status: registeredStatus } = useGetRegisteredPlayers({ enabled: visible });
 
   useEffect(() => {
     if (visible) setTempSelectedPlayers(selectedPlayers || []);
@@ -211,24 +211,21 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     );
 
   /* --------- Preferred players from API (normalize + exclude current user by name OR phone) --------- */
-  const preferToPlayWith = Array.isArray(
-    userDetails?.playerDetails?.preferToPlayWith
-  )
+  const preferToPlayWith = Array.isArray(userDetails?.playerDetails?.preferToPlayWith)
     ? userDetails.playerDetails.preferToPlayWith
     : [];
 
   const preferredPlayersAsContacts: Contact[] = preferToPlayWith
     .map((player: any, index: number) => {
-      const name = player?.contactName || player?.name || `Preferred ${index + 1}`;
-      const phone = normalizePhoneNumber(
-        player?.contactPhoneNumber || player?.phoneNumber || `preferred-${index}`
-      );
+      const name = player?.contactName || `Preferred ${index + 1}`;
+      const phoneRaw = player?.contactPhoneNumber || `preferred-${index}`;
+      const phone = normalizePhoneNumber(phoneRaw);
       return { contactName: String(name), contactPhoneNumber: String(phone) };
     })
-    .filter((p) => {
+    .filter((p: Contact) => {
+      // exclude current user defensively
       const nameMatches = normalizeName(p.contactName) === currentUserName;
       const phoneMatches = normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
-      // exclude if name OR phone matches current user
       return !(nameMatches || phoneMatches);
     });
 
