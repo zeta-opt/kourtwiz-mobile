@@ -66,7 +66,7 @@ const sortedInvites = [...invites]
   .sort((a, b) => {
     const dateA = getDateObject(a)?.getTime() || 0;
     const dateB = getDateObject(b)?.getTime() || 0;
-    return dateB - dateA;
+    return dateA - dateB;
   });
 
   const renderInviteRow = (invite: any, index: number) => {
@@ -113,12 +113,12 @@ const sortedInvites = [...invites]
             pathname: '/(authenticated)/myRequestsDetailedView',
             params: { requestId: invite.requestId },
           });
-        } else if (type === 'outgoing') {
-          const encoded = encodeURIComponent(JSON.stringify(invite));
-          router.push({
-            pathname: '/(authenticated)/sentRequestsDetailedView',
-            params: { data: encoded },
-          });
+          } else if (type === 'outgoing') {
+            const encoded = encodeURIComponent(JSON.stringify(invite));
+            router.push({
+              pathname: '/(authenticated)/sentRequestsDetailedView',
+              params: { data: encoded },
+            });
         } else if (type === 'openplay') {
           router.push({
             pathname: '/(authenticated)/openPlayDetailedView',

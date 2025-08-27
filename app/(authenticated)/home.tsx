@@ -191,6 +191,7 @@ const Dashboard = () => {
     }),
   ];
 
+
   useEffect(() => {
     if (isFocused) {
       refetchOpenPlay();
@@ -266,34 +267,22 @@ const Dashboard = () => {
     if (!selectedInvite || !selectedAction) return;
     try {
       setLoadingId(selectedInvite.id);
-      if (selectedAction === 'accept' || selectedAction === 'reject') {
-        const baseUrl =
-          selectedAction === 'accept'
-            ? selectedInvite.acceptUrl
-            : selectedInvite.declineUrl;
-        const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
-        const response = await fetch(url);
-        if (response.status === 200) {
-          Alert.alert('Success', `Invitation ${selectedAction}ed`);
-          refetch();
-        } else {
-          const errorText = await response.text();
-          Alert.alert(
-            'Error',
-            errorText || `Failed to ${selectedAction} invitation.`
-          );
-        }
-      } else if (selectedAction === 'cancel') {
-         const ok = await cancelInvitation(selectedInvite.requestId, userId, comment || '');
-        
-        if (ok) { 
-        Alert.alert('Success', 'Invitation cancelled');
+      const baseUrl =
+        selectedAction === 'accept'
+          ? selectedInvite.acceptUrl
+          : selectedInvite.declineUrl;
+      const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
+      const response = await fetch(url);
+      if (response.status === 200) {
+        Alert.alert('Success', `Invitation ${selectedAction}ed`);
         refetch();
-        
       } else {
-        Alert.alert('Error', cancelerror || 'Failed to cancel invitation');
-      }
-        refetch();
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
+        Alert.alert(
+          'Error',
+          `Failed to ${selectedAction} invitation. You may have another event at the same time.`
+        );
       }
     } catch (e) {
       Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
