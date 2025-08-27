@@ -446,7 +446,11 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
         }
       }}
     >
-      <FontAwesome5 name="comments" size={12} color="#fff" />
+      <MaterialCommunityIcons
+                        name="message-text-outline"
+                        size={18}
+                        color="#007BFF"
+                      />
 
     </TouchableOpacity>
             </View>
@@ -547,7 +551,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   chatButton: {
-  backgroundColor: '#2F7C83',
+  backgroundColor: '#E0F7FA',
   borderRadius: 20,
   padding: 4,
   marginLeft: 10,

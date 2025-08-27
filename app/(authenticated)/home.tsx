@@ -13,6 +13,7 @@ import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlay
 import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite'; // NEW
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
+import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
 import { resetInvitationsRefetch } from '@/store/refetchSlice';
@@ -38,6 +39,7 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
+import Toast from 'react-native-toast-message';
 
 const API_URL = 'http://44.216.113.234:8080';
 
@@ -187,10 +189,35 @@ const Dashboard = () => {
         isWaitlisted: play.waitlistedPlayers?.includes(userId),
         accepted: play.registeredPlayers?.length ?? 0,
         playersNeeded: play.maxPlayers ?? 1,
+         isRegistered: play.registeredPlayers?.includes(userId) ?? false,
         id: play.id,
       };
     }),
   ];
+
+  const { withdraw } = useWithdrawFromPlay();
+
+const handleWithdrawFromOpenPlay = async (invite: any) => {
+  try {
+    setLoadingId(invite.id);
+    await withdraw({ sessionId: invite.id, userId: user?.userId });
+    Toast.show({
+      type: 'success',
+      text1: 'Withdrawn from play',
+      topOffset: 100,
+    });
+    refetchOpenPlay();  // Refresh the open plays list
+  } catch (error: any) {
+    Toast.show({
+      type: 'error',
+      text1: 'Failed to withdraw',
+      text2: error.message || 'Unknown error',
+      topOffset: 100,
+    });
+  } finally {
+    setLoadingId(null);
+  }
+};
 
 
   useEffect(() => {
@@ -208,6 +235,7 @@ const Dashboard = () => {
     }
     return 0;
   };
+  
 
   useEffect(() => {
     const loadUser = async () => {
@@ -268,6 +296,7 @@ const Dashboard = () => {
     if (!selectedInvite || !selectedAction) return;
     try {
       setLoadingId(selectedInvite.id);
+      if (selectedAction === 'accept' || selectedAction === 'reject') {
       const baseUrl =
         selectedAction === 'accept'
           ? selectedInvite.acceptUrl
@@ -285,7 +314,21 @@ const Dashboard = () => {
           `Failed to ${selectedAction} invitation. You may have another event at the same time.`
         );
       }
-    } catch (e) {
+    }
+      else if (selectedAction === 'cancel') {
+          const ok = await cancelInvitation(selectedInvite.requestId, userId, comment || '');
+         
+         if (ok) { 
+         Alert.alert('Success', 'Invitation cancelled');
+         refetch();
+         
+       } else {
+         Alert.alert('Error', cancelerror || 'Failed to cancel invitation');
+       }
+         refetch();
+       }
+	     } 
+     catch (e) {
       Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
     } finally {
       setLoadingId(null);
@@ -469,7 +512,7 @@ const Dashboard = () => {
                 nestedScrollEnabled
                 contentContainerStyle={styles.calendarContent}
               >
-                <PlayCalendarCard invites={playCalendarData} />
+                <PlayCalendarCard invites={playCalendarData} onCancel={(invite) => showCommentDialog(invite, 'cancel')} onWithdraw={handleWithdrawFromOpenPlay} />
               </ScrollView>
             )}
           </View>
