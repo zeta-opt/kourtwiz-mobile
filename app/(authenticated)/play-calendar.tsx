@@ -124,19 +124,44 @@ export default function PlayCalendarPage() {
     index === self.findIndex(r => r.requestId === req.requestId)
   );
 
-  const outgoingRequests = uniqueInitiatedPlayerFinderRequests
-  .filter(e => e.status !== "WITHDRAWN")
-  .map(e => ({
-    ...e,
-    type: "outgoing",
-    start: e.start || parseArrayToDate(e.playTime),
-    end: e.end || parseArrayToDate(e.playEndTime),
-    accepted: Math.max((playerCounts[e.requestId]?.accepted ?? 1) - 1, 0),
-    totalPlayers: playerCounts[e.requestId]?.total ?? e.playersNeeded ?? 1,
-    dateTimeMs: e.start ? e.start.getTime() : (parseArrayToDate(e.playTime)?.getTime() || 0),
-  }))
-  .filter(e => isSameDay(e.playTime, selectedDate));
+ const allInitiatedPlayerFinderRequests = eventsForSelectedDate?.initiatedPlayerFinderRequests ?? [];
 
+// Function to group requests by requestId
+const groupedOutgoingRequests = (requests: any[]) => {
+  const grouped = requests
+    .filter(r => r.status !== "WITHDRAWN") // only active players
+    .reduce((acc: Record<string, any[]>, curr) => {
+      if (!acc[curr.requestId]) acc[curr.requestId] = [];
+      acc[curr.requestId].push({
+        ...curr,
+        start: parseArrayToDate(curr.playTime),
+        end: parseArrayToDate(curr.playEndTime),
+        type: "outgoing",
+      });
+      return acc;
+    }, {});
+
+  return Object.values(grouped).map(playersForRequest => ({
+    Requests: playersForRequest,
+    accepted: playersForRequest.filter(r => r.status === "ACCEPTED").length,
+    pending: playersForRequest.filter(r => r.status === "PENDING").length,
+    date: playersForRequest[0].playTime
+      ? format(parseArrayToDate(playersForRequest[0].playTime), "EEE, MMM d, h:mm a")
+      : null,
+    dateTimeMs: playersForRequest[0].playTime
+      ? parseArrayToDate(playersForRequest[0].playTime).getTime()
+      : null,
+    placeToPlay: playersForRequest[0].placeToPlay,
+    playersNeeded: playersForRequest[0].playersNeeded,
+    requestId: playersForRequest[0].requestId,
+    skillRating: playersForRequest[0].skillRating,
+    type: "outgoing",
+    start: playersForRequest[0].start,
+    end: playersForRequest[0].end,
+  }));
+};
+
+  const outgoingRequests = groupedOutgoingRequests(allInitiatedPlayerFinderRequests);
 
 
   const incomingRequests = (eventsForSelectedDate?.incomingPlayerFinderRequests ?? [])
@@ -225,6 +250,45 @@ export default function PlayCalendarPage() {
     setComment('');
   };
 
+  
+  const handlePress = (event: any) => {
+    if (event.type === "outgoing") {
+          const allPlayersForRequest = allInitiatedPlayerFinderRequests
+        .filter(e => e.status !== "WITHDRAWN" && e.requestId === event.requestId)
+        .map(e => ({
+          ...e,
+          type: "outgoing",
+          start: parseArrayToDate(e.playTime),
+          end: parseArrayToDate(e.playEndTime),
+        }));
+ 
+      if (!allPlayersForRequest.length) return;
+ 
+      const groupedOutgoingRequest = {
+        Requests: allPlayersForRequest,
+        accepted: allPlayersForRequest.filter(r => r.status === "ACCEPTED").length,
+        pending: allPlayersForRequest.filter(r => r.status === "PENDING").length,
+        date: allPlayersForRequest[0].playTime
+          ? format(parseArrayToDate(allPlayersForRequest[0].playTime), "EEE, MMM d, h:mm a")
+          : null,
+        dateTimeMs: allPlayersForRequest[0].playTime
+          ? parseArrayToDate(allPlayersForRequest[0].playTime).getTime()
+          : null,
+        placeToPlay: allPlayersForRequest[0].placeToPlay,
+        playersNeeded: allPlayersForRequest[0].playersNeeded,
+        requestId: event.requestId,
+        skillRating: allPlayersForRequest[0].skillRating,
+      };
+ 
+      const encoded = encodeURIComponent(JSON.stringify(groupedOutgoingRequest));
+      router.push({
+        pathname: "/(authenticated)/sentRequestsDetailedView",
+        params: { data: encoded },
+      });
+    }
+  }
+
+
   const handleDialogSubmit = async () => {
     if (!selectedInvite || !selectedAction) return;
     try {
@@ -272,6 +336,7 @@ export default function PlayCalendarPage() {
       Alert.alert('Error', 'Failed to fetch player details');
     }
   };
+
 
   return (
     <PaperProvider>
@@ -322,14 +387,17 @@ export default function PlayCalendarPage() {
               } else if (item.type === "outgoing") {
                 console.log('Rendering outgoing invite:', item);
                 return (
+                  <TouchableOpacity onPress={() => handlePress(item)}>
                   <OutgoingInviteCardItem
                     key={item.requestId}
                     invite={item}
                     // totalPlayers={item.totalPlayers}
                     // acceptedPlayers={item.accepted}
+                    
                     onViewPlayers={() => handleViewPlayers(item.requestId)}
                   />
-                );
+                  </TouchableOpacity>
+                );  
               } else if (item.type === "available") {
                 return (
                   <OpenPlayCard
