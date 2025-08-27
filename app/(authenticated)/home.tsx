@@ -5,11 +5,13 @@ import OpenPlayCard from '@/components/home-page/openPlayCard';
 import OutgoingInviteCardItem from '@/components/home-page/outgoingInvitationsCard';
 import PlayCalendarCard from '@/components/home-page/PlayCalendarCard';
 import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
+import PlayersNearbyMap from '@/components/players-nearby/PlayersNearbyMap';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
+import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite'; // NEW
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
@@ -36,7 +38,6 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
-import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite'; // NEW
 
 const API_URL = 'http://44.216.113.234:8080';
 
@@ -519,7 +520,7 @@ const Dashboard = () => {
           <Text style={styles.playersNearByDesc}>
             See users playing near by
           </Text>
-          {/* <PlayersNearbyMap /> */}
+          <PlayersNearbyMap />
 
           <NewMessages userId={user?.userId} />
         </ScrollView>

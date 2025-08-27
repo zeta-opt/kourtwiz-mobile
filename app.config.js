@@ -1,5 +1,5 @@
 import 'dotenv/config';
- 
+
 export default {
   expo: {
     name: 'kourtwiz-mobile',
@@ -9,27 +9,30 @@ export default {
     icon: './assets/images/icon.png',
     scheme: 'kourtwizmobile',
     userInterfaceStyle: 'automatic',
- 
+
     updates: {
       url: 'https://u.expo.dev/0c917ae5-4e2b-4c2b-bef1-928702cf4737',
     },
- 
+
     runtimeVersion: {
-      policy: 'appVersion', 
+      policy: 'appVersion',
     },
- 
+
     ios: {
-    supportsTablet: true,
-    bundleIdentifier: 'com.kourtwiz.mobile',
-    buildNumber: '1.0.12',
-    infoPlist: {
-      NSContactsUsageDescription:
-        'This app needs access to your contacts to let you invite or select players.',
-      NSLocationWhenInUseUsageDescription:
-        'This app needs your location to help you find nearby courts.',
+      supportsTablet: true,
+      bundleIdentifier: 'com.kourtwiz.mobile',
+      buildNumber: '1.0.12',
+      infoPlist: {
+        NSContactsUsageDescription:
+          'This app needs access to your contacts to let you invite or select players.',
+        NSLocationWhenInUseUsageDescription:
+          'This app needs your location to help you find nearby courts.',
+      },
+      config: {
+        googleMapsApiKey: "AIzaSyC3JM_8P23tGrP6laoq7K8fIGI0DQxNSog", // ✅ iOS key goes here
+      },
     },
-  },
- 
+
     android: {
       package: 'com.kourtwiz.mobile',
       versionCode: 1,
@@ -39,14 +42,19 @@ export default {
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
+      config: {
+        googleMaps: {
+          apiKey: "AIzaSyC3JM_8P23tGrP6laoq7K8fIGI0DQxNSog", // ✅ Android key goes here
+        },
+      },
     },
- 
+
     web: {
       bundler: 'metro',
       output: 'static',
       favicon: './assets/images/favicon.png',
     },
- 
+
     plugins: [
       'expo-router',
       [
@@ -59,11 +67,11 @@ export default {
         },
       ],
     ],
- 
+
     experiments: {
       typedRoutes: true,
     },
- 
+
     extra: {
       apiUrl: process.env.API_URL,
       router: {},
@@ -71,7 +79,7 @@ export default {
         projectId: '0c917ae5-4e2b-4c2b-bef1-928702cf4737',
       },
     },
- 
+
     owner: 'ankitexponative',
  
     // ✅ Recommended for future EAS compatibility
