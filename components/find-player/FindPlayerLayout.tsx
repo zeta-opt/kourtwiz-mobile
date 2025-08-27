@@ -404,6 +404,17 @@ const FindPlayerLayout = () => {
       </View>
 
       <ScrollView style={styles.formScrollView}>
+        {/* Event Name Section */}
+        <Text style={styles.sectionTitle}>Event Name</Text>
+        <View style={styles.dropdownRow}>
+          <TextInput
+            style={[styles.input]}
+            placeholder='Enter Event Name'
+            value={eventName}
+            onChangeText={setEventName}
+          />
+        </View>
+        
         {/* Club Name Section */}
         <Text style={styles.sectionTitle}>Club Name</Text>
         <View style={styles.dropdownRow}>
@@ -447,17 +458,6 @@ const FindPlayerLayout = () => {
             Enable location access to search nearby courts
           </Text>
         )}
-
-        {/* Event Name Section */}
-        <Text style={styles.sectionTitle}>Event Name</Text>
-        <View style={styles.dropdownRow}>
-          <TextInput
-            style={[styles.input]}
-            placeholder='Enter Event Name'
-            value={eventName}
-            onChangeText={setEventName}
-          />
-        </View>
 
         {/* Game Schedule Section - Using the new component */}
         <GameSchedulePicker
