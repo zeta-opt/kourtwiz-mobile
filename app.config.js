@@ -44,7 +44,7 @@ export default {
       edgeToEdgeEnabled: true,
       config: {
         googleMaps: {
-          apiKey: "AIzaSyC3JM_8P23tGrP6laoq7K8fIGI0DQxNSog", // ✅ Android key goes here
+          apiKey: "AIzaSyDQvA6q1C1dt9JoOo-_6iG6mOGFozGfqwk", // ✅ Android key goes here
         },
       },
     },
