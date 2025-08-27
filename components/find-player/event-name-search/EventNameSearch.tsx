@@ -15,7 +15,7 @@ interface EventNameSearchProps {
   onChange: (text: string) => void;
   onSelect: (event: any) => void;
   error?: boolean;
-  userId?: string;
+  requesterId?: string;
 }
 
 function debounce<F extends (...args: any[]) => void>(func: F, wait: number) {
@@ -31,12 +31,12 @@ const EventNameSearch: React.FC<EventNameSearchProps> = ({
   onChange,
   onSelect,
   error,
-  userId,
+  requesterId,
 }) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const fetchEventSuggestions = async (query: string, userId: string) => {
+  const fetchEventSuggestions = async (query: string, requesterId: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
@@ -54,7 +54,7 @@ const EventNameSearch: React.FC<EventNameSearchProps> = ({
 
     try {
       const res = await fetch(
-        `${BASE_URL}/api/play-type/sessions/search?eventName=${encodeURIComponent(query)}&userId=${userId}`,
+        `${BASE_URL}/api/player-tracker/tracker/search?eventName=${encodeURIComponent(query)}&requesterId=${requesterId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -72,6 +72,7 @@ const EventNameSearch: React.FC<EventNameSearchProps> = ({
 
       const data = await res.json();
       setSearchResults(data || []);
+      console.log("✅ Fetched events:", data);
     } catch (err) {
       console.error("❌ Error fetching events:", err);
     } finally {
@@ -80,7 +81,7 @@ const EventNameSearch: React.FC<EventNameSearchProps> = ({
   };
 
   const debouncedSearch = useRef(
-    debounce((text: string, userId: string) => fetchEventSuggestions(text, userId), 500)
+    debounce((text: string, requesterId: string) => fetchEventSuggestions(text, requesterId), 500)
   ).current;
 
   return (
@@ -94,7 +95,7 @@ const EventNameSearch: React.FC<EventNameSearchProps> = ({
         value={value}
         onChangeText={(text) => {
           onChange(text);
-          debouncedSearch(text, userId || "");
+          debouncedSearch(text, requesterId || "");
         }}
       />
 
