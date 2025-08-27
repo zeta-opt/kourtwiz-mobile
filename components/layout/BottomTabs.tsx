@@ -3,7 +3,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { toggleDrawer } from '../../store/uiSlice';
 
 export default function BottomTabs() {
   const router = useRouter();
@@ -28,7 +27,7 @@ export default function BottomTabs() {
         onPress={() => router.replace('/(authenticated)/home')}
         style={styles.tabItem}
       >
-        <MaterialIcons name="home" size={24} color="#3F7CFF" />
+        <MaterialIcons name='home' size={24} color='#3F7CFF' />
         <Text style={styles.activeLabel}>Home</Text>
       </TouchableOpacity>
 
@@ -36,7 +35,7 @@ export default function BottomTabs() {
         onPress={() => router.replace('/groups')}
         style={styles.tabItem}
       >
-        <MaterialIcons name="groups" size={24} color="#000" />
+        <MaterialIcons name='groups' size={24} color='#000' />
         <Text style={styles.label}>Groups</Text>
       </TouchableOpacity>
 
@@ -44,15 +43,15 @@ export default function BottomTabs() {
         onPress={() => console.log('videos icon pressed')}
         style={styles.tabItem}
       >
-        <MaterialIcons name="ondemand-video" size={24} color="#000" />
+        <MaterialIcons name='ondemand-video' size={24} color='#000' />
         <Text style={styles.label}>Videos</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => console.log('payment icon pressed')}
+        onPress={() => router.replace('/feedback')}
         style={styles.tabItem}
       >
-        <MaterialIcons name="feedback" size={24} color="#000" />
+        <MaterialIcons name='feedback' size={24} color='#000' />
         <Text style={styles.label}>Feedback</Text>
       </TouchableOpacity>
 
@@ -60,7 +59,7 @@ export default function BottomTabs() {
         onPress={() => router.replace('/history')}
         style={styles.tabItem}
       >
-        <MaterialIcons name="calendar-today" size={24} color="#000" />
+        <MaterialIcons name='calendar-today' size={24} color='#000' />
         <Text style={styles.label}>History</Text>
       </TouchableOpacity>
 
