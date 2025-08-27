@@ -45,6 +45,7 @@ import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersMo
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
 import RepeatPicker from './components/RepeatPicker';
 import StatusModal from './components/StatusModal';
+import EventNameSearch from './components/EventNameSearch';
 
 const CreateEventForm = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -524,15 +525,25 @@ const CreateEventForm = () => {
           </View>
           <ScrollView contentContainerStyle={styles.card}>
             <Text style={styles.label}>Event Name *</Text>
-            <TextInput
-              style={[
-                styles.input,
-                errors.eventName && { borderColor: 'red', borderWidth: 1 },
-              ]}
-              placeholder='Enter Event Name'
+            <EventNameSearch
               value={eventName}
-              onChangeText={setEventName}
-            />
+              onChange={setEventName}
+              userId={userId || ''}
+              error={errors.eventName}
+              onSelect={(event) => {
+                setEventName(event.eventName);
+                setCourt(event.courtId || "");
+                setPrice(event.priceForPlay?.toString() || "");
+                setSkillLevel(event.skillLevel || 0);
+                setMaxPlayers(event.maxPlayers?.toString() || "");
+                setDescription(event.description || "");
+                dispatch(setPlaceToPlay(event.allCourts?.Name || ""));
+                if (event.preferredPlayers?.length > 0) {
+                  dispatch(setPreferredContacts(event.preferredPlayers));
+                }
+              }}
+/>
+
             <Text style={styles.label}>Club Name *</Text>
             <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
 
