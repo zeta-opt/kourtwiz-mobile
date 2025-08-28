@@ -6,12 +6,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export type Invite = {
   requestId: string;
-  playTime: [number, number, number, number?, number?]; // [YYYY, MM, DD, HH?, MM?]
+  playTime: [number, number, number, number?, number?];
   placeToPlay: string;
   dateTimeMs: number;
   accepted: number;
   playersNeeded: number;
   status: string;
+  eventName: string;
 };
 
 type OutgoingInviteCardItemProps = {
@@ -23,18 +24,16 @@ type OutgoingInviteCardItemProps = {
 const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite, disabled = false, onViewPlayers }) => {
   const router = useRouter();
 
-  //const request = invite.Requests?.[0];
   const acceptedCount = invite.accepted + 1 || 0;
   const totalPlayers = invite.playersNeeded + 1 || 0;
-  const totalPlayers2 = invite.playersNeeded || 0;
   console.log('Invite:', invite);
 
   const isFullyAccepted = acceptedCount === totalPlayers;
   const statusText = isFullyAccepted ? 'Accepted' : 'Pending';
   const statusColor = isFullyAccepted ? '#429645' : '#c47602';
-
-  const peopleText = `${totalPlayers2} ${totalPlayers === 1 ? 'Person' : 'People'} Invited`;
-
+  const statusCount = isFullyAccepted
+  ? `${acceptedCount}/${totalPlayers}`
+  : `${totalPlayers - acceptedCount}/${totalPlayers}`;
 
   const formatDateParts = (timestamp: number) => {
     const dateObj = new Date(timestamp);
@@ -77,19 +76,19 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite,
           <View style={styles.statusBadgeContainer}>
             <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
               <Text style={styles.statusBadgeText}>
-                {acceptedCount}/{totalPlayers} {statusText}
+              {statusCount} {statusText}
               </Text>
             </View>
           </View>
 
           <Text style={styles.placeText} numberOfLines={1}>
-            {invite.placeToPlay}
+          {invite.eventName?.trim() || "Untitled Event"}
           </Text>
 
           <View style={styles.datePeopleRow}>
             <Text style={styles.dateText}>{dateString} | {timeString}</Text>
             <Text style={styles.separator}>|</Text>
-            <Text style={styles.peopleText}>{peopleText}</Text>
+            <Text style={styles.peopleText}>{invite.placeToPlay}</Text>
           </View>
         </View>
 
@@ -101,11 +100,11 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite,
           }}
           style={({ pressed }) => [
             styles.acceptedBox,
-            pressed && styles.pressedStyle, // Optional pressed effect
+            pressed && styles.pressedStyle,
           ]}
         >
           <MaterialCommunityIcons name="account" size={14} color="#007BFF" />
-          <Text style={styles.acceptedTextSmall}>  {acceptedCount} / {totalPlayers} Invited</Text>
+          <Text style={styles.acceptedTextSmall}>{acceptedCount} / {totalPlayers} Accepted</Text>
         </Pressable>
       </View>
     </TouchableOpacity>
@@ -154,7 +153,7 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   separator: {
-    marginHorizontal: 8,
+    marginHorizontal: 4,
     fontSize: 14,
     color: '#555',
   },
@@ -175,7 +174,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },  
   peopleText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#555',
   },
 });
