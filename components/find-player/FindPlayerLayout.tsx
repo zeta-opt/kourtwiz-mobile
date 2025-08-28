@@ -5,6 +5,7 @@ import {
   Contact,
   loadContacts,
   resetPlayerFinderData,
+  setPlaceToPlay,
   setPreferredContacts,
 } from '@/store/playerFinderSlice';
 import { triggerInvitationsRefetch } from '@/store/refetchSlice';
@@ -45,6 +46,7 @@ import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersMo
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
 import ContactsModal from './contacts-modal/ContactsModal';
 import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
+import EventNameSearch from './event-name-search/EventNameSearch';
 
 // Define the PlaceToSave type based on the payload structure
 interface PlaceToSave {
@@ -87,7 +89,6 @@ const FindPlayerLayout = () => {
   const userId = user?.userId;
 
   // State management
-  const [clubName, setClubName] = useState('');
   const [eventName, setEventName] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [contactsModalVisible, setContactsModalVisible] = useState(false);
@@ -143,7 +144,7 @@ const FindPlayerLayout = () => {
         };
 
         setPlaceToSave(transformedPlace);
-        setClubName(params.placeName as string);
+        dispatch(setPlaceToPlay(params.placeName as string));
       } catch (error) {
         console.error('Error parsing new place data:', error);
       }
@@ -350,7 +351,7 @@ const FindPlayerLayout = () => {
                   setPlayerCount(1);
                   setSubmitted(false);
                   setPlaceToSave(null);
-                  setClubName('');
+                  dispatch(setPlaceToPlay(''));
 
                   setTimeout(() => {
                     router.replace('/(authenticated)/home');
@@ -404,6 +405,27 @@ const FindPlayerLayout = () => {
       </View>
 
       <ScrollView style={styles.formScrollView}>
+        {/* Event Name Section */}
+        <Text style={styles.sectionTitle}>Event Name</Text>
+        <EventNameSearch
+          value={eventName}
+          onChange={setEventName}
+          requesterId={userId}
+          onSelect={(event) => {
+            setEventName(event.eventName);
+            setSkillLevel(event.skillRating);
+            setPlayerCount(event.playersNeeded);
+            dispatch(setPlaceToPlay(event.placeToPlay));
+            if (event.name?.length > 0) {
+              dispatch(setPreferredContacts([{
+                contactName: event.name,
+                contactPhoneNumber: event.phoneNumber,
+              }]));
+            }
+          }}
+          error={false}
+        />
+        
         {/* Club Name Section */}
         <Text style={styles.sectionTitle}>Club Name</Text>
         <View style={styles.dropdownRow}>
@@ -416,7 +438,7 @@ const FindPlayerLayout = () => {
           >
             <View style={styles.buttonContent}>
               <Text style={styles.buttonText} numberOfLines={1}>
-                {clubName || placeToPlay || 'Enter Place Name'}
+                {placeToPlay || 'Enter Place Name'}
               </Text>
               <View style={styles.iconContainer}>
                 <Icon source='chevron-down' size={20} />
@@ -447,17 +469,6 @@ const FindPlayerLayout = () => {
             Enable location access to search nearby courts
           </Text>
         )}
-
-        {/* Event Name Section */}
-        <Text style={styles.sectionTitle}>Event Name</Text>
-        <View style={styles.dropdownRow}>
-          <TextInput
-            style={[styles.input]}
-            placeholder='Enter Event Name'
-            value={eventName}
-            onChangeText={setEventName}
-          />
-        </View>
 
         {/* Game Schedule Section - Using the new component */}
         <GameSchedulePicker

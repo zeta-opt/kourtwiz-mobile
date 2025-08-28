@@ -5,11 +5,14 @@ import OpenPlayCard from '@/components/home-page/openPlayCard';
 import OutgoingInviteCardItem from '@/components/home-page/outgoingInvitationsCard';
 import PlayCalendarCard from '@/components/home-page/PlayCalendarCard';
 import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
+import PlayersNearbyMap from '@/components/players-nearby/PlayersNearbyMap';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
+import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
+import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite'; // NEW
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
@@ -35,10 +38,10 @@ import {
   Portal,
   TextInput,
 } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 import { useDispatch, useSelector } from 'react-redux';
-import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite'; // NEW
 
-const API_URL = 'http://44.216.113.234:8080';
+const API_URL = 'https://api.vddette.com';
 
 interface Invite {
   id: number;
@@ -58,11 +61,14 @@ const Dashboard = () => {
   const router = useRouter();
   const isFocused = useIsFocused();
 
-
   const { data: invites, refetch } = useGetInvitations({
     userId: user?.userId,
   });
-    const { cancelInvitation, status: cancelStatus, error:cancelerror } = useCancelInvitation(refetch);
+  const {
+    cancelInvitation,
+    status: cancelStatus,
+    error: cancelerror,
+  } = useCancelInvitation(refetch);
   const { data: outgoingInvitesRaw, refetch: refetchOutgoing } =
     useGetPlayerInvitationSent({
       inviteeEmail: user?.email,
@@ -70,7 +76,10 @@ const Dashboard = () => {
   const clubId = user?.currentActiveClubId;
   const userId = user?.userId;
   const openClubId = user?.currentActiveClubId || 'GLOBAL';
-  const { data: openPlayInvites, refetch:refetchOpenPlay } = useGetPlays('GLOBAL',userId);
+  const { data: openPlayInvites, refetch: refetchOpenPlay } = useGetPlays(
+    'GLOBAL',
+    userId
+  );
   const { data: initiatedPlays } = useGetInitiatedPlays(userId);
 
   const shouldRefetchInvitations = useSelector(
@@ -147,7 +156,7 @@ const Dashboard = () => {
       return {
         ...play,
         dateTimeMs: startDate?.getTime() ?? 0,
-        initiated: true,  
+        initiated: true,
         placeToPlay: play.allCourts?.Name || 'Unknown Court',
         eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
         accepted: play.registeredPlayers?.length ?? 0,
@@ -186,10 +195,35 @@ const Dashboard = () => {
         isWaitlisted: play.waitlistedPlayers?.includes(userId),
         accepted: play.registeredPlayers?.length ?? 0,
         playersNeeded: play.maxPlayers ?? 1,
+        isRegistered: play.registeredPlayers?.includes(userId) ?? false,
         id: play.id,
       };
     }),
   ];
+
+  const { withdraw } = useWithdrawFromPlay();
+
+  const handleWithdrawFromOpenPlay = async (invite: any) => {
+    try {
+      setLoadingId(invite.id);
+      await withdraw({ sessionId: invite.id, userId: user?.userId });
+      Toast.show({
+        type: 'success',
+        text1: 'Withdrawn from play',
+        topOffset: 100,
+      });
+      refetchOpenPlay(); // Refresh the open plays list
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to withdraw',
+        text2: error.message || 'Unknown error',
+        topOffset: 100,
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   useEffect(() => {
     if (isFocused) {
@@ -224,7 +258,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchCounts = async () => {
-      const newCounts: { [key: string]: { accepted: number; total: number } } = {};
+      const newCounts: { [key: string]: { accepted: number; total: number } } =
+        {};
       for (const invite of allInvites) {
         try {
           const token = await getToken();
@@ -254,7 +289,10 @@ const Dashboard = () => {
   }, [allInvites]);
 
   // updated for cancel
-  const showCommentDialog = (invite: Invite, action: 'accept' | 'reject' | 'cancel') => {
+  const showCommentDialog = (
+    invite: Invite,
+    action: 'accept' | 'reject' | 'cancel'
+  ) => {
     setSelectedInvite(invite);
     setSelectedAction(action);
     setDialogVisible(true);
@@ -278,25 +316,32 @@ const Dashboard = () => {
           refetch();
         } else {
           const errorText = await response.text();
+          console.log('Error response:', errorText);
           Alert.alert(
             'Error',
-            errorText || `Failed to ${selectedAction} invitation.`
+            `Failed to ${selectedAction} invitation. You may have another event at the same time.`
           );
         }
       } else if (selectedAction === 'cancel') {
-         const ok = await cancelInvitation(selectedInvite.requestId, userId, comment || '');
-        
-        if (ok) { 
-        Alert.alert('Success', 'Invitation cancelled');
-        refetch();
-        
-      } else {
-        Alert.alert('Error', cancelerror || 'Failed to cancel invitation');
-      }
+        const ok = await cancelInvitation(
+          selectedInvite.requestId,
+          userId,
+          comment || ''
+        );
+
+        if (ok) {
+          Alert.alert('Success', 'Invitation cancelled');
+          refetch();
+        } else {
+          Alert.alert('Error', cancelerror || 'Failed to cancel invitation');
+        }
         refetch();
       }
     } catch (e) {
-      Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
+      Alert.alert(
+        'Error',
+        `Something went wrong while trying to ${selectedAction}`
+      );
     } finally {
       setLoadingId(null);
       setDialogVisible(false);
@@ -479,7 +524,11 @@ const Dashboard = () => {
                 nestedScrollEnabled
                 contentContainerStyle={styles.calendarContent}
               >
-                <PlayCalendarCard invites={playCalendarData} />
+                <PlayCalendarCard
+                  invites={playCalendarData}
+                  onCancel={(invite) => showCommentDialog(invite, 'cancel')}
+                  onWithdraw={handleWithdrawFromOpenPlay}
+                />
               </ScrollView>
             )}
           </View>
@@ -490,13 +539,16 @@ const Dashboard = () => {
               onDismiss={() => setDialogVisible(false)}
             >
               <Dialog.Title>
-                {selectedAction === 'cancel' ? 'Cancel Invitation' : 'Add a message'}
+                {selectedAction === 'cancel'
+                  ? 'Cancel Invitation'
+                  : 'Add a message'}
               </Dialog.Title>
               <Dialog.Content>
                 <TextInput
-                  label={selectedAction === 'cancel'
-                    ? 'Cancel Reason (optional)'
-                    : 'Comment (optional)'
+                  label={
+                    selectedAction === 'cancel'
+                      ? 'Cancel Reason (optional)'
+                      : 'Comment (optional)'
                   }
                   value={comment}
                   onChangeText={setComment}
@@ -505,7 +557,10 @@ const Dashboard = () => {
               </Dialog.Content>
               <Dialog.Actions>
                 <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
-                <Button onPress={handleDialogSubmit} loading={cancelStatus === 'loading'}>
+                <Button
+                  onPress={handleDialogSubmit}
+                  loading={cancelStatus === 'loading'}
+                >
                   Submit
                 </Button>
               </Dialog.Actions>
@@ -530,7 +585,7 @@ const Dashboard = () => {
           <Text style={styles.playersNearByDesc}>
             See users playing near by
           </Text>
-          {/* <PlayersNearbyMap /> */}
+          <PlayersNearbyMap />
 
           <NewMessages userId={user?.userId} />
         </ScrollView>
@@ -542,7 +597,6 @@ const Dashboard = () => {
 export default Dashboard;
 
 // ...styles remain unchanged
-
 
 const styles = StyleSheet.create({
   container: { padding: 20, flexGrow: 1 },

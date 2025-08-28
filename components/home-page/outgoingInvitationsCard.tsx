@@ -59,6 +59,7 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite,
   
     try {
       const encoded = encodeURIComponent(JSON.stringify(invite));
+      console.log('Encoded invite for navigation:', encoded);
       router.push({
         pathname: '/(authenticated)/sentRequestsDetailedView',
         params: { data: encoded },

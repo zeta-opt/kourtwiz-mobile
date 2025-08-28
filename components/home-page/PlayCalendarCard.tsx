@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Text } from 'react-native-paper';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const PlayCalendarCard = ({ invites }: { invites: any[] }) => {
+const PlayCalendarCard = ({ invites,onCancel,onWithdraw, }: { invites: any[];onCancel: (invite: any) => void;onWithdraw: (invite: any) => void; }) => {
   const router = useRouter();
 
   const renderStatusBadge = (status: string) => {
@@ -44,30 +44,30 @@ const PlayCalendarCard = ({ invites }: { invites: any[] }) => {
   };
 
   const getDateObject = (invite: any): Date | null => {
-  if (invite.type === 'incoming' && Array.isArray(invite.playTime)) {
-    const [year, month, day, hour = 0, min = 0, sec = 0] = invite.playTime;
-    return new Date(year, month - 1, day, hour, min, sec);
-  } else if (invite.type === 'openplay' && Array.isArray(invite.playTime)) {
-    const [year, month, day, hour = 0, min = 0] = invite.playTime;
-    return new Date(year, month - 1, day, hour, min);
-  } else if (invite.dateTimeMs) {
-    return new Date(invite.dateTimeMs);
-  }
-  return null;
-};
+    if (invite.type === 'incoming' && Array.isArray(invite.playTime)) {
+      const [year, month, day, hour = 0, min = 0, sec = 0] = invite.playTime;
+      return new Date(year, month - 1, day, hour, min, sec);
+    } else if (invite.type === 'openplay' && Array.isArray(invite.playTime)) {
+      const [year, month, day, hour = 0, min = 0] = invite.playTime;
+      return new Date(year, month - 1, day, hour, min);
+    } else if (invite.dateTimeMs) {
+      return new Date(invite.dateTimeMs);
+    }
+    return null;
+  };
 
-const now = new Date().setHours(0, 0, 0, 0);
+  const now = new Date().setHours(0, 0, 0, 0);
 
-const sortedInvites = [...invites]
-  .filter(invite => {
-    const date = getDateObject(invite)?.getTime() || 0;
-    return date >= now;
-  })
-  .sort((a, b) => {
-    const dateA = getDateObject(a)?.getTime() || 0;
-    const dateB = getDateObject(b)?.getTime() || 0;
-    return dateB - dateA;
-  });
+  const sortedInvites = [...invites]
+    .filter(invite => {
+      const date = getDateObject(invite)?.getTime() || 0;
+      return date >= now;
+    })
+    .sort((a, b) => {
+      const dateA = getDateObject(a)?.getTime() || 0;
+      const dateB = getDateObject(b)?.getTime() || 0;
+      return dateA - dateB;
+    });
 
   const renderInviteRow = (invite: any, index: number) => {
     const { type } = invite;
@@ -94,11 +94,10 @@ const sortedInvites = [...invites]
     let statusText = 'Unknown';
     if (type === 'incoming') {
       statusText = invite.status || 'N/A';
-    } else {
-      const accepted = invite.accepted ?? 0;
-      const playersNeeded = invite.playersNeeded ?? 1;
-      const isFull = accepted >= playersNeeded;
-      statusText = invite.isWaitlisted ? 'WAITLISTED' : isFull ? 'ACCEPTED' : 'PENDING';
+    } else if (type === 'openplay') {
+      statusText = invite.isRegistered ? 'Registered' : 'Not Registered';
+    } else if (type === 'outgoing') {
+      statusText = 'Sent';
     }
 
     const eventName =
@@ -135,6 +134,70 @@ const sortedInvites = [...invites]
         <View style={{ flex: 1 }}>
           <View style={styles.rowTop}>
             <Text style={styles.title}>{eventName}</Text>
+            {/* Chat icon next to event name */}
+            {type === 'incoming' && (
+              <>
+              <TouchableOpacity
+                style={{ marginLeft: 6 }}
+                onPress={() => {
+                  try {
+                    router.push({
+                      pathname: '/(authenticated)/chat-summary',
+                      params: { requestId: invite.requestId },
+                    });
+                  } catch (err) {
+                    console.error('Chat navigation error:', err);
+                  }
+                }}
+              >
+                <MaterialCommunityIcons name="message-text-outline" size={18} color="#007BFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => onCancel(invite)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+              
+            )}
+            {type === 'outgoing' && (
+              <TouchableOpacity
+                onPress={() => {
+                  router.push({
+                    pathname: '/(authenticated)/chat-summary',
+                    params: { requestId: invite.requestId },
+                  });
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="message-text-outline"
+                  size={18}
+                  color="#007BFF"
+                />
+              </TouchableOpacity>
+            )}
+            {type === 'openplay' && invite.isRegistered && (
+              <>
+              <TouchableOpacity
+                onPress={() => {
+                  router.push({ pathname: '/(authenticated)/chat-summary', params: { sessionId: invite.id } });
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="message-text-outline"
+                  size={18}
+                  color="#007BFF"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                  style={styles.withdrawButton}
+                  onPress={() => onWithdraw(invite)}
+                >
+                  <Text style={styles.withdrawButtonText}>Withdraw</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
 
           <Text style={styles.subtitle}>
@@ -150,27 +213,24 @@ const sortedInvites = [...invites]
   };
 
   return (
-  <View style={styles.container}>
-    {sortedInvites
-      .filter(invite => {
-        let statusText = 'Unknown';
-        if (invite.type === 'incoming') {
-          statusText = invite.status || 'N/A';
-        } else {
-          const accepted = invite.accepted ?? 0;
-          const playersNeeded = invite.playersNeeded ?? 1;
-          const isFull = accepted >= playersNeeded;
-          statusText = invite.isWaitlisted
-            ? 'WAITLISTED'
-            : isFull
-            ? 'ACCEPTED'
-            : 'PENDING';
-        }
-        return statusText.toLowerCase() === 'accepted';
-      })
-      .map((invite, index) => renderInviteRow(invite, index))}
-  </View>
-);
+    <View style={styles.container}>
+      {sortedInvites
+        .filter(invite => {
+          if (invite.type === 'incoming') {
+            // all accepted incoming requests
+            return (invite.status || '').toLowerCase() === 'accepted';
+          } else if (invite.type === 'outgoing') {
+            // all sent requests (no filtering)
+            return true;
+          } else if (invite.type === 'openplay') {
+            // registered openplay events only
+            return invite.isRegistered === true;
+          }
+          return false;
+        })
+        .map((invite, index) => renderInviteRow(invite, index))}
+    </View>
+  );
 };
 
 export default PlayCalendarCard;
@@ -227,4 +287,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#555',
   },
+  cancelButton: {
+  backgroundColor: '#D32F2F',
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 6,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginLeft: 10,
+},
+cancelButtonText: {
+  color: '#fff',
+  fontWeight: '600',
+  fontSize: 12,
+},
+withdrawButton: {
+  backgroundColor: '#D32F2F',
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 6,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginLeft: 10,
+},
+withdrawButtonText: {
+  color: '#fff',
+  fontWeight: '600',
+  fontSize: 12,
+},
+
+
 });

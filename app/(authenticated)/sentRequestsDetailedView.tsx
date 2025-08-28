@@ -36,7 +36,6 @@ function arrayToDate(arr: number[]): Date {
   if (!arr || arr.length < 6) return new Date();
   return new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], arr[5]);
 }
-
 export default function SentRequestDetailedView() {
   const { data } = useLocalSearchParams<{ data: string }>();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -60,7 +59,7 @@ export default function SentRequestDetailedView() {
   }, [data]);
 
   if (!invite) return <ActivityIndicator size="large" style={styles.loader} />;
-
+  console.log(invite)
   const playTime = arrayToDate(invite?.Requests?.[0]?.playTime || []);
   const dateString = playTime.toLocaleDateString();
   const timeString = playTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
