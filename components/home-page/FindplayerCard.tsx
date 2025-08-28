@@ -15,7 +15,7 @@ const FindplayerCard = () => {
         {/* Left: Icon */}
         <View style={styles.featuredIconContainer}>
           <Image
-            source={require('@/assets/images/pickleball_player.png')}
+            source={require('@/assets/images/FindPlayerCardImage.png')}
             style={styles.featuredImage}
           />
         </View>
