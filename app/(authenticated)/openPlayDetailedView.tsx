@@ -145,13 +145,13 @@ export default function OpenPlayDetailedView() {
           <View style={styles.row}>
             <View style={styles.column}>
               <View style={styles.iconCircle}>
-                <FontAwesome5 name="calendar-alt" size={20} color="#2CA6A4" />
+                <FontAwesome5 name="calendar-alt" size={20} color="#2CA6A4" solid  />
               </View>
               <Text style={styles.infoText}>{startDate.toLocaleDateString()}</Text>
             </View>
             <View style={styles.column}>
               <View style={styles.iconCircle}>
-                <FontAwesome5 name="clock" size={20} color="#2CA6A4" />
+                <FontAwesome5 name="clock" size={20} color="#2CA6A4" solid  />
               </View>
               <Text style={styles.infoText2}>
                 {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}

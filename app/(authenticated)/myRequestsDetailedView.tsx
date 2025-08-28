@@ -17,13 +17,21 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 
 function arrayToDate(arr: number[]): Date {
-  if (!arr || arr.length < 6) return new Date();
-  return new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], arr[5]);
+  if (!arr || arr.length < 5) return new Date();
+   return new Date(
+    arr[0],         
+    arr[1] - 1,     
+    arr[2],         
+    arr[3],         
+    arr[4],         
+    arr[5] || 0     
+  );
 }
 
 export default function MyRequestsDetailedView() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
   const { data, loading, error } = useGetPlayerFinderRequest(requestId);
+  console.log('Request Data:', data);
 
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
@@ -43,8 +51,10 @@ export default function MyRequestsDetailedView() {
   const myInvite = data?.find((invite: any) => invite.userId === loggedInUserId);
 
   const invite = data[0];
+  console.log('Invite Details:', invite);
   const playTime = arrayToDate(invite?.playTime);
-  const dateString = playTime.toLocaleDateString();
+  const dateString = playTime.toLocaleDateString('en-US');
+  console.log('Play Time:', playTime);
   const timeString = playTime.toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -124,13 +134,14 @@ export default function MyRequestsDetailedView() {
                     name="calendar-alt"
                     size={20}
                     color="#2CA6A4"
+                    solid 
                   />
                 </View>
                 <Text style={styles.infoText}>{dateString}</Text>
               </View>
               <View style={styles.column}>
                 <View style={styles.infoCard}>
-                  <FontAwesome5 name="clock" size={20} color="#2CA6A4" />
+                  <FontAwesome5 name="clock" size={20} color="#2CA6A4" solid  />
                 </View>
                 <Text style={styles.infoText}>{timeString}</Text>
               </View>

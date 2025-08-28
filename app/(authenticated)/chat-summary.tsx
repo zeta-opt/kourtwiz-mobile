@@ -119,7 +119,7 @@ export default function ChatSummaryPage() {
             if (isGroupChat) {
               router.replace('/groups');
             } else if (isSessionChat) {
-              router.push({ pathname: '/(authenticated)/openPlayDetailedView', params: { sessionId:sessId } })
+              router.push({ pathname: '/(authenticated)/home' })
             } else {
               router.replace('/home');
             }
