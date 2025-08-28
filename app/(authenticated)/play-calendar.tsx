@@ -1,25 +1,40 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { Calendar } from 'react-native-calendars';
-import { useMemo, useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
-import { format } from 'date-fns';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
-import { Ionicons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
+import InvitationCard from '@/components/home-page/myInvitationsCard';
+import OpenPlayCard from '@/components/home-page/openPlayCard';
+import OutgoingInviteCardItem from '@/components/home-page/outgoingInvitationsCard';
+import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
+import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
+import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
 import { useGetPlayerEventsByDate } from '@/hooks/apis/set-availability/useGetPlayerEventsByDate';
 import { useGetPlayerSchedule } from '@/hooks/apis/set-availability/useGetPlayerSchedule';
-import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
-import InvitationCard from '@/components/home-page/myInvitationsCard';
-import OutgoingInviteCardItem from '@/components/home-page/outgoingInvitationsCard';
-import OpenPlayCard from '@/components/home-page/openPlayCard';
-import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
-import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
 import { getToken } from '@/shared/helpers/storeToken';
+import { RootState } from '@/store';
+import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import { Button, Dialog, Portal, Modal, Provider as PaperProvider, TextInput } from 'react-native-paper';
+import { format } from 'date-fns';
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Calendar } from 'react-native-calendars';
+import {
+  Button,
+  Dialog,
+  Modal,
+  Provider as PaperProvider,
+  Portal,
+  TextInput,
+} from 'react-native-paper';
+import { useSelector } from 'react-redux';
 
-const API_URL = 'http://44.216.113.234:8080';
+const API_URL = 'https://api.vddette.com';
 
 // Utilities
 const parseArrayToDate = (arr: number[]): Date => {
@@ -42,19 +57,30 @@ export default function PlayCalendarPage() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const [selectedDate, setSelectedDate] = useState<string>(today);
 
-  const { data: eventsForSelectedDate, refetch  } = useGetPlayerEventsByDate(selectedDate, userId);
+  const { data: eventsForSelectedDate, refetch } = useGetPlayerEventsByDate(
+    selectedDate,
+    userId
+  );
   const { data: schedule } = useGetPlayerSchedule(userId);
   const { data: initiatedData } = useGetInitiatedPlays(userId);
 
-  const { cancelInvitation, status: cancelStatus, error:cancelerror } = useCancelInvitation(refetch);
+  const {
+    cancelInvitation,
+    status: cancelStatus,
+    error: cancelerror,
+  } = useCancelInvitation(refetch);
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [selectedInvite, setSelectedInvite] = useState<any>(null);
   const [comment, setComment] = useState('');
-  const [selectedAction, setSelectedAction] = useState<'accept'|'reject'|'cancel'|null>(null);
+  const [selectedAction, setSelectedAction] = useState<
+    'accept' | 'reject' | 'cancel' | null
+  >(null);
 
-  const [playerCounts, setPlayerCounts] = useState<{[key:string]: {accepted:number; total:number}}>({});
+  const [playerCounts, setPlayerCounts] = useState<{
+    [key: string]: { accepted: number; total: number };
+  }>({});
   const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
 
@@ -62,7 +88,8 @@ export default function PlayCalendarPage() {
   useEffect(() => {
     const fetchCounts = async () => {
       if (!eventsForSelectedDate) return;
-      const newCounts: { [key: string]: { accepted: number; total: number } } = {};
+      const newCounts: { [key: string]: { accepted: number; total: number } } =
+        {};
 
       const allRequests = [
         ...(eventsForSelectedDate.incomingPlayerFinderRequests ?? []),
@@ -80,7 +107,8 @@ export default function PlayCalendarPage() {
             }
           );
           const total = res.data[0]?.playersNeeded + 1 || 1;
-          const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length + 1;
+          const accepted =
+            res.data.filter((p: any) => p.status === 'ACCEPTED').length + 1;
           newCounts[req.requestId] = { accepted, total };
         } catch (error) {
           newCounts[req.requestId] = { accepted: 0, total: 1 };
@@ -95,86 +123,102 @@ export default function PlayCalendarPage() {
 
   // Filter initiated plays by selectedDate
   const initiatedPlaysForSelectedDate = (initiatedData ?? [])
-    .filter(e => Array.isArray(e.startTime) && isSameDay(e.startTime, selectedDate))
-    .map(e => ({
+    .filter(
+      (e) => Array.isArray(e.startTime) && isSameDay(e.startTime, selectedDate)
+    )
+    .map((e) => ({
       ...e,
-      type: "available",
+      type: 'available',
       start: parseArrayToDate(e.startTime),
       end: e.durationMinutes
-        ? new Date(parseArrayToDate(e.startTime).getTime() + e.durationMinutes * 60000)
+        ? new Date(
+            parseArrayToDate(e.startTime).getTime() + e.durationMinutes * 60000
+          )
         : null,
     }));
 
   // Filter available events
-  const availableEventsForSelectedDate = (eventsForSelectedDate?.eventsAvailable ?? [])
-    .map(e => ({
+  const availableEventsForSelectedDate = (
+    eventsForSelectedDate?.eventsAvailable ?? []
+  )
+    .map((e) => ({
       ...e,
-      type: "available",
+      type: 'available',
       start: parseArrayToDate(e.startTime),
-      end: e.durationMinutes 
-        ? new Date(parseArrayToDate(e.startTime).getTime() + e.durationMinutes * 60000)
+      end: e.durationMinutes
+        ? new Date(
+            parseArrayToDate(e.startTime).getTime() + e.durationMinutes * 60000
+          )
         : null,
     }))
-    .filter(e => isSameDay(e.startTime, selectedDate));
+    .filter((e) => isSameDay(e.startTime, selectedDate));
 
   // Unique/outgoing/incoming requests filtering
   const uniqueInitiatedPlayerFinderRequests = (
     eventsForSelectedDate?.initiatedPlayerFinderRequests ?? []
-  ).filter((req, index, self) =>
-    index === self.findIndex(r => r.requestId === req.requestId)
+  ).filter(
+    (req, index, self) =>
+      index === self.findIndex((r) => r.requestId === req.requestId)
   );
 
- const allInitiatedPlayerFinderRequests = eventsForSelectedDate?.initiatedPlayerFinderRequests ?? [];
+  const allInitiatedPlayerFinderRequests =
+    eventsForSelectedDate?.initiatedPlayerFinderRequests ?? [];
 
-// Function to group requests by requestId
-const groupedOutgoingRequests = (requests: any[]) => {
-  const grouped = requests
-    .filter(r => r.status !== "WITHDRAWN") // only active players
-    .reduce((acc: Record<string, any[]>, curr) => {
-      if (!acc[curr.requestId]) acc[curr.requestId] = [];
-      acc[curr.requestId].push({
-        ...curr,
-        start: parseArrayToDate(curr.playTime),
-        end: parseArrayToDate(curr.playEndTime),
-        type: "outgoing",
-      });
-      return acc;
-    }, {});
+  // Function to group requests by requestId
+  const groupedOutgoingRequests = (requests: any[]) => {
+    const grouped = requests
+      .filter((r) => r.status !== 'WITHDRAWN') // only active players
+      .reduce((acc: Record<string, any[]>, curr) => {
+        if (!acc[curr.requestId]) acc[curr.requestId] = [];
+        acc[curr.requestId].push({
+          ...curr,
+          start: parseArrayToDate(curr.playTime),
+          end: parseArrayToDate(curr.playEndTime),
+          type: 'outgoing',
+        });
+        return acc;
+      }, {});
 
-  return Object.values(grouped).map(playersForRequest => ({
-    Requests: playersForRequest,
-    accepted: playersForRequest.filter(r => r.status === "ACCEPTED").length,
-    pending: playersForRequest.filter(r => r.status === "PENDING").length,
-    date: playersForRequest[0].playTime
-      ? format(parseArrayToDate(playersForRequest[0].playTime), "EEE, MMM d, h:mm a")
-      : null,
-    dateTimeMs: playersForRequest[0].playTime
-      ? parseArrayToDate(playersForRequest[0].playTime).getTime()
-      : null,
-    placeToPlay: playersForRequest[0].placeToPlay,
-    playersNeeded: playersForRequest[0].playersNeeded,
-    requestId: playersForRequest[0].requestId,
-    skillRating: playersForRequest[0].skillRating,
-    type: "outgoing",
-    start: playersForRequest[0].start,
-    end: playersForRequest[0].end,
-  }));
-};
+    return Object.values(grouped).map((playersForRequest) => ({
+      Requests: playersForRequest,
+      accepted: playersForRequest.filter((r) => r.status === 'ACCEPTED').length,
+      pending: playersForRequest.filter((r) => r.status === 'PENDING').length,
+      date: playersForRequest[0].playTime
+        ? format(
+            parseArrayToDate(playersForRequest[0].playTime),
+            'EEE, MMM d, h:mm a'
+          )
+        : null,
+      dateTimeMs: playersForRequest[0].playTime
+        ? parseArrayToDate(playersForRequest[0].playTime).getTime()
+        : null,
+      placeToPlay: playersForRequest[0].placeToPlay,
+      playersNeeded: playersForRequest[0].playersNeeded,
+      requestId: playersForRequest[0].requestId,
+      skillRating: playersForRequest[0].skillRating,
+      type: 'outgoing',
+      start: playersForRequest[0].start,
+      end: playersForRequest[0].end,
+    }));
+  };
 
-  const outgoingRequests = groupedOutgoingRequests(allInitiatedPlayerFinderRequests);
+  const outgoingRequests = groupedOutgoingRequests(
+    allInitiatedPlayerFinderRequests
+  );
 
-
-  const incomingRequests = (eventsForSelectedDate?.incomingPlayerFinderRequests ?? [])
-    .map(e => ({
+  const incomingRequests = (
+    eventsForSelectedDate?.incomingPlayerFinderRequests ?? []
+  )
+    .map((e) => ({
       ...e,
-      type: "incoming",
+      type: 'incoming',
       start: parseArrayToDate(e.playTime),
       end: parseArrayToDate(e.playEndTime),
       accepted: playerCounts[e.requestId]?.accepted ?? 0,
       totalPlayers: playerCounts[e.requestId]?.total ?? 1,
     }))
-    .filter(e => isSameDay(e.playTime, selectedDate));
-    
+    .filter((e) => isSameDay(e.playTime, selectedDate));
+
   // Merge all events
   const mergedEvents = [
     ...availableEventsForSelectedDate,
@@ -188,27 +232,39 @@ const groupedOutgoingRequests = (requests: any[]) => {
     const marks: Record<string, any> = {};
     if (schedule) {
       const allEvents = [
-        ...(schedule?.eventsAvailable ?? []).map(e => ({ ...e, type: "eventAvailable" })),
-        ...(schedule?.eventsCreated ?? []).map(e => ({ ...e, type: "eventCreated" })),
-        ...(schedule?.incomingPlayerFinderRequests ?? []).map(e => ({ ...e, type: "incomingPlayerFinder" })),
-        ...(schedule?.initiatedPlayerFinderRequests ?? []).map(e => ({ ...e, type: "initiatedPlayerFinder" })),
+        ...(schedule?.eventsAvailable ?? []).map((e) => ({
+          ...e,
+          type: 'eventAvailable',
+        })),
+        ...(schedule?.eventsCreated ?? []).map((e) => ({
+          ...e,
+          type: 'eventCreated',
+        })),
+        ...(schedule?.incomingPlayerFinderRequests ?? []).map((e) => ({
+          ...e,
+          type: 'incomingPlayerFinder',
+        })),
+        ...(schedule?.initiatedPlayerFinderRequests ?? []).map((e) => ({
+          ...e,
+          type: 'initiatedPlayerFinder',
+        })),
       ];
-      allEvents.forEach(event => {
+      allEvents.forEach((event) => {
         const dateArr = event.startTime ?? event.playTime;
         if (!dateArr) return;
-        const date = format(parseArrayToDate(dateArr), "yyyy-MM-dd");
+        const date = format(parseArrayToDate(dateArr), 'yyyy-MM-dd');
         let bgColor: string | null = null;
-        if (event.type === "eventAvailable" || event.type === "eventCreated") {
-          bgColor = "yellow";
-        } else if (event.type === "incomingPlayerFinder") {
-          if (event.status === "ACCEPTED") bgColor = "green";
-          else if (event.status === "DECLINED") bgColor = "red";
-          else bgColor = "yellow";
-        } else if (event.type === "initiatedPlayerFinder") {
-          if (event.status === "ACCEPTED") bgColor = "green";
-          else if (event.status === "DECLINED") bgColor = "red";
-          else if (event.status === "WITHDRAWN") bgColor = null;
-          else bgColor = "yellow";
+        if (event.type === 'eventAvailable' || event.type === 'eventCreated') {
+          bgColor = 'yellow';
+        } else if (event.type === 'incomingPlayerFinder') {
+          if (event.status === 'ACCEPTED') bgColor = 'green';
+          else if (event.status === 'DECLINED') bgColor = 'red';
+          else bgColor = 'yellow';
+        } else if (event.type === 'initiatedPlayerFinder') {
+          if (event.status === 'ACCEPTED') bgColor = 'green';
+          else if (event.status === 'DECLINED') bgColor = 'red';
+          else if (event.status === 'WITHDRAWN') bgColor = null;
+          else bgColor = 'yellow';
         }
         if (bgColor) {
           marks[date] = {
@@ -218,8 +274,8 @@ const groupedOutgoingRequests = (requests: any[]) => {
                 borderRadius: 4,
               },
               text: {
-                color: "white",
-                fontWeight: "bold",
+                color: 'white',
+                fontWeight: 'bold',
               },
             },
           };
@@ -230,12 +286,12 @@ const groupedOutgoingRequests = (requests: any[]) => {
       marks[selectedDate] = {
         customStyles: {
           container: {
-            backgroundColor: "#00adf5",
+            backgroundColor: '#00adf5',
             borderRadius: 4,
           },
           text: {
-            color: "white",
-            fontWeight: "bold",
+            color: 'white',
+            fontWeight: 'bold',
           },
         },
       };
@@ -243,33 +299,42 @@ const groupedOutgoingRequests = (requests: any[]) => {
     return marks;
   }, [schedule, selectedDate]);
 
-  const showCommentDialog = (invite: any, action: 'accept'|'reject'|'cancel') => {
+  const showCommentDialog = (
+    invite: any,
+    action: 'accept' | 'reject' | 'cancel'
+  ) => {
     setSelectedInvite(invite);
     setSelectedAction(action);
     setDialogVisible(true);
     setComment('');
   };
 
-  
   const handlePress = (event: any) => {
-    if (event.type === "outgoing") {
-          const allPlayersForRequest = allInitiatedPlayerFinderRequests
-        .filter(e => e.status !== "WITHDRAWN" && e.requestId === event.requestId)
-        .map(e => ({
+    if (event.type === 'outgoing') {
+      const allPlayersForRequest = allInitiatedPlayerFinderRequests
+        .filter(
+          (e) => e.status !== 'WITHDRAWN' && e.requestId === event.requestId
+        )
+        .map((e) => ({
           ...e,
-          type: "outgoing",
+          type: 'outgoing',
           start: parseArrayToDate(e.playTime),
           end: parseArrayToDate(e.playEndTime),
         }));
- 
+
       if (!allPlayersForRequest.length) return;
- 
+
       const groupedOutgoingRequest = {
         Requests: allPlayersForRequest,
-        accepted: allPlayersForRequest.filter(r => r.status === "ACCEPTED").length,
-        pending: allPlayersForRequest.filter(r => r.status === "PENDING").length,
+        accepted: allPlayersForRequest.filter((r) => r.status === 'ACCEPTED')
+          .length,
+        pending: allPlayersForRequest.filter((r) => r.status === 'PENDING')
+          .length,
         date: allPlayersForRequest[0].playTime
-          ? format(parseArrayToDate(allPlayersForRequest[0].playTime), "EEE, MMM d, h:mm a")
+          ? format(
+              parseArrayToDate(allPlayersForRequest[0].playTime),
+              'EEE, MMM d, h:mm a'
+            )
           : null,
         dateTimeMs: allPlayersForRequest[0].playTime
           ? parseArrayToDate(allPlayersForRequest[0].playTime).getTime()
@@ -279,22 +344,26 @@ const groupedOutgoingRequests = (requests: any[]) => {
         requestId: event.requestId,
         skillRating: allPlayersForRequest[0].skillRating,
       };
- 
-      const encoded = encodeURIComponent(JSON.stringify(groupedOutgoingRequest));
+
+      const encoded = encodeURIComponent(
+        JSON.stringify(groupedOutgoingRequest)
+      );
       router.push({
-        pathname: "/(authenticated)/sentRequestsDetailedView",
+        pathname: '/(authenticated)/sentRequestsDetailedView',
         params: { data: encoded },
       });
     }
-  }
-
+  };
 
   const handleDialogSubmit = async () => {
     if (!selectedInvite || !selectedAction) return;
     try {
       setLoadingId(selectedInvite.id);
       if (selectedAction === 'accept' || selectedAction === 'reject') {
-        const baseUrl = selectedAction === 'accept' ? selectedInvite.acceptUrl : selectedInvite.declineUrl;
+        const baseUrl =
+          selectedAction === 'accept'
+            ? selectedInvite.acceptUrl
+            : selectedInvite.declineUrl;
         const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
         const response = await fetch(url);
         if (response.status === 200) {
@@ -302,10 +371,17 @@ const groupedOutgoingRequests = (requests: any[]) => {
           await refetch();
         } else {
           const errorText = await response.text();
-          Alert.alert('Error', errorText || `Failed to ${selectedAction} invitation.`);
+          Alert.alert(
+            'Error',
+            errorText || `Failed to ${selectedAction} invitation.`
+          );
         }
       } else if (selectedAction === 'cancel') {
-        const ok = await cancelInvitation(selectedInvite.requestId, userId, comment || '');
+        const ok = await cancelInvitation(
+          selectedInvite.requestId,
+          userId,
+          comment || ''
+        );
         if (ok) {
           Alert.alert('Success', 'Invitation cancelled');
         } else {
@@ -313,7 +389,10 @@ const groupedOutgoingRequests = (requests: any[]) => {
         }
       }
     } catch (e) {
-      Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
+      Alert.alert(
+        'Error',
+        `Something went wrong while trying to ${selectedAction}`
+      );
     } finally {
       setLoadingId(null);
       setDialogVisible(false);
@@ -337,7 +416,6 @@ const groupedOutgoingRequests = (requests: any[]) => {
     }
   };
 
-
   return (
     <PaperProvider>
       <View style={styles.Headercontainer}>
@@ -346,7 +424,7 @@ const groupedOutgoingRequests = (requests: any[]) => {
             onPress={() => router.replace('/(authenticated)/home')}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={24} color="#cce5e3" />
+            <Ionicons name='arrow-back' size={24} color='#cce5e3' />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
             <Text style={styles.title}>Play Calendar</Text>
@@ -358,19 +436,23 @@ const groupedOutgoingRequests = (requests: any[]) => {
           <Calendar
             onDayPress={(day) => setSelectedDate(day.dateString)}
             markedDates={markedDates}
-            markingType="custom"
+            markingType='custom'
             style={styles.calendar}
           />
 
           <FlatList
             data={mergedEvents}
             style={styles.smc}
-            keyExtractor={(item, index) => `${item.id || item.requestId}-${index}`}
+            keyExtractor={(item, index) =>
+              `${item.id || item.requestId}-${index}`
+            }
             ListEmptyComponent={
-              <Text style={styles.noEvents}>No confirmed events for this date</Text>
+              <Text style={styles.noEvents}>
+                No confirmed events for this date
+              </Text>
             }
             renderItem={({ item }) => {
-              if (item.type === "incoming") {
+              if (item.type === 'incoming') {
                 return (
                   <InvitationCard
                     key={item.id}
@@ -384,35 +466,37 @@ const groupedOutgoingRequests = (requests: any[]) => {
                     onViewPlayers={() => handleViewPlayers(item.requestId)}
                   />
                 );
-              } else if (item.type === "outgoing") {
+              } else if (item.type === 'outgoing') {
                 console.log('Rendering outgoing invite:', item);
                 return (
                   <TouchableOpacity onPress={() => handlePress(item)}>
-                  <OutgoingInviteCardItem
-                    key={item.requestId}
-                    invite={item}
-                    // totalPlayers={item.totalPlayers}
-                    // acceptedPlayers={item.accepted}
-                    
-                    onViewPlayers={() => handleViewPlayers(item.requestId)}
-                  />
+                    <OutgoingInviteCardItem
+                      key={item.requestId}
+                      invite={item}
+                      // totalPlayers={item.totalPlayers}
+                      // acceptedPlayers={item.accepted}
+
+                      onViewPlayers={() => handleViewPlayers(item.requestId)}
+                    />
                   </TouchableOpacity>
-                );  
-              } else if (item.type === "available") {
-                return (
-                  <OpenPlayCard
-                    data={[item]}
-                    refetch={() => { }}
-                  />
                 );
+              } else if (item.type === 'available') {
+                return <OpenPlayCard data={[item]} refetch={() => {}} />;
               } else {
                 return (
                   <View style={styles.eventCard}>
-                    <Text style={styles.eventTitle}>{item.eventName || "Event Name"}</Text>
-                    <Text style={styles.eventLocation}>{item.placeToPlay || item.allCourts?.Name || "Unknown Location"}</Text>
+                    <Text style={styles.eventTitle}>
+                      {item.eventName || 'Event Name'}
+                    </Text>
+                    <Text style={styles.eventLocation}>
+                      {item.placeToPlay ||
+                        item.allCourts?.Name ||
+                        'Unknown Location'}
+                    </Text>
                     {item.start && item.end && (
                       <Text style={styles.eventTime}>
-                        {format(item.start, "h:mm a")} - {format(item.end, "h:mm a")}
+                        {format(item.start, 'h:mm a')} -{' '}
+                        {format(item.end, 'h:mm a')}
                       </Text>
                     )}
                   </View>
@@ -426,10 +510,16 @@ const groupedOutgoingRequests = (requests: any[]) => {
           <TouchableOpacity onPress={() => setSelectedDate(today)}>
             <Text style={styles.navText}>Today</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/(authenticated)/set-availability')}>
+          <TouchableOpacity
+            onPress={() => router.push('/(authenticated)/set-availability')}
+          >
             <Text style={styles.navText}>Set Availability</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/(authenticated)/player-invitations?type=incoming')}>
+          <TouchableOpacity
+            onPress={() =>
+              router.push('/(authenticated)/player-invitations?type=incoming')
+            }
+          >
             <Text style={styles.navText}>Inbox</Text>
           </TouchableOpacity>
         </View>
@@ -440,13 +530,16 @@ const groupedOutgoingRequests = (requests: any[]) => {
             onDismiss={() => setDialogVisible(false)}
           >
             <Dialog.Title>
-              {selectedAction === 'cancel' ? 'Cancel Invitation' : 'Add a message'}
+              {selectedAction === 'cancel'
+                ? 'Cancel Invitation'
+                : 'Add a message'}
             </Dialog.Title>
             <Dialog.Content>
               <TextInput
-                label={selectedAction === 'cancel'
-                  ? 'Cancel Reason (optional)'
-                  : 'Comment (optional)'
+                label={
+                  selectedAction === 'cancel'
+                    ? 'Cancel Reason (optional)'
+                    : 'Comment (optional)'
                 }
                 value={comment}
                 onChangeText={setComment}
@@ -455,7 +548,10 @@ const groupedOutgoingRequests = (requests: any[]) => {
             </Dialog.Content>
             <Dialog.Actions>
               <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
-              <Button onPress={handleDialogSubmit} loading={cancelStatus === 'loading'}>
+              <Button
+                onPress={handleDialogSubmit}
+                loading={cancelStatus === 'loading'}
+              >
                 Submit
               </Button>
             </Dialog.Actions>
@@ -513,10 +609,10 @@ const styles = StyleSheet.create({
     color: '#0077cc',
     fontWeight: '500',
   },
-  smc:{
-    padding:10,
+  smc: {
+    padding: 10,
   },
-  
+
   calendar: {
     borderRadius: 12,
     margin: 16,
