@@ -199,13 +199,24 @@ export default function OpenPlayDetailedView() {
         {/* Player Lists */}
         <View style={styles.playerListSection}>
           <Text style={styles.playersListTitle}>Registered Players:</Text>
-          {data?.registeredPlayersNames && data.registeredPlayersNames.length > 0 ? (
-            data.registeredPlayersNames.map((name:string, idx:number) => (
-              <Text style={styles.playerName} key={idx}>• {name}</Text>
-            ))
-          ) : (
-            <Text style={styles.playerNameDimmed}>No players registered yet.</Text>
-          )}
+            {(() => {
+              const registered = data?.registeredPlayersNames || [];
+              const playersWithRequestor = [
+                requestorName,   
+                ...registered,
+              ];
+
+              return playersWithRequestor.length > 0 ? (
+                playersWithRequestor.map((name: string, idx: number) => (
+                  <Text style={styles.playerName} key={idx}>
+                    • {name}
+                  </Text>
+                ))
+              ) : (
+                <Text style={styles.playerNameDimmed}>No players registered yet.</Text>
+              );
+            })()}
+
 
           <Text style={[styles.playersListTitle, { marginTop: 12 }]}>Waitlisted Players:</Text>
           {data?.waitlistedPlayersNames && data.waitlistedPlayersNames.length > 0 ? (
