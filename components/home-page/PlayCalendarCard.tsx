@@ -8,7 +8,7 @@ import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const PlayCalendarCard = ({ invites,onCancel,onWithdraw, }: { invites: any[];onCancel: (invite: any) => void;onWithdraw: (invite: any) => void; }) => {
+const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest }: { invites: any[];onCancel: (invite: any) => void;onWithdraw: (invite: any) => void; onWithdrawSentRequest?: (invite: any) => void; }) => {
   const router = useRouter();
 
   const renderStatusBadge = (status: string) => {
@@ -162,21 +162,33 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw, }: { invites: any[];onC
               
             )}
             {type === 'outgoing' && (
-              <TouchableOpacity
-                onPress={() => {
-                  router.push({
-                    pathname: '/(authenticated)/chat-summary',
-                    params: { requestId: invite.requestId },
-                  });
-                }}
-              >
-                <MaterialCommunityIcons
-                  name="message-text-outline"
-                  size={18}
-                  color="#007BFF"
-                />
-              </TouchableOpacity>
-            )}
+  <>
+    <TouchableOpacity
+      onPress={() => {
+        router.push({
+          pathname: '/(authenticated)/chat-summary',
+          params: { requestId: invite.requestId },
+        });
+      }}
+    >
+      <MaterialCommunityIcons
+        name="message-text-outline"
+        size={18}
+        color="#007BFF"
+      />
+    </TouchableOpacity>
+
+    {onWithdrawSentRequest && (
+      <TouchableOpacity
+        style={styles.withdrawButton}
+        onPress={() => onWithdrawSentRequest(invite)}
+      >
+        <Text style={styles.withdrawButtonText}>Withdraw</Text>
+      </TouchableOpacity>
+    )}
+  </>
+)}
+
             {type === 'openplay' && invite.isRegistered && (
               <>
               <TouchableOpacity

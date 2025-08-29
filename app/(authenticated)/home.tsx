@@ -14,6 +14,7 @@ import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite'; // NEW
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
+import { useWithdrawRequest } from '@/hooks/apis/player-finder/useWithdrawRequest';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
 import { resetInvitationsRefetch } from '@/store/refetchSlice';
@@ -200,6 +201,29 @@ const Dashboard = () => {
       };
     }),
   ];
+  const { withdrawRequest, status: withdrawRequestStatus, error: withdrawRequestError, refetch: refetchWithdrawRequest } = useWithdrawRequest();
+const handleWithdrawFromSentRequest = async (invite: any) => {
+  try {
+    setLoadingId(invite.requestId);
+    await withdrawRequest(invite.requestId, userId, ''); // comment can be added if needed
+    Toast.show({
+      type: 'success',
+      text1: 'Request withdrawn',
+      topOffset: 100,
+    });
+    refetchOutgoing(); // refresh outgoing invites
+  } catch (error: any) {
+    Toast.show({
+      type: 'error',
+      text1: 'Failed to withdraw request',
+      text2: error.message || 'Unknown error',
+      topOffset: 100,
+    });
+  } finally {
+    setLoadingId(null);
+  }
+};
+
 
   const { withdraw } = useWithdrawFromPlay();
 
@@ -529,6 +553,7 @@ const Dashboard = () => {
                   invites={playCalendarData}
                   onCancel={(invite) => showCommentDialog(invite, 'cancel')}
                   onWithdraw={handleWithdrawFromOpenPlay}
+                  onWithdrawSentRequest={handleWithdrawFromSentRequest}
                 />
               </ScrollView>
             )}
