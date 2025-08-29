@@ -85,18 +85,18 @@ const MapComponent = React.memo(
         {markers.map(
           (marker) =>
             positions[marker.key] && (
-              <Text
-                key={`label-${marker.key}`}
-                style={[
-                  styles.label,
-                  {
-                    left: positions[marker.key].x - 40,
-                    top: positions[marker.key].y - 30,
-                  },
-                ]}
-              >
-                {marker.clubName}
-              </Text>
+                <Text
+                  key={`label-${marker.key}`}
+                  style={[
+                    styles.label,
+                    {
+                      left: positions[marker.key].x - 40,
+                      top: positions[marker.key].y - 30,
+                    },
+                  ]}
+                >
+                  {marker.bookings.length} {marker.bookings.length === 1 ? "player" : "players"}
+                </Text>
             )
         )}
       </View>
