@@ -3,12 +3,24 @@ import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlay
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
+import { useCancelOpenPlay } from '@/hooks/apis/join-play/useCancelOpenPlay';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import { RootState } from '@/store';
-import { FontAwesome5, Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import {
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
+import {
+  Alert,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
@@ -36,6 +48,8 @@ type OpenPlayCardProps = {
   cardStyle?: ViewStyle;
   data: any[];
   refetch: () => void;
+   refetchInitiated?: () => void;    // 🔑 add this for initiated plays
+  onCancelSuccess?: (sessionId: string) => void;
 };
 
 const extractErrorMessage = (err: any): string => {
@@ -51,13 +65,13 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
   cardStyle,
   data,
   refetch,
+  refetchInitiated
 }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
 
-  // Get initiated plays
-  const { data: initiatedData, status: initiatedStatus } =
+  const { data: initiatedData, status: initiatedStatus, } =
     useGetInitiatedPlays(userId);
 
   const { data: courtsData, status: courtsStatus } = useGetClubCourt({
@@ -66,20 +80,61 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
   const { joinPlaySession } = useMutateJoinPlay();
   const { withdraw } = useWithdrawFromPlay();
   const { withdrawFromWaitlist } = useWithdrawFromWaitlist();
+  const { cancel } = useCancelOpenPlay();
 
   const [rows, setRows] = useState<PlayRow[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  // Track optimistic updates to prevent them from being overwritten
   const optimisticUpdates = useRef<Map<string, Partial<PlayRow>>>(new Map());
   const pendingActions = useRef<Set<string>>(new Set());
+
+  const handleCancelInitiatedPlay = async (id: string) => {
+    Alert.alert(
+      'Cancel Event',
+      'Are you sure you want to cancel this event? This cannot be undone.',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            setLoadingId(id);
+            try {
+              await cancel({ sessionId: id });
+              Toast.show({
+                type: 'success',
+                text1: 'Event canceled successfully',
+                topOffset: 100,
+              });
+              await refetch();
+              await refetchInitiated?.();
+            } catch (err) {
+              Toast.show({
+                type: 'error',
+                text1: 'Failed to cancel event',
+                text2: extractErrorMessage(err),
+                topOffset: 100,
+              });
+            } finally {
+              setLoadingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleJoinPlay = async (
     id: string,
     isFull: boolean,
     isRegistered: boolean,
-    isWaitlisted: boolean
+    isWaitlisted: boolean,
+    initiated: boolean
   ) => {
+    if (initiated) {
+      return handleCancelInitiatedPlay(id);
+    }
+
     setLoadingId(id);
     pendingActions.current.add(id);
 
@@ -169,7 +224,6 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
       return;
     }
 
-    // Joining play - optimistic update
     const currentRow = rows.find((r) => r.id === id)!;
     const newIsRegistered = !isFull;
     const newIsWaitlisted = isFull;
@@ -234,8 +288,10 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
   const buttonMessage = (
     isRegistered: boolean,
     isWaitlisted: boolean,
-    isFull: boolean
+    isFull: boolean,
+    initiated: boolean
   ): string => {
+    if (initiated) return 'Cancel';
     if (isWaitlisted) return 'Withdraw from waitlist';
     if (isRegistered) return 'Withdraw';
     if (!isRegistered && isFull && !isWaitlisted) return 'Join Waitlist';
@@ -250,29 +306,21 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
       return;
     }
 
-    console.log('Data plays count:', data.length);
-    console.log('Initiated plays count:', initiatedData?.length ?? 0);
-
     let allPlays = data.map((p) => ({ ...p, initiated: false }));
 
     if (initiatedData && Array.isArray(initiatedData)) {
       const existingIds = new Set(allPlays.map((p) => p.id));
-      console.log('Existing ids count:', existingIds.size);
 
-      // Mark existing plays as initiated if they are in initiatedData
       allPlays = allPlays.map((p) => ({
         ...p,
         initiated: initiatedData.some((ip) => ip.id === p.id) || false,
       }));
 
-      // Add initiated plays missing from allPlays
       const extra = initiatedData
         .filter((p) => !existingIds.has(p.id))
         .map((p) => ({ ...p, initiated: true }));
 
-      console.log('Initiated plays new entries count:', extra.length);
-
-      allPlays = [...allPlays];
+      allPlays = [...allPlays, ...extra];
     }
 
     const courtMap: Record<string, string> = {};
@@ -430,29 +478,28 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                 </Text>
               </View>
               <TouchableOpacity
-      style={styles.chatButton}
-      onPress={() => {
-        if (row.isRegistered) {
-          router.push({
-            pathname: '/(authenticated)/chat-summary',
-            params: { sessionId: row.id },
-          });
-        } else {
-          Toast.show({
-            type: 'info',
-            text1: 'Register to chat with players',
-            topOffset: 100,
-          });
-        }
-      }}
-    >
-      <MaterialCommunityIcons
-                        name="message-text-outline"
-                        size={18}
-                        color="#007BFF"
-                      />
-
-    </TouchableOpacity>
+                style={styles.chatButton}
+                onPress={() => {
+                  if (row.isRegistered) {
+                    router.push({
+                      pathname: '/(authenticated)/chat-summary',
+                      params: { sessionId: row.id },
+                    });
+                  } else {
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Register to chat with players',
+                      topOffset: 100,
+                    });
+                  }
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="message-text-outline"
+                  size={18}
+                  color="#007BFF"
+                />
+              </TouchableOpacity>
             </View>
             <Button
               mode="contained"
@@ -461,11 +508,13 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                   row.id,
                   row.isFull,
                   row.isRegistered,
-                  row.isWaitlisted
+                  row.isWaitlisted,
+                  row.initiated
                 )
               }
               style={[
                 styles.button,
+                row.initiated && styles.cancelButton,
                 row.isWaitlisted && styles.waitlistWithdrawButton,
                 row.isRegistered && styles.withdrawButton,
                 !row.isRegistered &&
@@ -478,9 +527,17 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                 styles.buttonContent,
                 row.isWaitlisted && styles.longTextContent,
               ]}
-              labelStyle={[styles.buttonLabel, row.isWaitlisted && styles.longTextLabel]}
+              labelStyle={[
+                styles.buttonLabel,
+                row.isWaitlisted && styles.longTextLabel,
+              ]}
             >
-              {buttonMessage(row.isRegistered, row.isWaitlisted, row.isFull)}
+              {buttonMessage(
+                row.isRegistered,
+                row.isWaitlisted,
+                row.isFull,
+                row.initiated
+              )}
             </Button>
           </View>
         </TouchableOpacity>
@@ -542,8 +599,12 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
   },
+  cancelButton: {
+    backgroundColor: '#B00020',
+  },
   buttonContent: { height: 36, paddingHorizontal: 12 },
-  buttonLabel: { fontSize: 12, fontWeight: 'bold', color: '#FFFFFF' },
+  buttonLabel: { fontSize: 12,
+ fontWeight: 'bold', color: '#FFFFFF' },
   noDataText: {
     textAlign: 'center',
     color: '#000000',

@@ -80,7 +80,7 @@ const Dashboard = () => {
     'GLOBAL',
     userId
   );
-  const { data: initiatedPlays } = useGetInitiatedPlays(userId);
+ const { data: initiatedPlays, refetch: refetchInitiated } = useGetInitiatedPlays(userId);
 
   const shouldRefetchInvitations = useSelector(
     (state: RootState) => state.refetch.shouldRefetchInvitations
@@ -499,6 +499,7 @@ const Dashboard = () => {
                       ...upcomingInitiatedPlays,
                     ].sort((a, b) => a.dateTimeMs - b.dateTimeMs)}
                     refetch={refetchOpenPlay}
+                    refetchInitiated={refetchInitiated}
                   />
                 )}
               </ScrollView>
