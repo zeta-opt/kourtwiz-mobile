@@ -1,15 +1,5 @@
 import { useMemo } from 'react';
-
-type GroupedInviteInfo = {
-  date: string;
-  dateTimeMs: number;
-  skillRating: number;
-  requestId: string;
-  placeToPlay: string;
-  pending: number;
-  accepted: number;
-  Requests: any[];
-};
+import {GroupedInviteInfo} from '@/helpers/find-players/groupInviteeByRequestId';
 
 export const useFilteredAndSortedInvites = (
   filterStatus: string,

@@ -32,10 +32,21 @@ const statusIconMap: Record<string, string> = {
   CANCELLED: 'minus-circle',
 };
 
-function arrayToDate(arr: number[]): Date {
-  if (!arr || arr.length < 6) return new Date();
-  return new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], arr[5]);
+function arrayToDate(arr: number[] = []): Date {
+  if (arr.length >= 5) {
+    // [year, month, day, hour, minute, (optional) second]
+    return new Date(
+      arr[0],
+      arr[1] - 1, // month is 0-based
+      arr[2],
+      arr[3] || 0,
+      arr[4] || 0,
+      arr[5] || 0
+    );
+  }
+  return new Date();
 }
+
 export default function SentRequestDetailedView() {
   const { data } = useLocalSearchParams<{ data: string }>();
   const { user } = useSelector((state: RootState) => state.auth);

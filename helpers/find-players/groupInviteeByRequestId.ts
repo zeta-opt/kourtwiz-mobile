@@ -1,4 +1,4 @@
-type GroupedInviteInfo = {
+export type GroupedInviteInfo = {
   date: string;
   dateTimeMs: number;
   skillRating: number;
@@ -8,6 +8,7 @@ type GroupedInviteInfo = {
   accepted: number;
   Requests: any[];
   playersNeeded: number;
+  eventName: string;
 };
 
 export function groupInviteeByRequestId(
@@ -53,6 +54,7 @@ export function groupInviteeByRequestId(
           accepted: 0,
           Requests: [],
           playersNeeded: invite.playersNeeded,
+          eventName: invite.eventName,
         };
       }
 
