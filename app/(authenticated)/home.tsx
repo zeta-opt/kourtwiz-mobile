@@ -428,7 +428,7 @@ const Dashboard = () => {
                     }
                   }}
                 >
-                  <Text style={styles.viewAllText}>View All</Text>
+                  {/* <Text style={styles.viewAllText}>View All</Text> */}
                 </TouchableOpacity>
               ) : null}
             </View>
