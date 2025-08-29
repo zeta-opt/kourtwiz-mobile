@@ -1,12 +1,13 @@
+import { useCreateGroup } from '@/hooks/apis/groups/useCreateGroup';
+import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
 import { useGetRegisteredPlayers } from '@/hooks/apis/player-finder/useGetRegisteredPlayers';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
-import * as Contacts from 'expo-contacts';
-import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
-import CreateGroup, { Player } from '../groups/CreateGroup';
 import { RootState } from '@/store';
+import * as Contacts from 'expo-contacts';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   Text as RNText,
@@ -16,17 +17,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Button, Checkbox, Searchbar, Chip } from 'react-native-paper';
+import { Button, Checkbox, Chip, Searchbar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSelector } from 'react-redux';
-import ContactsModal from '../find-player/contacts-modal/ContactsModal';
 
 export interface Contact {
   contactName: string;
   contactPhoneNumber: string;
 }
 
-/* PreferredPlayersModal props same as before */
 interface PreferredPlayersModalProps {
   visible: boolean;
   onClose: () => void;
@@ -52,21 +51,23 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   const [deviceContacts, setDeviceContacts] = useState<Contact[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
 
-  // CreateGroup + contacts states
-  const [modalVisible, setModalVisible] = useState(false); // CreateGroup modal
-  const [contactsModalVisible, setContactsModalVisible] = useState(false); // Contacts overlay
-  const [players, setPlayers] = useState<Player[]>([]); // players for CreateGroup
-  const [groupName, setGroupName] = useState('');
+  // Add useCreateGroup hook
+  const {
+    createGroup,
+    status: createGroupStatus,
+    error: createGroupError,
+  } = useCreateGroup();
 
   // Normalizers
   const normalizePhoneNumber = (phone = '') =>
-    String(phone || '').trim().replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '');
-  const normalizeName = (n = '') => String(n || '').trim().toLowerCase();
-
-  const normalizeContact = (c: any): Contact => ({
-    contactName: c.contactName ?? c.name ?? '',
-    contactPhoneNumber: c.contactPhoneNumber ?? c.phoneNumber ?? '',
-  });
+    String(phone || '')
+      .trim()
+      .replace(/[^\d+]/g, '')
+      .replace(/(?!^)\+/g, '');
+  const normalizeName = (n = '') =>
+    String(n || '')
+      .trim()
+      .toLowerCase();
 
   const [tempSelectedPlayers, setTempSelectedPlayers] = useState<Contact[]>([]);
   const [tempSelectedGroupIds, setTempSelectedGroupIds] = useState<string[]>(
@@ -78,11 +79,17 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
 
   // Current user
   const user = useSelector((state: RootState) => state.auth?.user);
-  const userId = useSelector((state: RootState) => state.auth?.user?.id || '');
+  const userId = user?.userId;
+  // const userId = useSelector((state: RootState) => state.auth?.user?.id || '');
   const currentUserPhone = normalizePhoneNumber(user?.phoneNumber || '');
   const currentUserName = normalizeName(user?.name || '');
 
-  const { getGroups, data: groupsData, status: groupsStatus, refetch } = useGetGroupsByPhoneNumber();
+  const {
+    getGroups,
+    data: groupsData,
+    status: groupsStatus,
+    refetch,
+  } = useGetGroupsByPhoneNumber();
 
   interface Group {
     id: string;
@@ -145,11 +152,10 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     userId,
     enabled: visible,
   });
-  // console.log('User details:', userDetails);
-  // console.log('Preferred players:', preferredPlayers);
 
   // registered players
-  const { data: registeredPlayers, status: registeredStatus } = useGetRegisteredPlayers({ enabled: visible });
+  const { data: registeredPlayers, status: registeredStatus } =
+    useGetRegisteredPlayers({ enabled: visible });
 
   useEffect(() => {
     if (visible) setTempSelectedPlayers(selectedPlayers || []);
@@ -211,7 +217,9 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     );
 
   /* --------- Preferred players from API (normalize + exclude current user by name OR phone) --------- */
-  const preferToPlayWith = Array.isArray(userDetails?.playerDetails?.preferToPlayWith)
+  const preferToPlayWith = Array.isArray(
+    userDetails?.playerDetails?.preferToPlayWith
+  )
     ? userDetails.playerDetails.preferToPlayWith
     : [];
 
@@ -225,7 +233,8 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     .filter((p: Contact) => {
       // exclude current user defensively
       const nameMatches = normalizeName(p.contactName) === currentUserName;
-      const phoneMatches = normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
+      const phoneMatches =
+        normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
       return !(nameMatches || phoneMatches);
     });
 
@@ -238,7 +247,8 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     }))
     .filter((p) => {
       const nameMatches = normalizeName(p.contactName) === currentUserName;
-      const phoneMatches = normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
+      const phoneMatches =
+        normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
       return !(nameMatches || phoneMatches);
     });
 
@@ -264,15 +274,17 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   });
 
   /* --------- Groups (normalized mapping) ---------- */
-  const normalizedGroups: Group[] = (groupsData || []).map((item: any, i: number) => {
-    const group = item.group ?? {};
-    return {
-      id: group.id?.toString?.() ?? `${i}`,
-      groupName: group.name ?? 'Unnamed Group',
-      members: Array.isArray(group.members) ? group.members : [],
-      membersCount: Array.isArray(group.members) ? group.members.length : 0,
-    };
-  });
+  const normalizedGroups: Group[] = (groupsData || []).map(
+    (item: any, i: number) => {
+      const group = item.group ?? {};
+      return {
+        id: group.id?.toString?.() ?? `${i}`,
+        groupName: group.name ?? 'Unnamed Group',
+        members: Array.isArray(group.members) ? group.members : [],
+        membersCount: Array.isArray(group.members) ? group.members.length : 0,
+      };
+    }
+  );
 
   const filteredGroups = normalizedGroups.filter((g) =>
     (g.groupName || '').toLowerCase().includes(q)
@@ -285,7 +297,8 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     filteredGroups.length > 0;
 
   /* --------- Group add/remove: exclude current user by OR; de-dupe using normalized keys ---------- */
-  const isGroupSelected = (group: Group) => tempSelectedGroupIds.includes(group.id);
+  const isGroupSelected = (group: Group) =>
+    tempSelectedGroupIds.includes(group.id);
 
   const handleToggleGroup = (group: Group) => {
     if (!group?.id) return;
@@ -323,26 +336,111 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
       }))
       .filter((p) => {
         const nameMatches = normalizeName(p.contactName) === currentUserName;
-        const phoneMatches = normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
+        const phoneMatches =
+          normalizePhoneNumber(p.contactPhoneNumber) === currentUserPhone;
         return !(nameMatches || phoneMatches);
       });
 
     // de-dupe using normalized composite key
     setTempSelectedPlayers((prev) => {
       const seen = new Set(
-        prev.map((p) => `${normalizePhoneNumber(p.contactPhoneNumber)}|${normalizeName(p.contactName)}`)
+        prev.map(
+          (p) =>
+            `${normalizePhoneNumber(p.contactPhoneNumber)}|${normalizeName(
+              p.contactName
+            )}`
+        )
       );
 
       return [
         ...prev,
         ...incoming.filter((p) => {
-          const key = `${normalizePhoneNumber(p.contactPhoneNumber)}|${normalizeName(p.contactName)}`;
+          const key = `${normalizePhoneNumber(
+            p.contactPhoneNumber
+          )}|${normalizeName(p.contactName)}`;
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
         }),
       ];
     });
+  };
+
+  // Handler for creating a new group
+  const handleCreateNewGroup = async () => {
+    // Use an alert to get the group name
+    Alert.prompt(
+      'Create New Group',
+      'Enter a name for the group:',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Create',
+          onPress: async (groupName) => {
+            if (!groupName?.trim()) {
+              Alert.alert('Error', 'Group name is required');
+              return;
+            }
+
+            if (tempSelectedPlayers.length === 0) {
+              Alert.alert(
+                'No Players Selected',
+                'Please select at least one player before creating a group.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Select Players',
+                    onPress: () => setActiveChip('registered'),
+                  },
+                ]
+              );
+              return;
+            }
+
+            // Prepare the payload
+            const allMembers = tempSelectedPlayers.map((p) => ({
+              name: p.contactName,
+              phoneNumber: p.contactPhoneNumber,
+              admin: false,
+            }));
+
+            const payload = {
+              name: groupName,
+              creatorUserId: userId,
+              members: allMembers,
+            };
+            console.log(payload, 'payload');
+
+            // Call the createGroup function
+            await createGroup({
+              groupData: payload,
+              callbacks: {
+                onSuccess: (data) => {
+                  Alert.alert('Success', 'Group created successfully!');
+                  // Refetch groups
+                  refetch?.();
+                  // Switch to groups tab to see the new group
+                  setActiveChip('groups');
+                  // Clear selected players for the group
+                  setTempSelectedPlayers([]);
+                  setTempSelectedGroupIds([]);
+                },
+                onError: (error) => {
+                  Alert.alert(
+                    'Error',
+                    error.message || 'Failed to create group'
+                  );
+                },
+              },
+            });
+          },
+        },
+      ],
+      'plain-text'
+    );
   };
 
   // Render helpers (unchanged style)
@@ -364,7 +462,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
       <Checkbox
         status={isPlayerSelected(player) ? 'checked' : 'unchecked'}
         onPress={() => handleTogglePlayer(player)}
-        color="#2C7E88"
+        color='#2C7E88'
       />
     </TouchableOpacity>
   );
@@ -381,30 +479,30 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
           {group.groupName || 'Unnamed Group'}
         </RNText>
         <RNText style={styles.playerPhone}>
-          {group.membersCount > 0 ? `${group.membersCount} members` : 'No members'}
+          {group.membersCount > 0
+            ? `${group.membersCount} members`
+            : 'No members'}
         </RNText>
       </View>
       <Checkbox
         status={isGroupSelected(group) ? 'checked' : 'unchecked'}
         onPress={() => handleToggleGroup(group)}
-        color="#2C7E88"
+        color='#2C7E88'
       />
     </TouchableOpacity>
   );
-    
+
   const isLoading = userStatus === 'loading' || registeredStatus === 'loading';
   const hasError = userStatus === 'error' || registeredStatus === 'error';
 
   /* ---------- RENDER ---------- */
   return (
-    <>
-    {/* Preferred Players top-level modal */}
     <Modal
-      animationType="slide"
+      animationType='slide'
       transparent={false}
       visible={visible}
       onRequestClose={handleCancel}
-      presentationStyle="fullScreen"
+      presentationStyle='fullScreen'
     >
       <SafeAreaView style={styles.container}>
         {/* Header */}
@@ -473,180 +571,139 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
             <View style={styles.centerContent}>
               <Icon name='search-off' size={48} color='#999' />
               <RNText style={styles.emptyText}>No players found</RNText>
-              <RNText style={styles.emptySubtext}>Try adjusting your search</RNText>
+              <RNText style={styles.emptySubtext}>
+                Try adjusting your search
+              </RNText>
             </View>
           ) : (
             <>
-              {activeChip === 'registered' && filteredRegisteredPlayers.length > 0 && (
-                <View style={styles.section}>
-                  <RNText style={styles.sectionTitle}>REGISTERED PLAYERS</RNText>
-                  {filteredRegisteredPlayers.map((player, index) =>
-                    renderPlayer(player, index)
-                  )}
-                </View>
-              )}
-              {/* Placeholder for other chips */}
-              {activeChip === 'selected' && (
-                tempSelectedPlayers.length > 0 ? (
+              {activeChip === 'registered' &&
+                filteredRegisteredPlayers.length > 0 && (
                   <View style={styles.section}>
-                    <RNText style={styles.sectionTitle}>SELECTED PLAYERS</RNText>
+                    <RNText style={styles.sectionTitle}>
+                      REGISTERED PLAYERS
+                    </RNText>
+                    {filteredRegisteredPlayers.map((player, index) =>
+                      renderPlayer(player, index)
+                    )}
+                  </View>
+                )}
+              {/* Placeholder for other chips */}
+              {activeChip === 'selected' &&
+                (tempSelectedPlayers.length > 0 ? (
+                  <View style={styles.section}>
+                    <RNText style={styles.sectionTitle}>
+                      SELECTED PLAYERS
+                    </RNText>
                     {tempSelectedPlayers.map((player, index) =>
                       renderPlayer(player, index)
                     )}
                   </View>
                 ) : (
                   <View style={styles.centerContent}>
-                    <RNText style={styles.emptyText}>No players selected yet</RNText>
+                    <RNText style={styles.emptyText}>
+                      No players selected yet
+                    </RNText>
                   </View>
-                )
-              )}
-              {activeChip === 'preferred' && (
-                filteredPreferredPlayers.length > 0 ? (
+                ))}
+              {activeChip === 'preferred' &&
+                (filteredPreferredPlayers.length > 0 ? (
                   <View style={styles.section}>
-                    <RNText style={styles.sectionTitle}>PREFERRED PLAYERS</RNText>
+                    <RNText style={styles.sectionTitle}>
+                      PREFERRED PLAYERS
+                    </RNText>
                     {filteredPreferredPlayers.map((player, index) =>
                       renderPlayer(player, index)
                     )}
                   </View>
                 ) : (
                   <View style={styles.centerContent}>
-                    <RNText style={styles.emptyText}>No preferred players found</RNText>
+                    <RNText style={styles.emptyText}>
+                      No preferred players found
+                    </RNText>
                   </View>
-                )
-              )}
-                {activeChip === 'contacts' && (
-                  loadingContacts ? (
-                    <View style={styles.centerContent}>
-                      <ActivityIndicator size="large" color="#2C7E88" />
-                      <RNText style={styles.loadingText}>Loading contacts...</RNText>
-                    </View>
-                  ) : filteredContacts.length > 0 ? (
-                    <View style={styles.section}>
-                      <RNText style={styles.sectionTitle}>CONTACTS</RNText>
-                      {filteredContacts.map((contact, index) =>
-                        renderPlayer(contact, index)
-                      )}
-                    </View>
-                  ) : (
-                    <View style={styles.centerContent}>
-                      <RNText style={styles.emptyText}>No contacts found</RNText>
-                    </View>
-                  )
-                )}
-              {activeChip === 'groups' && (
-                groupsStatus === 'loading' ? (
+                ))}
+              {activeChip === 'contacts' &&
+                (loadingContacts ? (
                   <View style={styles.centerContent}>
-                    <ActivityIndicator size="large" color="#2C7E88" />
+                    <ActivityIndicator size='large' color='#2C7E88' />
+                    <RNText style={styles.loadingText}>
+                      Loading contacts...
+                    </RNText>
+                  </View>
+                ) : filteredContacts.length > 0 ? (
+                  <View style={styles.section}>
+                    <RNText style={styles.sectionTitle}>CONTACTS</RNText>
+                    {filteredContacts.map((contact, index) =>
+                      renderPlayer(contact, index)
+                    )}
+                  </View>
+                ) : (
+                  <View style={styles.centerContent}>
+                    <RNText style={styles.emptyText}>No contacts found</RNText>
+                  </View>
+                ))}
+              {activeChip === 'groups' &&
+                (groupsStatus === 'loading' ? (
+                  <View style={styles.centerContent}>
+                    <ActivityIndicator size='large' color='#2C7E88' />
                     <RNText style={styles.loadingText}>Loading groups…</RNText>
                   </View>
                 ) : groupsStatus === 'success' && filteredGroups.length > 0 ? (
                   <View style={styles.section}>
                     <RNText style={styles.sectionTitle}>GROUPS</RNText>
-                    {filteredGroups.map((group, index) => renderGroup(group, index))}
+                    {filteredGroups.map((group, index) =>
+                      renderGroup(group, index)
+                    )}
                   </View>
                 ) : (
                   <View style={styles.centerContent}>
                     <RNText style={styles.emptyText}>
-                      {groupsStatus === 'success' ? 'No groups found' : 'Unable to load groups'}
+                      {groupsStatus === 'success'
+                        ? 'No groups found'
+                        : 'Unable to load groups'}
                     </RNText>
                   </View>
-                )
-              )}
+                ))}
             </>
           )}
         </ScrollView>
 
         {/* Footer */}
         <View style={styles.footer}>
-            <View style={styles.selectedInfo}>
-              <RNText style={styles.selectedCount}>
-                {tempSelectedPlayers.length} player
-                {tempSelectedPlayers.length !== 1 ? 's' : ''} selected
-              </RNText>
-            </View>
-
-            {/* Open CreateGroup modal (keeps this PreferredPlayersModal open) */}
-            <Button
-              mode="contained"
-              onPress={() => setModalVisible(true)}
-              style={styles.groupButton}
-              labelStyle={styles.groupButtonLabel}
-              contentStyle={styles.groupButtonContent}
-            >
-              Create New Group
-            </Button>
-
-            <Button
-              mode="contained"
-              onPress={handleSave}
-              style={styles.addButton}
-              labelStyle={styles.addButtonLabel}
-              contentStyle={styles.addButtonContent}
-            >
-              Add Players
-            </Button>
+          <View style={styles.selectedInfo}>
+            <RNText style={styles.selectedCount}>
+              {tempSelectedPlayers.length} player
+              {tempSelectedPlayers.length !== 1 ? 's' : ''} selected
+            </RNText>
           </View>
-        </SafeAreaView>
-      </Modal>
 
-      {/* Create Group modal — rendered outside the top-level PreferredPlayersModal modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-        presentationStyle="fullScreen"
-      >
-        <CreateGroup
-          onClose={() => {
-            setModalVisible(false);
-          }}
-          // IMPORTANT: do NOT close CreateGroup when opening contacts.
-          onAddPlayers={() => {
-            setModalVisible(false);
-            onClose();
-            setContactsModalVisible(true);
-          }}
-          groupName={groupName}
-          setGroupName={setGroupName}
-          players={players}
-          setPlayers={setPlayers}
-          onGroupCreated={() => {
-            // after group create, refetch and close create modal
-            refetch?.();
-            setModalVisible(false);
-          }}
-        />
-      </Modal>
+          {/* Create New Group button */}
+          <Button
+            mode='contained'
+            onPress={handleCreateNewGroup}
+            style={styles.groupButton}
+            labelStyle={styles.groupButtonLabel}
+            contentStyle={styles.groupButtonContent}
+            disabled={createGroupStatus === 'loading'}
+          >
+            {createGroupStatus === 'loading'
+              ? 'Creating...'
+              : 'Create New Group'}
+          </Button>
 
-      {/* Contacts modal — rendered outside both modals */}
-      <ContactsModal
-        visible={contactsModalVisible}
-        onClose={() => {
-          // simply close contacts modal and return to CreateGroup
-          setContactsModalVisible(false);
-          setModalVisible(true);
-        }}
-        onSelectContacts={(selected) => {
-          const normalized = selected.map(normalizeContact);
-
-          // setPlayers for CreateGroup only (no parent selectedPlayers)
-          setPlayers(
-            normalized.map((p, index) => ({
-              id: `${p.contactPhoneNumber}-${index}`,
-              name: p.contactName,
-              phoneNumber: p.contactPhoneNumber,
-            }))
-          );
-
-          setContactsModalVisible(false);
-          setModalVisible(true);
-        }}
-        selectedContacts={players.map((player) => ({
-          contactName: player.name,
-          contactPhoneNumber: player.phoneNumber,
-        }))}
-      />
-    </>
+          <Button
+            mode='contained'
+            onPress={handleSave}
+            style={styles.addButton}
+            labelStyle={styles.addButtonLabel}
+            contentStyle={styles.addButtonContent}
+          >
+            Add Players
+          </Button>
+        </View>
+      </SafeAreaView>
+    </Modal>
   );
 };
 
@@ -807,7 +864,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: "#2C7E88",
+    borderColor: '#2C7E88',
     borderRadius: 20,
   },
   activeChip: {
@@ -819,7 +876,7 @@ const styles = StyleSheet.create({
   },
   activeChipText: {
     color: '#fff',
-  },  
+  },
   groupButton: {
     borderRadius: 30,
     backgroundColor: '#2C7E88',

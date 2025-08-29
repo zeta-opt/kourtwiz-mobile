@@ -1,4 +1,5 @@
 import UserAvatar from '@/assets/UserAvatar';
+import { useSubmitGameFeedback } from '@/hooks/apis/game-feedback/useSubmitGameFeedback';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
 import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPlayerInivitationsSent';
 import { RootState } from '@/store';
@@ -8,6 +9,7 @@ import { router } from 'expo-router';
 import moment from 'moment';
 import { useMemo, useState } from 'react';
 import {
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -26,6 +28,12 @@ const HistoryPage = () => {
   const { data: outgoingInvitations } = useGetPlayerInvitationSent({
     inviteeEmail: user?.email,
   });
+  const {
+    submitGameFeedback,
+    status: feedbackStatus,
+    error: feedbackError,
+    resetStatus,
+  } = useSubmitGameFeedback();
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [selectedEmoji, setSelectedEmoji] = useState<number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
@@ -129,30 +137,64 @@ const HistoryPage = () => {
       )
       .map(([date, invites]) => ({ date, invites }));
   }, [incomingInvitations, outgoingInvitations]);
+  console.log(selectedInvitation, 'selectedinv');
 
-  const handleFeedbackSubmit = () => {
-    // Handle feedback submission
-    console.log({
-      invitationId: selectedInvitation?.id,
-      rating: selectedEmoji,
-      chips: selectedChips,
-      comments: feedbackText,
-    });
+  const handleFeedbackSubmit = async () => {
+    // Validate that rating is selected
+    if (selectedEmoji === null) {
+      Alert.alert(
+        'Rating Required',
+        'Please select a rating before submitting.'
+      );
+      return;
+    }
 
-    // TODO: Send feedback to your API endpoint
-    // await submitFeedback({
-    //   invitationId: selectedInvitation?.id,
-    //   rating: selectedEmoji + 1, // Convert to 1-5 scale
-    //   positiveAspects: selectedChips,
-    //   comments: feedbackText,
-    // });
+    try {
+      // Prepare the payload
+      const feedbackPayload = {
+        gameId: selectedInvitation?.id || '',
+        playerId: user?.userId || '',
+        location: selectedInvitation?.placeToPlay || '',
+        rating: selectedEmoji + 1,
+        positives: selectedChips,
+        comments: feedbackText,
+      };
+      // console.log(feedbackPayload);
 
-    // Reset and close
-    setFeedbackVisible(false);
-    setSelectedEmoji(null);
-    setSelectedChips([]);
-    setFeedbackText('');
-    setSelectedInvitation(null);
+      // Submit feedback
+      await submitGameFeedback(feedbackPayload);
+
+      // Show success message
+      Alert.alert(
+        'Feedback Submitted',
+        'Thank you for your feedback! It helps us improve the experience.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Reset and close
+              setFeedbackVisible(false);
+              setSelectedEmoji(null);
+              setSelectedChips([]);
+              setFeedbackText('');
+              setSelectedInvitation(null);
+              resetStatus();
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Submission Failed',
+        feedbackError || 'Failed to submit feedback. Please try again.',
+        [
+          {
+            text: 'OK',
+            onPress: () => resetStatus(),
+          },
+        ]
+      );
+    }
   };
 
   return (
@@ -448,6 +490,7 @@ const HistoryPage = () => {
                   setSelectedChips([]);
                   setFeedbackText('');
                   setSelectedInvitation(null);
+                  resetStatus();
                 }}
                 style={[styles.modalActionButton, styles.cancelButton]}
               >
@@ -456,9 +499,18 @@ const HistoryPage = () => {
 
               <TouchableOpacity
                 onPress={handleFeedbackSubmit}
-                style={[styles.modalActionButton, styles.submitButton]}
+                style={[
+                  styles.modalActionButton,
+                  styles.submitButton,
+                  feedbackStatus === 'loading' && { opacity: 0.7 },
+                ]}
+                disabled={feedbackStatus === 'loading'}
               >
-                <Text style={styles.submitButtonText}>Submit Feedback</Text>
+                <Text style={styles.submitButtonText}>
+                  {feedbackStatus === 'loading'
+                    ? 'Submitting...'
+                    : 'Submit Feedback'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
