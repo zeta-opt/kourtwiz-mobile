@@ -11,6 +11,7 @@ import {
   Keyboard,
   ScrollView,
 } from 'react-native';
+import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import UserAvatar from '@/assets/UserAvatar';
@@ -18,6 +19,7 @@ import { useCreateIWantToPlay } from '@/hooks/apis/iwanttoplay/useCreateIWantToP
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
+import { useSearchImport } from '@/hooks/apis/iwanttoplay/useSearchImport';
 
 type SendOption =
   | 'broadcast'
@@ -32,11 +34,47 @@ const IWantToPlayScreen = () => {
   const [locationError, setLocationError] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedSendTo, setSelectedSendTo] = useState<SendOption>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const { createIWantToPlay } = useCreateIWantToPlay();
   const { getGroups, data: groupsData, status } = useGetGroupsByPhoneNumber();
 
-  // fetch groups on mount
+  // 👇 Hook to fetch location suggestions
+  const {
+    data: suggestionsData,
+    status: suggestionsStatus,
+  } = useSearchImport({
+    search: location,
+    userId: user?.userId,
+    page: 0,
+    size: 5,
+  });
+
+  const suggestions = suggestionsData?.content || [];
+
+  // Auto-fill current location on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setLocationError('Permission to access location was denied');
+          return;
+        }
+        let loc = await Location.getCurrentPositionAsync({});
+        const address = await Location.reverseGeocodeAsync(loc.coords);
+        if (address.length > 0) {
+          setLocation(`${address[0].city}, ${address[0].region}`);
+        } else {
+          setLocation(`${loc.coords.latitude}, ${loc.coords.longitude}`);
+        }
+      } catch (error) {
+        setLocationError('Failed to get location');
+      }
+    })();
+  }, []);
+
+  // Fetch groups on mount
   useEffect(() => {
     if (user?.phoneNumber) {
       getGroups({ phoneNumber: user.phoneNumber });
@@ -96,10 +134,11 @@ const IWantToPlayScreen = () => {
         return;
       }
 
-      // Reset
+      
       setMessage('');
       setLocation('');
       setSelectedSendTo(null);
+      setShowSuggestions(false);
       router.push('/(authenticated)/home');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -118,7 +157,7 @@ const IWantToPlayScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setShowSuggestions(false); }} accessible={false}>
         <View style={{ flex: 1 }}>
           {/* HEADER */}
           <View style={styles.header}>
@@ -148,14 +187,47 @@ const IWantToPlayScreen = () => {
                   setLocation(text);
                   if (!isValidLocation(text)) setLocationError('invalid location entered');
                   else setLocationError('');
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => {
+                  setLocation('');
+                  if (location) setShowSuggestions(true);
                 }}
                 style={[styles.input, { flex: 1 }]}
+                autoCorrect={false}
               />
               <Ionicons name="location-outline" size={20} color="#000" style={{ marginLeft: 8 }} />
             </View>
             {locationError !== '' && (
               <Text style={{ color: 'red', margin: 4 }}>{locationError}</Text>
             )}
+
+{showSuggestions &&
+  suggestionsStatus === 'success' &&
+  suggestions.length > 0 && (
+    <View style={styles.suggestionsContainer}>
+      <ScrollView keyboardShouldPersistTaps="handled">
+        {suggestions.map((item: any, index: number) => {
+          return (
+            <TouchableOpacity
+              key={item.id || index}
+              style={styles.suggestionItem}
+              onPress={() => {
+                setLocation(item.Location || item.Name || '');
+                setShowSuggestions(false);
+                setLocationError('');
+              }}
+            >
+              <Text style={styles.suggestionText}>
+                {item.Name} – {item.Location}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+)}
+
 
             {/* MESSAGE */}
             <Text style={[styles.label, { marginTop: 20 }]}>Enter Message</Text>
@@ -199,10 +271,7 @@ const IWantToPlayScreen = () => {
 
               {isDropdownOpen && (
                 <View style={styles.dropdownList}>
-                  <ScrollView
-                    style={{ maxHeight: 250 }}
-                    nestedScrollEnabled={true}
-                  >
+                  <ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled={true}>
                     {/* Built-in options */}
                     <TouchableOpacity
                       style={styles.dropdownItem}
@@ -256,7 +325,11 @@ const IWantToPlayScreen = () => {
 
             {/* SEND BUTTON */}
             {selectedSendTo && (
-              <TouchableOpacity onPress={onSendPress} style={styles.sendButton} activeOpacity={0.9}>
+              <TouchableOpacity
+                onPress={onSendPress}
+                style={styles.sendButton}
+                activeOpacity={0.9}
+              >
                 <Text style={styles.sendButtonText}>Send</Text>
               </TouchableOpacity>
             )}
@@ -267,7 +340,6 @@ const IWantToPlayScreen = () => {
   );
 };
 
-// Styling same as before...
 const primaryColor = '#2F7C83';
 const white = '#fff';
 
@@ -333,13 +405,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     backgroundColor: '#fff',
-    zIndex: 1000, // keep above other content
+    zIndex: 1000,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-  },  
+  },
   dropdownItem: { paddingVertical: 12, paddingHorizontal: 12 },
   dropdownItemText: { color: '#000', fontSize: 14 },
   dropdownDivider: { height: 1, backgroundColor: '#eee' },
@@ -353,6 +425,34 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sendButtonText: { color: white, fontSize: 14, fontWeight: '600' },
+
+  // Styles for suggestions dropdown
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 100,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderColor: '#bbb',
+    borderWidth: 1,
+    borderRadius: 8,
+    maxHeight: 150,
+    zIndex: 1200,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+  },
+  suggestionItem: {
+    padding: 12,
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
+  },
+  suggestionText: {
+    color: '#000',
+    fontSize: 14,
+  },
 });
 
 export default IWantToPlayScreen;
