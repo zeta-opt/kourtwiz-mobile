@@ -12,6 +12,7 @@ export type Invite = {
   accepted: number;
   playersNeeded: number;
   status: string;
+  Requests: any[];
   eventName: string;
 };
 
@@ -82,7 +83,7 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite,
           </View>
 
           <Text style={styles.placeText} numberOfLines={1}>
-          {invite.eventName?.trim() || "Untitled Event"}
+          {invite.eventName?.trim() || invite.Requests?.[0]?.eventName?.trim() || "Untitled Event"}
           </Text>
 
           <View style={styles.datePeopleRow}>

@@ -473,9 +473,6 @@ export default function PlayCalendarPage() {
                     <OutgoingInviteCardItem
                       key={item.requestId}
                       invite={item}
-                      // totalPlayers={item.totalPlayers}
-                      // acceptedPlayers={item.accepted}
-
                       onViewPlayers={() => handleViewPlayers(item.requestId)}
                     />
                   </TouchableOpacity>
