@@ -20,6 +20,7 @@ import { useDeleteUserById } from '@/hooks/apis/user/useDeleteUserById';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { Avatar } from 'react-native-paper';
+import VideoSubscriptionToggle from '@/components/profile/VideoSubscriptionToggle';
 
 type PlayerDetails = {
   preferPlacesToPlay: { id: string }[];
@@ -46,6 +47,7 @@ type UserData = {
   skillLevel: string;
   userId: string;
   playerDetails: PlayerDetails;
+  videoRecordingSubscribed?: boolean;
 };
 
 const UserProfile = () => {
@@ -212,6 +214,15 @@ const UserProfile = () => {
         >
           <Text style={styles.editButtonText}>Edit</Text>
         </TouchableOpacity>
+      </View>
+      <View style={styles.DetailsCard}>
+        <VideoSubscriptionToggle
+          userId={userData.userId}
+          initialSubscribed={userData.videoRecordingSubscribed}
+          onSubscriptionChange={(newValue) =>
+            setUserData((prev) => ({ ...prev, videoRecordingSubscribed: newValue }))
+          }
+        />
       </View>
 
       <Text style={[styles.sectionTitle, {marginBottom: 0, marginLeft:40, fontWeight:600,}]}>PERSONAL DETAILS</Text>
