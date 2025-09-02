@@ -56,31 +56,31 @@ const HistoryPage = () => {
       return Array.from(seen.values());
     };
   
-    const eventsAvailable = (schedule?.eventsAvailable ?? []).map((e) => ({
+    const eventsAvailable = (schedule?.eventsAvailable ?? []).map((e:any) => ({
       ...e,
       type: 'eventAvailable',
       start: parseArrayToDate(e.startTime ?? e.playTime),
       end: e.durationMinutes
         ? new Date(parseArrayToDate(e.startTime ?? e.playTime)!.getTime() + e.durationMinutes * 60000)
         : parseArrayToDate(e.playEndTime),
-      location: e.allCourts?.Location ?? e.placeToPlay,
+      location: e.allCourts?.Name ?? e.placeToPlay,
       title: e.eventName ?? 'Pickleball Game',
       status: e.status ?? 'ACCEPTED',
     }));
   
-    const eventsCreated = (schedule?.eventsCreated ?? []).map((e) => ({
+    const eventsCreated = (schedule?.eventsCreated ?? []).map((e:any) => ({
       ...e,
       type: 'eventCreated',
       start: parseArrayToDate(e.startTime ?? e.playTime),
       end: e.durationMinutes
         ? new Date(parseArrayToDate(e.startTime ?? e.playTime)!.getTime() + e.durationMinutes * 60000)
         : parseArrayToDate(e.playEndTime),
-      location: e.allCourts?.Location ?? e.placeToPlay,
+      location: e.allCourts?.Name ?? e.placeToPlay,
       title: e.eventName ?? 'Pickleball Game',
       status: e.status ?? 'ACCEPTED',
     }));
   
-    const incomingFinder = (schedule?.incomingPlayerFinderRequests ?? []).map((e) => ({
+    const incomingFinder = (schedule?.incomingPlayerFinderRequests ?? []).map((e:any) => ({
       ...e,
       type: 'incomingPlayerFinder',
       start: parseArrayToDate(e.startTime ?? e.playTime),
@@ -91,7 +91,7 @@ const HistoryPage = () => {
     }));
   
     const initiatedFinder = dedupeByKey(
-      (schedule?.initiatedPlayerFinderRequests ?? []).map((e) => ({
+      (schedule?.initiatedPlayerFinderRequests ?? []).map((e:any) => ({
         ...e,
         type: 'initiatedPlayerFinder',
         start: parseArrayToDate(e.startTime ?? e.playTime),
@@ -99,7 +99,7 @@ const HistoryPage = () => {
         location: e.placeToPlay,
         title: `You invited ${e.playersNeeded} ${e.playersNeeded === 1 ? 'player' : 'players'}`,
         status: e.status,
-        uniqueKey: e.requestId ?? e.id, // <-- requestId is unique per event
+        uniqueKey: e.requestId,
       })),
       'uniqueKey'
     );
@@ -202,7 +202,23 @@ const HistoryPage = () => {
       const feedbackPayload = {
         gameId: selectedEvent?.id || '',
         playerId: user?.userId || '',
-        location: selectedEvent?.placeToPlay || '',
+        opponentId: selectedEvent?.requestorId || selectedEvent?.inviteeId || '',
+        date: selectedEvent?.playTime
+          ? moment(normalizeDate(selectedEvent.playTime)).toISOString()
+          : selectedEvent?.start
+          ? moment(selectedEvent.start).toISOString()
+          : '',
+        startTime: selectedEvent?.playTime
+          ? moment(normalizeDate(selectedEvent.playTime)).toISOString()
+          : selectedEvent?.start
+          ? moment(selectedEvent.start).toISOString()
+          : '',
+        endTime: selectedEvent?.playEndTime
+          ? moment(normalizeDate(selectedEvent.playEndTime)).toISOString()
+          : selectedEvent?.end
+          ? moment(selectedEvent.end).toISOString()
+          : '',
+        location: selectedEvent?.location || '',
         rating: selectedEmoji + 1,
         positives: selectedChips,
         comments: feedbackText,
@@ -230,6 +246,15 @@ const HistoryPage = () => {
     }
   };
 
+  const normalizeDate = (dateVal: any) => {
+    if (!dateVal) return null;
+    if (Array.isArray(dateVal)) {
+      return parseArrayToDate(dateVal);
+    }
+    return new Date(dateVal); // handles ISO strings or timestamps
+  };
+  
+
   return (
     <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
       {/* Header */}
@@ -251,7 +276,7 @@ const HistoryPage = () => {
           pastEvents.map(({ date, events }) => (
             <View key={date}>
               <Text style={styles.dateHeader}>{moment(date).format('MMMM DD, YYYY')}</Text>
-              {events.map((ev) => (
+              {events.map((ev:any) => (
                 <View key={ev.uniqueKey ?? ev.id} style={styles.cardContainer}>
                   <View
                     style={[
@@ -274,7 +299,7 @@ const HistoryPage = () => {
                           style={{ marginRight: 8 }}
                         />
                         <Text style={[styles.subText, { color: '#327D85' }]}>
-                          {ev.clubname || 'No location'}
+                          {ev.location || 'No location'}
                         </Text>
                       </View>
                     </View>
@@ -351,13 +376,20 @@ const HistoryPage = () => {
                   <View style={styles.detailTextContainer}>
                     <Text style={styles.detailLabel}>Played with:</Text>
                     <Text style={styles.detailValue}>
-                      {selectedEvent.type === 'outgoing'
+                      {selectedEvent.type === "initiatedPlayerFinder"
                         ? `${selectedEvent.playersNeeded} ${
-                            selectedEvent.playersNeeded === 1
-                              ? 'person'
-                              : 'people'
+                            selectedEvent.playersNeeded === 1 ? "person" : "people"
                           }`
-                        : selectedEvent.inviteeName || 'Unknown'}
+                        : selectedEvent.type === "incomingPlayerFinder"
+                        ? selectedEvent.inviteeName || "Unknown"
+                        : selectedEvent.type === "eventCreated" ||
+                          selectedEvent.type === "eventAvailable"
+                        ? selectedEvent.registeredPlayers?.length > 0
+                          ? `${selectedEvent.registeredPlayers.length} ${
+                              selectedEvent.registeredPlayers.length === 1 ? "person" : "people"
+                            }`
+                          : selectedEvent.requestorName || "Unknown"
+                        : "Unknown"}
                     </Text>
                   </View>
                 </View>
@@ -372,10 +404,8 @@ const HistoryPage = () => {
                   <View style={styles.detailTextContainer}>
                     <Text style={styles.detailLabel}>Date:</Text>
                     <Text style={styles.detailValue}>
-                      {moment(parseArrayToDate(selectedEvent.playTime)).format(
-                        'MMMM DD, YYYY'
-                      )}
-                    </Text>
+                    {moment(normalizeDate(selectedEvent.playTime ?? selectedEvent.start)).format('MMMM DD, YYYY')}
+                  </Text>
                   </View>
                 </View>
 
@@ -389,13 +419,8 @@ const HistoryPage = () => {
                   <View style={styles.detailTextContainer}>
                     <Text style={styles.detailLabel}>Time:</Text>
                     <Text style={styles.detailValue}>
-                      {moment(parseArrayToDate(selectedEvent.playTime)).format(
-                        'h:mm A'
-                      )}{' '}
-                      -{' '}
-                      {moment(parseArrayToDate(selectedEvent.playEndTime)).format(
-                        'h:mm A'
-                      )}
+                      {moment(normalizeDate(selectedEvent.playTime ?? selectedEvent.start)).format('h:mm A')} -{' '}
+                      {moment(normalizeDate(selectedEvent.playEndTime ?? selectedEvent.end)).format('h:mm A')}
                     </Text>
                   </View>
                 </View>
@@ -436,7 +461,7 @@ const HistoryPage = () => {
                     ]}
                   >
                     <MaterialCommunityIcons
-                      name={icon}
+                      name={icon as keyof typeof MaterialCommunityIcons.glyphMap}
                       size={36}
                       color={selectedEmoji === index ? '#327D85' : '#999'}
                     />
