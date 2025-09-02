@@ -254,7 +254,7 @@ export default function OpenPlayDetailedView() {
       </ScrollView>
 
       {/* Action Button */}
-      <View style={styles.fixedBottom}>
+      <View style={[styles.fixedBottom, { flexDirection: 'row', justifyContent: 'space-between' }]}>
         <TouchableOpacity
           disabled={loading}
           style={[
@@ -275,6 +275,35 @@ export default function OpenPlayDetailedView() {
               : isFull
               ? 'Join Waitlist'
               : 'Register'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+         style={[
+            styles.actionButton,
+            isWaitlisted && styles.waitlistWithdrawButton,
+            isRegistered && styles.withdrawButton,
+            !isRegistered && isFull && !isWaitlisted && styles.joinWaitlistButton,
+          ]}
+          onPress={() =>
+            router.push({
+              pathname: '/(authenticated)/create-event',
+              params: {
+                isEditMode: 'true',
+                sessionId: selectedPlay.id,
+                eventName: selectedPlay.eventName,
+                court: courtName,
+                description: selectedPlay.description || '',
+                price: selectedPlay.priceForPlay?.toString() || '',
+                maxPlayers: selectedPlay.maxPlayers?.toString() || '',
+                skillLevel: selectedPlay.skillLevel?.toString() || '0',
+                startDate: startDate.toISOString(),
+                endTime: endDate.toISOString(),
+              },
+            })
+          }
+        >
+           <Text style={styles.actionButtonText}>
+            Edit
           </Text>
         </TouchableOpacity>
       </View>
@@ -305,7 +334,8 @@ const styles = StyleSheet.create({
   infoText2: { marginTop: 4, fontSize: 11, color: '#333' },
   actionButton: {
     paddingVertical: 14, paddingHorizontal: 32, borderRadius: 10, backgroundColor: '#2F7C83',
-    width: '100%', alignItems: 'center',
+    marginBottom:10,
+    width: '45%', alignItems: 'center',
   },
   actionButtonText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
   withdrawButton: { backgroundColor: '#D32F2F' },
