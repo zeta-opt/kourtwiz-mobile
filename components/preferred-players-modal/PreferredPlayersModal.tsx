@@ -1,4 +1,3 @@
-import { useCreateGroup } from '@/hooks/apis/groups/useCreateGroup';
 import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
 import { useGetRegisteredPlayers } from '@/hooks/apis/player-finder/useGetRegisteredPlayers';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
@@ -7,7 +6,6 @@ import * as Contacts from 'expo-contacts';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Platform,
   Text as RNText,
@@ -18,8 +16,9 @@ import {
   View,
 } from 'react-native';
 import { Button, Checkbox, Chip, Searchbar } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
+import { router, usePathname } from 'expo-router';
 
 export interface Contact {
   contactName: string;
@@ -50,14 +49,8 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [deviceContacts, setDeviceContacts] = useState<Contact[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
-
-  // Add useCreateGroup hook
-  const {
-    createGroup,
-    status: createGroupStatus,
-    error: createGroupError,
-  } = useCreateGroup();
-
+  
+  const pathname = usePathname();
   // Normalizers
   const normalizePhoneNumber = (phone = '') =>
     String(phone || '')
@@ -80,7 +73,6 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   // Current user
   const user = useSelector((state: RootState) => state.auth?.user);
   const userId = user?.userId;
-  // const userId = useSelector((state: RootState) => state.auth?.user?.id || '');
   const currentUserPhone = normalizePhoneNumber(user?.phoneNumber || '');
   const currentUserName = normalizeName(user?.name || '');
 
@@ -88,7 +80,6 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     getGroups,
     data: groupsData,
     status: groupsStatus,
-    refetch,
   } = useGetGroupsByPhoneNumber();
 
   interface Group {
@@ -366,83 +357,6 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     });
   };
 
-  // Handler for creating a new group
-  const handleCreateNewGroup = async () => {
-    // Use an alert to get the group name
-    Alert.prompt(
-      'Create New Group',
-      'Enter a name for the group:',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Create',
-          onPress: async (groupName) => {
-            if (!groupName?.trim()) {
-              Alert.alert('Error', 'Group name is required');
-              return;
-            }
-
-            if (tempSelectedPlayers.length === 0) {
-              Alert.alert(
-                'No Players Selected',
-                'Please select at least one player before creating a group.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Select Players',
-                    onPress: () => setActiveChip('registered'),
-                  },
-                ]
-              );
-              return;
-            }
-
-            // Prepare the payload
-            const allMembers = tempSelectedPlayers.map((p) => ({
-              name: p.contactName,
-              phoneNumber: p.contactPhoneNumber,
-              admin: false,
-            }));
-
-            const payload = {
-              name: groupName,
-              creatorUserId: userId,
-              members: allMembers,
-            };
-            console.log(payload, 'payload');
-
-            // Call the createGroup function
-            await createGroup({
-              groupData: payload,
-              callbacks: {
-                onSuccess: (data) => {
-                  Alert.alert('Success', 'Group created successfully!');
-                  // Refetch groups
-                  refetch?.();
-                  // Switch to groups tab to see the new group
-                  setActiveChip('groups');
-                  // Clear selected players for the group
-                  setTempSelectedPlayers([]);
-                  setTempSelectedGroupIds([]);
-                },
-                onError: (error) => {
-                  Alert.alert(
-                    'Error',
-                    error.message || 'Failed to create group'
-                  );
-                },
-              },
-            });
-          },
-        },
-      ],
-      'plain-text'
-    );
-  };
-
   // Render helpers (unchanged style)
   const renderPlayer = (player: Contact, index: number, source?: string) => (
     <TouchableOpacity
@@ -508,7 +422,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel} style={styles.closeButton}>
-            <Icon name='close' size={24} color='#333' />
+            <MaterialIcons name='close' size={24} color='#333' />
           </TouchableOpacity>
           <RNText style={styles.headerTitle}>Select Players</RNText>
           <View style={styles.placeholder} />
@@ -561,7 +475,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
             </View>
           ) : hasError ? (
             <View style={styles.centerContent}>
-              <Icon name='error-outline' size={48} color='#ff6b6b' />
+              <MaterialIcons name='error-outline' size={48} color='#ff6b6b' />
               <RNText style={styles.errorText}>Failed to load players</RNText>
               <RNText style={styles.errorSubtext}>
                 Please check your connection and try again
@@ -569,7 +483,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
             </View>
           ) : !anyFiltered ? (
             <View style={styles.centerContent}>
-              <Icon name='search-off' size={48} color='#999' />
+              <MaterialIcons name='search-off' size={48} color='#999' />
               <RNText style={styles.emptyText}>No players found</RNText>
               <RNText style={styles.emptySubtext}>
                 Try adjusting your search
@@ -678,20 +592,8 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
             </RNText>
           </View>
 
-          {/* Create New Group button */}
-          <Button
-            mode='contained'
-            onPress={handleCreateNewGroup}
-            style={styles.groupButton}
-            labelStyle={styles.groupButtonLabel}
-            contentStyle={styles.groupButtonContent}
-            disabled={createGroupStatus === 'loading'}
-          >
-            {createGroupStatus === 'loading'
-              ? 'Creating...'
-              : 'Create New Group'}
-          </Button>
-
+          <>
+          {/* Add Players button (always visible) */}
           <Button
             mode='contained'
             onPress={handleSave}
@@ -701,6 +603,20 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
           >
             Add Players
           </Button>
+
+          {/* Conditionally render Create New Group button */}
+          {pathname !== "/(authenticated)/create-group" && (
+            <Button
+              mode="contained"
+              onPress={() => router.replace("/(authenticated)/create-group")}
+              style={styles.groupButton}
+              labelStyle={styles.groupButtonLabel}
+              contentStyle={styles.groupButtonContent}
+            >
+              Create New Group
+            </Button>
+          )}
+        </>
         </View>
       </SafeAreaView>
     </Modal>
@@ -880,6 +796,7 @@ const styles = StyleSheet.create({
   groupButton: {
     borderRadius: 30,
     backgroundColor: '#2C7E88',
+    marginTop: 10,
   },
   groupButtonLabel: {
     fontSize: 16,
@@ -891,7 +808,6 @@ const styles = StyleSheet.create({
   addButton: {
     borderRadius: 30,
     backgroundColor: '#fff',
-    marginTop: 10,
     borderWidth: 1,
     borderColor: '#2C7E88',
   },

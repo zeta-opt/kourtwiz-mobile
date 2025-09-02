@@ -279,6 +279,23 @@ const UserProfile = () => {
             Import contacts and invite friend to play KourtWiz with you.
         </Text>
 
+        {/* CREATE GROUPS */}
+        <Text style={styles.sectionTitle}>CREATE GROUPS</Text>
+        <View style={styles.sectionCard}>
+        <TouchableOpacity 
+          style={styles.optionRow} 
+          onPress={() => {
+            router.replace('/(authenticated)/groups');
+          }}
+          >
+          <Text style={styles.optionText}>Create Groups</Text>
+          <Text style={styles.optionArrow}>{'>'}</Text>
+        </TouchableOpacity>
+        </View>
+        <Text style={styles.sectionHelperText}>
+            Import groups and invite friends to play KourtWiz with you.
+        </Text>
+
         {/* AVOIDED PLAYERS */}
         {/* <Text style={styles.sectionTitle}>AVOIDED PLAYERS</Text>
         <View style={styles.sectionCard}>

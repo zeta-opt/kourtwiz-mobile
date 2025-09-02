@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Modal,
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
   Alert,
   SafeAreaView,
   KeyboardAvoidingView,
@@ -11,7 +11,6 @@ import { Checkbox } from 'react-native-paper';
 import { useSelector} from 'react-redux';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 import PreferredPlayersModal, {Contact} from '@/components/preferred-players-modal/PreferredPlayersModal';
-import ContactsModal from '@/components/find-player/contacts-modal/ContactsModal';
 import { getToken } from '@/shared/helpers/storeToken';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
@@ -26,8 +25,6 @@ const PreferredPlayersScreen = () => {
     const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
   const [preferredPlayers, setPreferredPlayers] = useState<Contact[]>([]);
-  const [showOptionModal, setShowOptionModal] = useState(false);
-  const [showContactsModal, setShowContactsModal] = useState(false);
   const [showRegisteredModal, setShowRegisteredModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [filteredPreferredPlayers, setFilteredPreferredPlayers] = useState<Contact[]>([]);
@@ -76,9 +73,7 @@ const PreferredPlayersScreen = () => {
   
         if (!res.ok) throw new Error('Failed to update preferred players.');
     
-        setShowContactsModal(false);
         setShowRegisteredModal(false);
-        setShowOptionModal(false);
         router.replace('/profile'); // move after save
         } catch (err) {
         console.error(err);
@@ -118,95 +113,68 @@ const PreferredPlayersScreen = () => {
             </View>
 
             <View style={styles.searchWrapper}>
-            <TextInput
-                placeholder="Search"
-                style={styles.searchInput}
-                value={searchText}
-                onChangeText={setSearchText}
-            />
-            </View>
+                <TextInput
+                    placeholder="Search"
+                    style={styles.searchInput}
+                    value={searchText}
+                    onChangeText={setSearchText}
+                />
+                </View>
 
-            {preferredPlayers.length === 0 ? (
+                {preferredPlayers.length === 0 ? (
                 <View style={styles.emptyMessageWrapper}>
                     <Text style={styles.emptyMessage}>No preferred players added yet.</Text>
                 </View>
-            ) : (
+                ) : filteredPreferredPlayers.length === 0 ? (
+                <View style={styles.emptyMessageWrapper}>
+                    <Text style={styles.emptyMessage}>No results found</Text>
+                </View>
+                ) : (
                 <>
-                    <Text style={styles.sectionLabel}>{preferredPlayers.length} Preferred Players Selected</Text>
+                    <Text style={styles.sectionLabel}>
+                    {preferredPlayers.length} Preferred Players Selected
+                    </Text>
                     <View style={styles.optionsContainer}>
-                        <FlatList
-                            data={[...filteredPreferredPlayers].sort((a, b) =>
-                                a.contactName.toLowerCase().localeCompare(b.contactName.toLowerCase())
-                              )}
-                            keyExtractor={(item) => item.contactPhoneNumber}
-                            keyboardShouldPersistTaps="handled"
-                            renderItem={({ item }) => {
-                                const checked = isSelected(item.contactPhoneNumber);
-                            
-                                return (
-                                <TouchableOpacity style={styles.item} onPress={() => toggleSelect(item)}>
-                                    <View style={styles.iconCircle}>
-                                        <Ionicons name="person" size={16} color="#2CA6A4" />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.name}>{item.contactName}</Text>
-                                        <Text style={styles.phoneText}>{item.contactPhoneNumber}</Text>
-                                    </View>
-                                    <Checkbox
-                                    status={checked ? 'checked' : 'unchecked'}
-                                    onPress={() => toggleSelect(item)}
-                                    color="#327D85"
-                                    />
-                                </TouchableOpacity>
-                                );
-                            }}
-                        />
-                  </View>
+                    <FlatList
+                        data={[...filteredPreferredPlayers].sort((a, b) => a.contactName.toLowerCase().localeCompare(b.contactName.toLowerCase()))}
+                        keyExtractor={(item) => item.contactPhoneNumber}
+                        keyboardShouldPersistTaps="handled"
+                        renderItem={({ item }) => {
+                        const checked = isSelected(item.contactPhoneNumber);
+
+                        return (
+                            <TouchableOpacity
+                                style={styles.item}
+                                onPress={() => toggleSelect(item)}
+                            >
+                            <View style={styles.iconCircle}>
+                                <Ionicons name="person" size={16} color="#2CA6A4" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.name}>{item.contactName}</Text>
+                                <Text style={styles.phoneText}>{item.contactPhoneNumber}</Text>
+                            </View>
+                            <Checkbox
+                                status={checked ? "checked" : "unchecked"}
+                                onPress={() => toggleSelect(item)}
+                                color="#327D85"
+                            />
+                            </TouchableOpacity>
+                        );
+                        }}
+                    />
+                    </View>
                 </>
-            )}
+                )}
 
             <View style={styles.buttonsContainer}>
-                <TouchableOpacity style={styles.addButton} onPress={() => setShowOptionModal(true)}>
+                <TouchableOpacity style={styles.addButton} onPress={() => setShowRegisteredModal(true)}>
                     <Text style={styles.addButtonText}>Add Players</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.doneButton} onPress={handleSavePreferredPlayers}>
-                    <Text style={styles.doneButtonText}>Done</Text>
+                    <Text style={styles.doneButtonText}>Save</Text>
                 </TouchableOpacity>
             </View>
-
-            {/* Options Modal */}
-            <Modal visible={showOptionModal} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.optionModalContainer}>
-                    <TouchableOpacity
-                        style={styles.optionButton}
-                        onPress={() => {
-                        setShowOptionModal(false);
-                        setShowRegisteredModal(true);
-                        }}
-                    >
-                        <Text style={styles.optionButtonText}>Add from Registered Players</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.optionButton}
-                        onPress={() => {
-                        setShowOptionModal(false);
-                        setShowContactsModal(true);
-                        }}
-                    >
-                        <Text style={styles.optionButtonText}>Add from Contacts</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.optionButton, { backgroundColor: '#ffe6e6' }]}
-                        onPress={() => setShowOptionModal(false)}
-                    >
-                        <Text style={[styles.optionButtonText, { color: 'red' }]}>Cancel</Text>
-                    </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
 
             <PreferredPlayersModal
                 visible={showRegisteredModal}
@@ -215,15 +183,6 @@ const PreferredPlayersScreen = () => {
                     setPreferredPlayers(selected.map(normalizeContact));
                 }}
                 selectedPlayers={preferredPlayers}
-            />
-
-            <ContactsModal
-                visible={showContactsModal}
-                onClose={() => setShowContactsModal(false)}
-                onSelectContacts={(selected) => {
-                    setPreferredPlayers(selected.map(normalizeContact));
-                }}
-                selectedContacts={preferredPlayers}
             />
         </KeyboardAvoidingView>
     </SafeAreaView>
