@@ -17,6 +17,7 @@ import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay'
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
 import Toast from 'react-native-toast-message';
 import UserAvatar from '@/assets/UserAvatar';
+import VideoUpload from '@/components/open-play/VideoUpload';
 
 export default function OpenPlayDetailedView() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
@@ -185,6 +186,7 @@ export default function OpenPlayDetailedView() {
             </View>
           </View>
         </View>
+        <VideoUpload event={selectedPlay} />
 
         {/* Description */}
         <View style={styles.descriptionCard}>
