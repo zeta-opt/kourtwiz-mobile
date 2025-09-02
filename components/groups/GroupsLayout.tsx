@@ -7,14 +7,11 @@ import {
   FlatList,
   Image,
   StyleSheet,
-  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import UserAvatar from "@/assets/UserAvatar";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import CreateGroup, {Player} from "./CreateGroup";
-import ContactsModal, { Contact } from "../find-player/contacts-modal/ContactsModal";
 import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
@@ -28,24 +25,19 @@ const FILTERS = [
   { key: "favorite", label: "Favorites" },
 ];
 
+export interface Contact {
+  contactName: string;
+  contactPhoneNumber: string;
+}
+
 export default function GroupsScreen() {
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
   const { getGroups, status, error, data, refetch } = useGetGroupsByPhoneNumber();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [contactsModalVisible, setContactsModalVisible] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<Contact[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [groupName, setGroupName] = useState("");
   const [favoriteGroups, setFavoriteGroups] = useState<string[]>([]);
   const [lastReadTimestamps, setLastReadTimestamps] = useState<{ [key: string]: string }>({});
-
-  const normalizeContact = (c: any): Contact => ({
-    contactName: c.contactName ?? c.name ?? '',
-    contactPhoneNumber: c.contactPhoneNumber ?? c.phoneNumber ?? '',
-  });
 
   useEffect(() => {
     if (user?.phoneNumber) {
@@ -284,31 +276,17 @@ export default function GroupsScreen() {
             </Text>
           </View>
           <View style={styles.rowSpaceBetween}>
-          <Text style={[styles.messageText, !isRead && styles.unreadText]} numberOfLines={1}>
-            {lastMessageText}
-          </Text>
+            {/* <Text style={[styles.messageText, !isRead && styles.unreadText]} numberOfLines={1}>
+              {lastMessageText}
+            </Text> */}
 
-        {/* Unread badge */}
-        {!isRead && (
-          <View style={styles.unreadBadge}>
-            <Text style={styles.unreadBadgeText}>•</Text>
-          </View>
-        )}
-        </View>
-          {/* <View style={styles.rowSpaceBetween}>
-            <Text
-              style={[styles.messageText, !isRead && styles.unreadText]}
-              numberOfLines={1}
-            >
-              {messagePreview}
-            </Text>
-
-            {!isRead && (
+            {/* Unread badge */}
+            {/* {!isRead && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadBadgeText}>•</Text>
               </View>
-            )}
-          </View> */}
+            )} */}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -349,7 +327,7 @@ export default function GroupsScreen() {
       </View>
 
       {/* Filters */}
-      <View style={styles.filters}>
+      {/* <View style={styles.filters}>
         {FILTERS.map(({ key, label }) => {
           let count = 0;
           if (key === "unread") {
@@ -402,7 +380,7 @@ export default function GroupsScreen() {
         <Text style={styles.favoriteHint}>
           Long press a group to add it in favorites
         </Text>
-      )}
+      )} */}
 
       {status === 'loading' && <Text>Loading groups...</Text>}
       {status === 'error' && <Text>Error: {error}</Text>}
@@ -419,52 +397,10 @@ export default function GroupsScreen() {
         {/* Open Modal Button */}
         <TouchableOpacity
             style={styles.createButton}
-            onPress={() => setModalVisible(true)}
+            onPress={() => router.replace("/(authenticated)/create-group")}
         >
             <Text style={styles.createButtonText}>Create Group</Text>
         </TouchableOpacity>
-
-       {/* Create Group Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-        presentationStyle="fullScreen"
-      >
-        <CreateGroup
-          onClose={() => setModalVisible(false)}
-          onAddPlayers={() => {
-            setModalVisible(false);
-            setContactsModalVisible(true);
-          }}
-          groupName={groupName}
-          setGroupName={setGroupName}
-          players={players}
-          setPlayers={setPlayers}
-          onGroupCreated={refetch}
-        />
-      </Modal>
-
-      {/* Contacts Modal at top level */}
-      <ContactsModal
-        visible={contactsModalVisible}
-        onClose={() => {
-          setContactsModalVisible(false);
-          setModalVisible(true);
-        }}
-        onSelectContacts={(selected) => {
-          const normalized = selected.map(normalizeContact);
-          setSelectedPlayer(normalized);
-          setPlayers(normalized.map((p, index) => ({
-            id: `${p.contactPhoneNumber}-${index}`,
-            name: p.contactName,
-            phoneNumber: p.contactPhoneNumber,
-          })));
-          setContactsModalVisible(false);
-          setModalVisible(true);
-        }}
-        selectedContacts={selectedPlayer}
-      />
     </LinearGradient>
   );
 }
@@ -472,7 +408,7 @@ export default function GroupsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#D9E3E3", // pale blue background
+    backgroundColor: "#D9E3E3",
     paddingTop: 54,
     paddingHorizontal: 16,
   },
