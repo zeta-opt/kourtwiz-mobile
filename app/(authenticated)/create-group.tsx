@@ -217,6 +217,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 20,
+    paddingTop: 20,
   },
   title: {
     color: '#fff',
