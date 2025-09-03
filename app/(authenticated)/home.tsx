@@ -81,7 +81,8 @@ const Dashboard = () => {
     'GLOBAL',
     userId
   );
- const { data: initiatedPlays, refetch: refetchInitiated } = useGetInitiatedPlays(userId);
+  const { data: initiatedPlays, refetch: refetchInitiated } =
+    useGetInitiatedPlays(userId);
 
   const shouldRefetchInvitations = useSelector(
     (state: RootState) => state.refetch.shouldRefetchInvitations
@@ -201,29 +202,33 @@ const Dashboard = () => {
       };
     }),
   ];
-  const { withdrawRequest, status: withdrawRequestStatus, error: withdrawRequestError, refetch: refetchWithdrawRequest } = useWithdrawRequest();
-const handleWithdrawFromSentRequest = async (invite: any) => {
-  try {
-    setLoadingId(invite.requestId);
-    await withdrawRequest(invite.requestId, userId, ''); // comment can be added if needed
-    Toast.show({
-      type: 'success',
-      text1: 'Request withdrawn',
-      topOffset: 100,
-    });
-    refetchOutgoing(); // refresh outgoing invites
-  } catch (error: any) {
-    Toast.show({
-      type: 'error',
-      text1: 'Failed to withdraw request',
-      text2: error.message || 'Unknown error',
-      topOffset: 100,
-    });
-  } finally {
-    setLoadingId(null);
-  }
-};
-
+  const {
+    withdrawRequest,
+    status: withdrawRequestStatus,
+    error: withdrawRequestError,
+    refetch: refetchWithdrawRequest,
+  } = useWithdrawRequest();
+  const handleWithdrawFromSentRequest = async (invite: any) => {
+    try {
+      setLoadingId(invite.requestId);
+      await withdrawRequest(invite.requestId, userId, ''); // comment can be added if needed
+      Toast.show({
+        type: 'success',
+        text1: 'Request withdrawn',
+        topOffset: 100,
+      });
+      refetchOutgoing(); // refresh outgoing invites
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to withdraw request',
+        text2: error.message || 'Unknown error',
+        topOffset: 100,
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   const { withdraw } = useWithdrawFromPlay();
 
@@ -409,7 +414,7 @@ const handleWithdrawFromSentRequest = async (invite: any) => {
                   ]}
                   onPress={() => setActiveTab('INCOMING')}
                 >
-                  Incoming Request ({incomingCount.length})
+                  Incoming ({incomingCount.length})
                 </Text>
                 <Text
                   style={[
@@ -420,7 +425,7 @@ const handleWithdrawFromSentRequest = async (invite: any) => {
                   ]}
                   onPress={() => setActiveTab('OUTGOING')}
                 >
-                  Sent Request ({pendingOutCount})
+                  Sent ({pendingOutCount})
                 </Text>
                 <Text
                   style={[
