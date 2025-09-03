@@ -40,7 +40,7 @@ export default function BottomTabs() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => console.log('videos icon pressed')}
+        onPress={() => router.replace('/videos')}
         style={styles.tabItem}
       >
         <MaterialIcons name='ondemand-video' size={24} color='#000' />
