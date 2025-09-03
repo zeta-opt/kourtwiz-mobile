@@ -169,7 +169,7 @@ const VideosLayout = () => {
 
   const handleBackPress = () => {
     if (router.canGoBack()) {
-      router.back();
+      router.replace('/home');
     } else {
       router.replace('/home');
     }

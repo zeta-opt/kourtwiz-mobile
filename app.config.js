@@ -55,7 +55,6 @@ export default {
 
     plugins: [
       'expo-router',
-      'expo-video',
       [
         'expo-splash-screen',
         {
