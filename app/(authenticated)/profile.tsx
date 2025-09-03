@@ -20,6 +20,7 @@ import { useDeleteUserById } from '@/hooks/apis/user/useDeleteUserById';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { Avatar } from 'react-native-paper';
+import VideoSubscriptionToggle from '@/components/profile/VideoSubscriptionToggle';
 
 type PlayerDetails = {
   preferPlacesToPlay: { id: string }[];
@@ -46,6 +47,7 @@ type UserData = {
   skillLevel: string;
   userId: string;
   playerDetails: PlayerDetails;
+  videoRecordingSubscribed?: boolean;
 };
 
 const UserProfile = () => {
@@ -213,6 +215,15 @@ const UserProfile = () => {
           <Text style={styles.editButtonText}>Edit</Text>
         </TouchableOpacity>
       </View>
+      <View style={styles.DetailsCard}>
+        <VideoSubscriptionToggle
+          userId={userData.userId}
+          initialSubscribed={userData.videoRecordingSubscribed}
+          onSubscriptionChange={(newValue) =>
+            setUserData((prev) => ({ ...prev, videoRecordingSubscribed: newValue }))
+          }
+        />
+      </View>
 
       <Text style={[styles.sectionTitle, {marginBottom: 0, marginLeft:40, fontWeight:600,}]}>PERSONAL DETAILS</Text>
       <View style={styles.DetailsCard}>
@@ -277,6 +288,23 @@ const UserProfile = () => {
         </View>
         <Text style={styles.sectionHelperText}>
             Import contacts and invite friend to play KourtWiz with you.
+        </Text>
+
+        {/* CREATE GROUPS */}
+        <Text style={styles.sectionTitle}>CREATE GROUPS</Text>
+        <View style={styles.sectionCard}>
+        <TouchableOpacity 
+          style={styles.optionRow} 
+          onPress={() => {
+            router.replace('/(authenticated)/groups');
+          }}
+          >
+          <Text style={styles.optionText}>Create Groups</Text>
+          <Text style={styles.optionArrow}>{'>'}</Text>
+        </TouchableOpacity>
+        </View>
+        <Text style={styles.sectionHelperText}>
+            Import groups and invite friends to play KourtWiz with you.
         </Text>
 
         {/* AVOIDED PLAYERS */}

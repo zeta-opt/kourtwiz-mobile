@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Modal, StyleSheet, Text, TouchableOpacity, View, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const FindplayerCard = () => {
   const router = useRouter();
+  const [showOptionModal, setShowOptionModal] = useState(false);
 
   return (
     <TouchableOpacity
@@ -20,7 +22,7 @@ const FindplayerCard = () => {
           />
         </View>
 
-        {/* Right: Column (title → subtitle → buttons) */}
+        {/* Right: Column */}
         <View style={styles.featuredRightColumn}>
           <Text style={styles.featuredSubtitle}>Connect and play near you</Text>
           <Text style={styles.featuredTitle}>FIND PLAYERS{'\n'}& GAMES</Text>
@@ -28,12 +30,9 @@ const FindplayerCard = () => {
           <View style={styles.featuredButtonColumn}>
             <TouchableOpacity
               style={styles.filledButton}
-              onPress={()=>router.push('/(authenticated)/create-event')}
+              onPress={() => router.push('/(authenticated)/create-event')}
             >
-              <Text
-                style={styles.filledButtonText}
-                
-                >Create Event</Text>
+              <Text style={styles.filledButtonText}>Create Event</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -49,13 +48,68 @@ const FindplayerCard = () => {
             >
               <Text style={styles.outlinedButtonText}>I want to Play</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.featuredButton, styles.outlinedButton]}
+              onPress={() => setShowOptionModal(true)}
+            >
+              <Text style={styles.outlinedButtonText}>Reserve</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
+
+      {/* Options Modal */}
+      <Modal
+        visible={showOptionModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowOptionModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowOptionModal(false)}
+        >
+          <View style={styles.modalWrapper}>
+            {/* Floating Close Icon */}
+            <TouchableOpacity
+              style={styles.closeIconOutside}
+              onPress={() => setShowOptionModal(false)}
+            >
+              <Ionicons name="close-circle" size={32} color="#fff" />
+            </TouchableOpacity>
+
+            {/* Modal Box */}
+            <Pressable
+              style={styles.optionModalContainer}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <TouchableOpacity
+                style={styles.optionButton}
+                onPress={() => {
+                  setShowOptionModal(false);
+                  router.push('/(authenticated)/create-event');
+                }}
+              >
+                <Text style={styles.optionButtonText}>Initiate Open Play</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.optionButton}
+                onPress={() => {
+                  setShowOptionModal(false);
+                  router.push('/(authenticated)/find-player');
+                }}
+              >
+                <Text style={styles.optionButtonText}>Initiate Find Player</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </TouchableOpacity>
   );
 };
-
 export default FindplayerCard;
 
 const styles = StyleSheet.create({
@@ -84,7 +138,7 @@ const styles = StyleSheet.create({
 
   featuredImage: {
     width: 120,
-    height: 200,
+    height: 220,
     borderRadius: 12,
     backgroundColor: '#eee',
   },
@@ -99,13 +153,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 10,
+    marginBottom: 6,
   },
 
   featuredSubtitle: {
     fontSize: 10,
     color: '#666',
-    marginBottom: 6,
+    marginBottom: 2,
     marginTop: 6,
   },
 
@@ -136,6 +190,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderColor: '#3F7CFF',
     borderWidth: 1,
+    borderRadius:5,
+    paddingVertical:8,
+    paddingBlockStart:4,
+    alignItems:'center',
   },
     
   filledButton: {
@@ -153,9 +211,56 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   filledButtonText: {
-  color: '#FFFFFF',
-  fontWeight: '600',
-  fontSize: 12,
-},
-
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalWrapper: {
+    width: '85%',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  optionModalContainer: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  closeIconOutside: {
+    position: 'absolute',
+    top: -40,
+    right: -10,
+    zIndex: 10,
+  },  
+  optionButton: {
+    width: '100%',
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#3F7CFF',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    marginVertical: 6,
+  },
+  optionButtonText: {
+    fontSize: 16,
+    color: '#3F7CFF',
+    fontWeight: '600',
+  },
+  modalFooter: {
+    flexDirection: 'row', justifyContent: 'space-around', padding: 10,
+  },
 });

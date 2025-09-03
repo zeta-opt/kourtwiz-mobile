@@ -637,11 +637,11 @@ const styles = StyleSheet.create({
     // flexShrink: 1,
     // maxWidth: '80%',
     // overflow: 'hidden',
-    gap: 4,
+    gap: 8,
     paddingRight: 8,
   },
   chip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 12,
     fontSize: 12,

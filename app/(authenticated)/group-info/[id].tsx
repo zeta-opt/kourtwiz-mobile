@@ -316,15 +316,15 @@ const GroupInfoScreen: React.FC = () => {
           <View style={{ alignItems: 'center' }}>
             <Text style={styles.groupName}>{group?.name ?? 'Group'}</Text>
             <Text style={styles.groupMembers}>
-              Group: {group?.members?.length ?? 0} members
+              Group: {group?.members?.length ?? 0} players
             </Text>
           </View>
 
           {/* Members section */}
           <View style={styles.modalOptionLeft}>
-            <Text style={styles.sectionTitle}>Members</Text>
+            <Text style={styles.sectionTitle}>Players</Text>
             <TouchableOpacity onPress={() => setContactsModalVisible(true)}>
-              <Text style={[styles.sectionTitle, { color: '#257073' }]}>Add Members</Text>
+              <Text style={[styles.sectionTitle, { color: '#257073' }]}>Add Players</Text>
             </TouchableOpacity>
           </View>
 
