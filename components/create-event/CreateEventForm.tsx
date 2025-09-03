@@ -46,31 +46,58 @@ import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelec
 import RepeatPicker from './components/RepeatPicker';
 import StatusModal from './components/StatusModal';
 import EventNameSearch from './components/EventNameSearch';
+import { useUpdateOpenPlaySession } from '@/hooks/apis/createPlay/useUpdatePlaySession';
 
 const CreateEventForm = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
   const params = useLocalSearchParams();
+  const { 
+    isEditMode,
+    sessionId,
+    eventName: initialEventName,
+    court: initialCourt,
+    description: initialDescription,
+    price: initialPrice,
+    maxPlayers: initialMaxPlayers,
+    skillLevel: initialSkillLevel,
+    startDate: initialStartDate,
+    endTime: initialEndTime,
+  } = useLocalSearchParams<{
+    isEditMode?: string;
+    sessionId?: string;
+    eventName?: string;
+    court?: string;
+    description?: string;
+    price?: string;
+    maxPlayers?: string;
+    skillLevel?: string;
+    startDate?: string;
+    endTime?: string;
+  }>(); 
+  const editMode = isEditMode === 'true';
   const [newPlaceData, setNewPlaceData] = useState<any>(null);
 
-  const [eventName, setEventName] = useState('');
+  const [eventName, setEventName] = useState(initialEventName || '');
   const [place, setPlace] = useState('');
-  const [court, setCourt] = useState('');
+  const [court, setCourt] = useState(initialCourt || '');
   const [date, setDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(initialStartDate ? new Date(initialStartDate) : new Date());
   const [customRepeatDays, setCustomRepeatDays] = useState<string[]>([]);
   const [customRepeatDates, setCustomRepeatDates] = useState<Date[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [repeat, setRepeat] = useState('');
-  const [skillLevel, setSkillLevel] = useState(0);
-  const [price, setPrice] = useState('');
-  const [maxPlayers, setMaxPlayers] = useState('');
-  const [description, setDescription] = useState('');
+  const [skillLevel, setSkillLevel] = useState(Number(initialSkillLevel) || 0);
+  const [price, setPrice] = useState(initialPrice || '');
+  const [maxPlayers, setMaxPlayers] = useState(initialMaxPlayers || '');
+  const [description, setDescription] = useState(initialDescription || '');
   const { createSession } = useCreateOpenPlaySession();
+  const { updateSession } = useUpdateOpenPlaySession();
+
 
   const [startTime, setStartTime] = useState<Date | null>(null);
-  const [endTime, setEndTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState(initialEndTime ? new Date(initialEndTime) : new Date());
   const [showTimePicker, setShowTimePicker] = useState<{
     visible: boolean;
     type: 'start' | 'end';
@@ -325,6 +352,47 @@ const CreateEventForm = () => {
     }
   };
 
+const handleUpdate = async () => {
+  try {
+    // Build payload with only editable fields
+    const payload: any = {};
+
+    if (eventName?.trim()) payload.eventName = eventName.trim();
+    if (maxPlayers) payload.maxPlayers = Number(maxPlayers);
+    if (newPlaceData || placeToPlay) {
+      payload.allCourts = newPlaceData || { Name: placeToPlay };
+    }
+    if (startTime && endTime && selectedDate) {
+      const startDateTime = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        startTime.getHours(),
+        startTime.getMinutes()
+      );
+
+      const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+
+      payload.startTime = formatDateToLocalISOString(startDateTime);
+      payload.durationMinutes = durationMinutes;
+    }
+
+    await updateSession({
+      sessionId: sessionId!,
+      ...payload,
+    });
+
+    setSuccessVisible(true);
+    console.log('session', sessionId);
+    console.log('Update Payload:', payload);
+  } catch (err: any) {
+    console.error('Error updating session:', err);
+    setErrorMessage(err.message || 'Failed to update session');
+    setErrorVisible(true);
+  }
+};
+
+
   const handleAddPlace = () => {
     router.push({
       pathname: '/(authenticated)/add-place',
@@ -515,9 +583,11 @@ const CreateEventForm = () => {
                 <Ionicons name='arrow-back' size={24} color='#cce5e3' />
               </TouchableOpacity>
               <View style={styles.headerTextContainer}>
-                <Text style={styles.MainTitle}>Create Event</Text>
+                <Text style={styles.MainTitle}>
+                {editMode ? 'Edit Event' : 'Create Event'}
+              </Text>
                 <Text style={styles.subtitle}>
-                  Fill out details to create an event
+                  {editMode ? 'Update details of your event' : 'Fill out details to create an event'}
                 </Text>
               </View>
               <UserAvatar size={30} />
@@ -580,14 +650,18 @@ const CreateEventForm = () => {
               handleClose={handleModalClose}
               locationPermissionGranted={locationPermissionGranted}
             />
-
+      {!isEditMode && (
+        <>
             <Text style={styles.label}>Court Selection (Optional)</Text>
             <TextInput
               style={styles.input}
               placeholder='Enter Court Name'
               value={court}
               onChangeText={setCourt}
+              editable={!editMode}
             />
+            </>
+        )}
             <GameSchedulePicker
               selectedDate={selectedDate}
               startTime={startTime}
@@ -601,6 +675,9 @@ const CreateEventForm = () => {
                 endTime: errors.endTime,
               }}
             />
+
+            {!isEditMode && (
+        <>
 
             <Text style={styles.label}>Repeat Event *</Text>
             <View
@@ -669,7 +746,9 @@ const CreateEventForm = () => {
                 maximumDate={new Date(2100, 11, 31)}
               />
             )}
-
+          
+            </>)}
+             
             <View style={styles.formSection}>
               <View style={styles.sliderSection}>
                 <Text style={styles.skillLevelTitle}>Skill Level *</Text>
@@ -696,7 +775,7 @@ const CreateEventForm = () => {
                 </View>
               </View>
             </View>
-
+            
             <View style={styles.row}>
               <View style={styles.halfInput}>
                 <Text style={styles.label}>Price (Optional)</Text>
@@ -706,6 +785,7 @@ const CreateEventForm = () => {
                   value={price}
                   onChangeText={setPrice}
                   keyboardType='numeric'
+                  editable={!editMode}
                 />
               </View>
 
@@ -724,6 +804,8 @@ const CreateEventForm = () => {
               </View>
             </View>
 
+            {!isEditMode && (
+        <>
             <Text style={styles.label}>Description (Optional)</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
@@ -753,13 +835,16 @@ const CreateEventForm = () => {
               onSelectContacts={handleSelectContactsFromDevice}
               selectedContacts={preferredContacts}
             />
-
+          </>
+            )}
             <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleSubmit}
-            >
-              <Text style={styles.buttonText}>Create Event</Text>
-            </TouchableOpacity>
+                style={styles.primaryButton}
+                onPress={isEditMode ? handleUpdate : handleSubmit}
+              >
+                <Text style={styles.buttonText}>
+                  {isEditMode ? 'Update Event' : 'Create Event'}
+                </Text>
+              </TouchableOpacity>
           </ScrollView>
         </View>
 
@@ -1047,6 +1132,7 @@ const styles = StyleSheet.create({
   },
   halfInput: {
     flex: 1,
+    marginBottom:14,
   },
   textArea: {
     height: 80,
