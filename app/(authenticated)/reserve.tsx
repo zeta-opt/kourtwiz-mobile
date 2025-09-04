@@ -1,9 +1,10 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { useGetPreferredPlaces } from '@/hooks/apis/player-finder/useGetPreferredPlaces';
+import { useGetSearchPlaces } from '@/hooks/apis/player-finder/useGetSearchPlaces';
 import { RootState } from '@/store';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,45 +16,116 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSelector } from 'react-redux';
+import * as Location from 'expo-location';
 
 type CourtData = {
   id: string;
   name: string;
-  location: string;
-  courtType: string;
-  courtPurpose: string;
+  location?: string;
+  courtType?: string;
+  courtPurpose?: string;
+  distance?: number;
+  isPreferred?: boolean;
 };
 
 const ReserveCourtScreen = () => {
-  const [searchText, setSearchText] = React.useState("");
-  const [filteredData, setFilteredData] = React.useState<CourtData[]>([]);
+  const [searchText, setSearchText] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [page, setPage] = useState(0);
+  const [places, setPlaces] = useState<CourtData[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   const { user } = useSelector((state: RootState) => state.auth);
 
+  // Preferred places API
   const {
     data: preferredPlaces,
     status: preferredStatus,
-    refetch,
   } = useGetPreferredPlaces({ userId: user?.userId });
 
-  // Apply search filter whenever API data or searchText changes
-  React.useEffect(() => {
-    if (!preferredPlaces) return;
+  // Search places API
+  const {
+    data: searchPlaces,
+    status: searchStatus,
+    refetch,
+  } = useGetSearchPlaces({
+    userId: user?.userId,
+    lat: coords?.lat ?? 0,
+    lng: coords?.lng ?? 0,
+    maxDistanceInKm: 30,
+    page,
+    limit: 20,
+  });
 
-    if (searchText.trim() === "") {
-      setFilteredData(preferredPlaces as CourtData[]);
-    } else {
-      const lowered = searchText.toLowerCase();
-      setFilteredData(
-        (preferredPlaces as CourtData[]).filter(
-          (item) =>
-            item.name.toLowerCase().includes(lowered) ||
-            item.location.toLowerCase().includes(lowered) ||
-            item.courtPurpose.toLowerCase().includes(lowered)
-        )
+  // Get user location on mount
+  useEffect(() => {
+    const getLocation = async () => {
+      try {
+        const location = await Location.getCurrentPositionAsync({});
+        setCoords({
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        });
+      } catch (err) {
+        console.error("Error getting location:", err);
+      }
+    };
+    getLocation();
+  }, []);
+
+  // Append new courts when searchPlaces changes
+  useEffect(() => {
+    if (searchPlaces && coords) {
+      const preferredIds = new Set(preferredPlaces?.map(p => p.id) ?? []);
+      const newPlaces: CourtData[] = searchPlaces
+        .filter(court => !preferredIds.has(court.id))
+        .map(court => ({
+          id: court.id || court.Name,
+          name: court.Name,
+          location: court.Location,
+          courtType: court["Court Type"],
+          courtPurpose: court["Court Purpose"],
+          distance: court.distance,
+          isPreferred: false,
+        }));
+
+      setHasMore(newPlaces.length >= 20);
+      setPlaces(prev =>
+        [...prev, ...newPlaces.filter(p => !prev.some(x => x.id === p.id))]
       );
+      setIsFetchingMore(false);
     }
-  }, [searchText, preferredPlaces]);
+  }, [searchPlaces]);
+
+  const combinedPlaces: CourtData[] = [
+    ...(preferredPlaces?.map(p => ({
+      id: p.id,
+      name: p.name,
+      location: p.location,
+      courtType: p.courtType,
+      courtPurpose: p.courtPurpose,
+      isPreferred: true,
+    })) ?? []),
+    ...places,
+  ];
+
+  // Search filtering
+  const filteredData = combinedPlaces.filter(item => {
+    const lowered = searchText.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(lowered) ||
+      item.location?.toLowerCase().includes(lowered) ||
+      item.courtPurpose?.toLowerCase().includes(lowered)
+    );
+  });
+
+  const loadMore = () => {
+    if (hasMore && !isFetchingMore && searchStatus !== "loading") {
+      setIsFetchingMore(true);
+      setPage(prev => prev + 1);
+    }
+  };
 
   const renderItem = ({ item }: { item: CourtData }) => (
     <TouchableOpacity
@@ -67,27 +139,36 @@ const ReserveCourtScreen = () => {
     >
       <Image
         source={
-          item.courtPurpose.toLowerCase().includes("pickleball")
+          item.courtPurpose?.toLowerCase().includes("pickleball")
             ? require("@/assets/images/pickleball_player.png")
             : require("@/assets/images/FindPlayerCardImage.png")
         }
         style={styles.image}
       />
       <View style={styles.infoContainer}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.location}>{item.location}</Text>
-        <Text style={styles.details}>
-          {item.courtType} | {item.courtPurpose}
+        <Text style={styles.name}>
+          {item.name} {item.isPreferred && "⭐"}
         </Text>
+        {item.location && <Text style={styles.location}>{item.location}</Text>}
+        <Text style={styles.details}>
+          {item.courtType ?? ""} {item.courtPurpose ? `| ${item.courtPurpose}` : ""}
+        </Text>
+        {item.distance !== undefined && (
+          <Text style={styles.details}>
+            {item.distance < 1
+              ? `${Math.round(item.distance * 1000)}m`
+              : `${item.distance.toFixed(1)}km`}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
-  );  
+  );
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace("/home")}>
+        <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Reserve Court</Text>
@@ -102,28 +183,23 @@ const ReserveCourtScreen = () => {
         onChangeText={setSearchText}
       />
 
-      {/* Preferred Place Title */}
-      <Text style={styles.sectionTitle}>Preferred Place</Text>
-
-      {/* Loading & Error states */}
-      {preferredStatus === "loading" && (
-        <ActivityIndicator size="large" style={{ marginTop: 20 }} />
-      )}
-      {preferredStatus === "error" && (
-        <Text style={{ color: "red", marginTop: 20 }}>
-          Failed to fetch places.  
-          <Text onPress={refetch} style={{ color: "blue" }}>Retry</Text>
-        </Text>
-      )}
-
       {/* List */}
-      {preferredStatus === "success" && (
+      {(preferredStatus === "loading" || searchStatus === "loading") && page === 0 ? (
+        <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+      ) : (
         <FlatList
           data={filteredData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.6}
+          ListFooterComponent={() =>
+            isFetchingMore ? (
+              <ActivityIndicator size="small" style={{ marginVertical: 16 }} />
+            ) : null
+          }
         />
       )}
     </View>
