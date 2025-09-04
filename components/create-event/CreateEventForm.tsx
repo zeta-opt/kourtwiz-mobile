@@ -1,5 +1,6 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { useCreateOpenPlaySession } from '@/hooks/apis/createPlay/useCreateOpenPlay';
+import { useUpdateOpenPlaySession } from '@/hooks/apis/createPlay/useUpdatePlaySession';
 import { AppDispatch, RootState } from '@/store';
 import {
   Contact,
@@ -43,17 +44,16 @@ import PreferredPlacesModal from '../find-player/preferred-places-modal/Preferre
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
+import EventNameSearch from './components/EventNameSearch';
 import RepeatPicker from './components/RepeatPicker';
 import StatusModal from './components/StatusModal';
-import EventNameSearch from './components/EventNameSearch';
-import { useUpdateOpenPlaySession } from '@/hooks/apis/createPlay/useUpdatePlaySession';
 
 const CreateEventForm = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
   const params = useLocalSearchParams();
-  const { 
+  const {
     isEditMode,
     sessionId,
     eventName: initialEventName,
@@ -75,7 +75,7 @@ const CreateEventForm = () => {
     skillLevel?: string;
     startDate?: string;
     endTime?: string;
-  }>(); 
+  }>();
   const editMode = isEditMode === 'true';
   const [newPlaceData, setNewPlaceData] = useState<any>(null);
 
@@ -83,7 +83,9 @@ const CreateEventForm = () => {
   const [place, setPlace] = useState('');
   const [court, setCourt] = useState(initialCourt || '');
   const [date, setDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(initialStartDate ? new Date(initialStartDate) : new Date());
+  const [selectedDate, setSelectedDate] = useState(
+    initialStartDate ? new Date(initialStartDate) : new Date()
+  );
   const [customRepeatDays, setCustomRepeatDays] = useState<string[]>([]);
   const [customRepeatDates, setCustomRepeatDates] = useState<Date[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -95,9 +97,10 @@ const CreateEventForm = () => {
   const { createSession } = useCreateOpenPlaySession();
   const { updateSession } = useUpdateOpenPlaySession();
 
-
   const [startTime, setStartTime] = useState<Date | null>(null);
-  const [endTime, setEndTime] = useState(initialEndTime ? new Date(initialEndTime) : new Date());
+  const [endTime, setEndTime] = useState(
+    initialEndTime ? new Date(initialEndTime) : new Date()
+  );
   const [showTimePicker, setShowTimePicker] = useState<{
     visible: boolean;
     type: 'start' | 'end';
@@ -352,46 +355,47 @@ const CreateEventForm = () => {
     }
   };
 
-const handleUpdate = async () => {
-  try {
-    // Build payload with only editable fields
-    const payload: any = {};
+  const handleUpdate = async () => {
+    try {
+      // Build payload with only editable fields
+      const payload: any = {};
 
-    if (eventName?.trim()) payload.eventName = eventName.trim();
-    if (maxPlayers) payload.maxPlayers = Number(maxPlayers);
-    if (newPlaceData || placeToPlay) {
-      payload.allCourts = newPlaceData || { Name: placeToPlay };
+      if (eventName?.trim()) payload.eventName = eventName.trim();
+      if (maxPlayers) payload.maxPlayers = Number(maxPlayers);
+      if (newPlaceData || placeToPlay) {
+        payload.allCourts = newPlaceData || { Name: placeToPlay };
+      }
+      if (startTime && endTime && selectedDate) {
+        const startDateTime = new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+          startTime.getHours(),
+          startTime.getMinutes()
+        );
+
+        const durationMinutes = Math.floor(
+          (endTime.getTime() - startTime.getTime()) / (1000 * 60)
+        );
+
+        payload.startTime = formatDateToLocalISOString(startDateTime);
+        payload.durationMinutes = durationMinutes;
+      }
+
+      await updateSession({
+        sessionId: sessionId!,
+        ...payload,
+      });
+
+      setSuccessVisible(true);
+      console.log('session', sessionId);
+      console.log('Update Payload:', payload);
+    } catch (err: any) {
+      console.error('Error updating session:', err);
+      setErrorMessage(err.message || 'Failed to update session');
+      setErrorVisible(true);
     }
-    if (startTime && endTime && selectedDate) {
-      const startDateTime = new Date(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate(),
-        startTime.getHours(),
-        startTime.getMinutes()
-      );
-
-      const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-
-      payload.startTime = formatDateToLocalISOString(startDateTime);
-      payload.durationMinutes = durationMinutes;
-    }
-
-    await updateSession({
-      sessionId: sessionId!,
-      ...payload,
-    });
-
-    setSuccessVisible(true);
-    console.log('session', sessionId);
-    console.log('Update Payload:', payload);
-  } catch (err: any) {
-    console.error('Error updating session:', err);
-    setErrorMessage(err.message || 'Failed to update session');
-    setErrorVisible(true);
-  }
-};
-
+  };
 
   const handleAddPlace = () => {
     router.push({
@@ -584,10 +588,12 @@ const handleUpdate = async () => {
               </TouchableOpacity>
               <View style={styles.headerTextContainer}>
                 <Text style={styles.MainTitle}>
-                {editMode ? 'Edit Event' : 'Create Event'}
-              </Text>
+                  {editMode ? 'Edit Event' : 'Create Event'}
+                </Text>
                 <Text style={styles.subtitle}>
-                  {editMode ? 'Update details of your event' : 'Fill out details to create an event'}
+                  {editMode
+                    ? 'Update details of your event'
+                    : 'Fill out details to create an event'}
                 </Text>
               </View>
               <UserAvatar size={30} />
@@ -602,19 +608,19 @@ const handleUpdate = async () => {
               error={errors.eventName}
               onSelect={(event) => {
                 setEventName(event.eventName);
-                setCourt(event.courtId || "");
-                setPrice(event.priceForPlay?.toString() || "");
+                setCourt(event.courtId || '');
+                setPrice(event.priceForPlay?.toString() || '');
                 setSkillLevel(event.skillLevel || 0);
-                setMaxPlayers(event.maxPlayers?.toString() || "");
-                setDescription(event.description || "");
-                dispatch(setPlaceToPlay(event.allCourts?.Name || ""));
+                setMaxPlayers(event.maxPlayers?.toString() || '');
+                setDescription(event.description || '');
+                dispatch(setPlaceToPlay(event.allCourts?.Name || ''));
                 if (event.preferredPlayers?.length > 0) {
                   dispatch(setPreferredContacts(event.preferredPlayers));
                 }
               }}
-/>
+            />
 
-            <Text style={styles.label}>Club Name *</Text>
+            <Text style={styles.label}>Place *</Text>
             <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
 
             <View style={styles.inputRow}>
@@ -650,18 +656,18 @@ const handleUpdate = async () => {
               handleClose={handleModalClose}
               locationPermissionGranted={locationPermissionGranted}
             />
-      {!isEditMode && (
-        <>
-            <Text style={styles.label}>Court Selection (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder='Enter Court Name'
-              value={court}
-              onChangeText={setCourt}
-              editable={!editMode}
-            />
-            </>
-        )}
+            {!isEditMode && (
+              <>
+                <Text style={styles.label}>Court Selection (Optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder='Enter Court Name'
+                  value={court}
+                  onChangeText={setCourt}
+                  editable={!editMode}
+                />
+              </>
+            )}
             <GameSchedulePicker
               selectedDate={selectedDate}
               startTime={startTime}
@@ -677,78 +683,77 @@ const handleUpdate = async () => {
             />
 
             {!isEditMode && (
-        <>
-
-            <Text style={styles.label}>Repeat Event *</Text>
-            <View
-              style={[
-                errors.repeat && {
-                  borderColor: 'red',
-                  borderWidth: 1,
-                  borderRadius: 5,
-                },
-              ]}
-            >
-              <RepeatPicker
-                repeat={repeat}
-                handleRepeatChange={handleRepeatChange}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Repeat End Date *</Text>
-              <Button
-                mode='outlined'
-                style={[
-                  styles.dateTimeButton,
-                  styles.roundedButton,
-                  styles.whiteButton,
-                  styles.blackBorder,
-                  errors.repeatEndDate && {
-                    borderColor: 'red',
-                    borderWidth: 1,
-                  },
-                ]}
-                onPress={() => setShowRepeatEndDatePicker(true)}
-                contentStyle={styles.fullWidth}
-              >
-                <View style={styles.buttonContent}>
-                  <Text
-                    style={[
-                      styles.timeText,
-                      { color: repeatEndDate ? '#000' : '#9F9F9F' },
-                    ]}
-                  >
-                    {repeatEndDate
-                      ? repeatEndDate.toLocaleDateString('en-GB')
-                      : 'DD/MM/YYYY'}
-                  </Text>
-                  <Icon
-                    source='calendar'
-                    size={20}
-                    color={repeatEndDate ? '#000' : '#9F9F9F'}
+              <>
+                <Text style={styles.label}>Repeat Event *</Text>
+                <View
+                  style={[
+                    errors.repeat && {
+                      borderColor: 'red',
+                      borderWidth: 1,
+                      borderRadius: 5,
+                    },
+                  ]}
+                >
+                  <RepeatPicker
+                    repeat={repeat}
+                    handleRepeatChange={handleRepeatChange}
                   />
                 </View>
-              </Button>
-            </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Repeat End Date *</Text>
+                  <Button
+                    mode='outlined'
+                    style={[
+                      styles.dateTimeButton,
+                      styles.roundedButton,
+                      styles.whiteButton,
+                      styles.blackBorder,
+                      errors.repeatEndDate && {
+                        borderColor: 'red',
+                        borderWidth: 1,
+                      },
+                    ]}
+                    onPress={() => setShowRepeatEndDatePicker(true)}
+                    contentStyle={styles.fullWidth}
+                  >
+                    <View style={styles.buttonContent}>
+                      <Text
+                        style={[
+                          styles.timeText,
+                          { color: repeatEndDate ? '#000' : '#9F9F9F' },
+                        ]}
+                      >
+                        {repeatEndDate
+                          ? repeatEndDate.toLocaleDateString('en-GB')
+                          : 'DD/MM/YYYY'}
+                      </Text>
+                      <Icon
+                        source='calendar'
+                        size={20}
+                        color={repeatEndDate ? '#000' : '#9F9F9F'}
+                      />
+                    </View>
+                  </Button>
+                </View>
 
-            {showRepeatEndDatePicker && (
-              <DateTimePickerModal
-                isVisible={showRepeatEndDatePicker}
-                mode='date'
-                onConfirm={(date) => {
-                  setShowRepeatEndDatePicker(false);
-                  setRepeatEndDate(date);
-                }}
-                onCancel={() => setShowRepeatEndDatePicker(false)}
-                date={repeatEndDate || new Date()}
-                display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
-                minimumDate={new Date(2000, 0, 1)}
-                maximumDate={new Date(2100, 11, 31)}
-              />
+                {showRepeatEndDatePicker && (
+                  <DateTimePickerModal
+                    isVisible={showRepeatEndDatePicker}
+                    mode='date'
+                    onConfirm={(date) => {
+                      setShowRepeatEndDatePicker(false);
+                      setRepeatEndDate(date);
+                    }}
+                    onCancel={() => setShowRepeatEndDatePicker(false)}
+                    date={repeatEndDate || new Date()}
+                    display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+                    minimumDate={new Date(2000, 0, 1)}
+                    maximumDate={new Date(2100, 11, 31)}
+                  />
+                )}
+              </>
             )}
-          
-            </>)}
-             
+
             <View style={styles.formSection}>
               <View style={styles.sliderSection}>
                 <Text style={styles.skillLevelTitle}>Skill Level *</Text>
@@ -775,7 +780,7 @@ const handleUpdate = async () => {
                 </View>
               </View>
             </View>
-            
+
             <View style={styles.row}>
               <View style={styles.halfInput}>
                 <Text style={styles.label}>Price (Optional)</Text>
@@ -805,46 +810,46 @@ const handleUpdate = async () => {
             </View>
 
             {!isEditMode && (
-        <>
-            <Text style={styles.label}>Description (Optional)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder='Add event details...'
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={3}
-            />
-            <PreferredPlayersSelector
-              preferredContacts={preferredContacts}
-              onShowPreferredPlayers={showPreferredPlayers}
-              onAddContact={handleAddContact}
-              onRemovePlayer={handleRemovePlayer}
-            />
+              <>
+                <Text style={styles.label}>Description (Optional)</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder='Add event details...'
+                  value={description}
+                  onChangeText={setDescription}
+                  multiline
+                  numberOfLines={3}
+                />
+                <PreferredPlayersSelector
+                  preferredContacts={preferredContacts}
+                  onShowPreferredPlayers={showPreferredPlayers}
+                  onAddContact={handleAddContact}
+                  onRemovePlayer={handleRemovePlayer}
+                />
 
-            <PreferredPlayersModal
-              visible={preferredPlayersModal}
-              onClose={() => dispatch(closePreferredPlayersModal())}
-              onSelectPlayers={handleSelectPlayers}
-              selectedPlayers={preferredContacts}
-            />
+                <PreferredPlayersModal
+                  visible={preferredPlayersModal}
+                  onClose={() => dispatch(closePreferredPlayersModal())}
+                  onSelectPlayers={handleSelectPlayers}
+                  selectedPlayers={preferredContacts}
+                />
 
-            <ContactsModal
-              visible={contactsModalVisible}
-              onClose={() => setContactsModalVisible(false)}
-              onSelectContacts={handleSelectContactsFromDevice}
-              selectedContacts={preferredContacts}
-            />
-          </>
+                <ContactsModal
+                  visible={contactsModalVisible}
+                  onClose={() => setContactsModalVisible(false)}
+                  onSelectContacts={handleSelectContactsFromDevice}
+                  selectedContacts={preferredContacts}
+                />
+              </>
             )}
             <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={isEditMode ? handleUpdate : handleSubmit}
-              >
-                <Text style={styles.buttonText}>
-                  {isEditMode ? 'Update Event' : 'Create Event'}
-                </Text>
-              </TouchableOpacity>
+              style={styles.primaryButton}
+              onPress={isEditMode ? handleUpdate : handleSubmit}
+            >
+              <Text style={styles.buttonText}>
+                {isEditMode ? 'Update Event' : 'Create Event'}
+              </Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
 
@@ -1132,7 +1137,7 @@ const styles = StyleSheet.create({
   },
   halfInput: {
     flex: 1,
-    marginBottom:14,
+    marginBottom: 14,
   },
   textArea: {
     height: 80,

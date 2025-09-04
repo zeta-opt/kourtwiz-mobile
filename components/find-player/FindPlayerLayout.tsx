@@ -27,7 +27,6 @@ import {
   LayoutChangeEvent,
   ScrollView,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -45,8 +44,8 @@ import PlayerCountDropdown from '../player-count/PlayerCountDropdown';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
 import ContactsModal from './contacts-modal/ContactsModal';
-import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
 import EventNameSearch from './event-name-search/EventNameSearch';
+import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
 
 // Define the PlaceToSave type based on the payload structure
 interface PlaceToSave {
@@ -417,17 +416,21 @@ const FindPlayerLayout = () => {
             setPlayerCount(event.playersNeeded);
             dispatch(setPlaceToPlay(event.placeToPlay));
             if (event.name?.length > 0) {
-              dispatch(setPreferredContacts([{
-                contactName: event.name,
-                contactPhoneNumber: event.phoneNumber,
-              }]));
+              dispatch(
+                setPreferredContacts([
+                  {
+                    contactName: event.name,
+                    contactPhoneNumber: event.phoneNumber,
+                  },
+                ])
+              );
             }
           }}
           error={false}
         />
-        
+
         {/* Club Name Section */}
-        <Text style={styles.sectionTitle}>Club Name</Text>
+        <Text style={styles.sectionTitle}>Place</Text>
         <View style={styles.dropdownRow}>
           <Button
             mode='outlined'
