@@ -42,16 +42,14 @@ const FindplayerCard = () => {
 
             <TouchableOpacity
               style={[styles.featuredButton, styles.outlinedButton]}
-              onPress={() => router.replace('/(authenticated)/want-to-play')}
+              onPress={() => router.push('/(authenticated)/want-to-play')}
             >
               <Text style={styles.outlinedButtonText}>I want to Play</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.featuredButton, styles.outlinedButton]}
-              onPress={() => 
-                router.push('/(authenticated)/reserve')
-              }
+              onPress={() => router.push('/(authenticated)/reserve')}
             >
               <Text style={styles.outlinedButtonText}>Reserve</Text>
             </TouchableOpacity>
