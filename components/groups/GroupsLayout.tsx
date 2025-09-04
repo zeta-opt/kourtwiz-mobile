@@ -303,7 +303,7 @@ export default function GroupsScreen() {
             <Ionicons name="chevron-back-outline" size={24} color="#4A4A4A" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Groups</Text>
-        <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
+        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
             <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
@@ -397,7 +397,7 @@ export default function GroupsScreen() {
         {/* Open Modal Button */}
         <TouchableOpacity
             style={styles.createButton}
-            onPress={() => router.replace("/(authenticated)/create-group")}
+            onPress={() => router.push("/(authenticated)/create-group")}
         >
             <Text style={styles.createButtonText}>Create Group</Text>
         </TouchableOpacity>

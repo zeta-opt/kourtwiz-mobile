@@ -627,8 +627,6 @@ const Dashboard = () => {
 
 export default Dashboard;
 
-// ...styles remain unchanged
-
 const styles = StyleSheet.create({
   container: { padding: 20, flexGrow: 1 },
   tabRow: {

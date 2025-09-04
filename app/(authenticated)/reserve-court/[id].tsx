@@ -104,8 +104,17 @@ export default function PlaceDetailsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About {place.Name}</Text>
         <Text style={styles.aboutText}>
-          This court is located at {place.Location}. {'\n'}It has {place.Access},
-          and {place.Lighting}.
+          {place.Location
+            ? `This court is located at ${place.Location}.`
+            : "Location details are not available."}
+          {"\n"}
+          {place.Access
+            ? `It has ${place.Access}.`
+            : "Access details are not specified."}
+          {"\n"}
+          {place.Lighting
+            ? `Lighting: ${place.Lighting}.`
+            : "Lighting information is not available."}
         </Text>
       </View>
 

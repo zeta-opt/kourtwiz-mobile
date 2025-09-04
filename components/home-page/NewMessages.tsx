@@ -247,7 +247,7 @@ export default function NewMessages() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 10,
+    marginTop: 25,
   },
   heading: {
     fontSize: 18,

@@ -53,7 +53,7 @@ const CreateEventForm = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
   const params = useLocalSearchParams();
-  const {
+  const { 
     isEditMode,
     sessionId,
     eventName: initialEventName,
@@ -75,7 +75,7 @@ const CreateEventForm = () => {
     skillLevel?: string;
     startDate?: string;
     endTime?: string;
-  }>();
+  }>(); 
   const editMode = isEditMode === 'true';
   const [newPlaceData, setNewPlaceData] = useState<any>(null);
 
@@ -581,7 +581,7 @@ const CreateEventForm = () => {
           <View style={styles.mainHeader}>
             <View style={styles.header}>
               <TouchableOpacity
-                onPress={() => router.replace('/(authenticated)/home')}
+                onPress={() => router.back()}
                 style={styles.backButton}
               >
                 <Ionicons name='arrow-back' size={24} color='#cce5e3' />
@@ -753,7 +753,7 @@ const CreateEventForm = () => {
                 )}
               </>
             )}
-
+          
             <View style={styles.formSection}>
               <View style={styles.sliderSection}>
                 <Text style={styles.skillLevelTitle}>Skill Level *</Text>
@@ -780,7 +780,7 @@ const CreateEventForm = () => {
                 </View>
               </View>
             </View>
-
+            
             <View style={styles.row}>
               <View style={styles.halfInput}>
                 <Text style={styles.label}>Price (Optional)</Text>
