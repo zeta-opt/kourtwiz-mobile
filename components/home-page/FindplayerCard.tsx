@@ -1,11 +1,9 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Image, Modal, StyleSheet, Text, TouchableOpacity, View, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const FindplayerCard = () => {
   const router = useRouter();
-  const [showOptionModal, setShowOptionModal] = useState(false);
 
   return (
     <TouchableOpacity
@@ -51,62 +49,15 @@ const FindplayerCard = () => {
 
             <TouchableOpacity
               style={[styles.featuredButton, styles.outlinedButton]}
-              onPress={() => setShowOptionModal(true)}
+              onPress={() => 
+                router.push('/(authenticated)/reserve')
+              }
             >
               <Text style={styles.outlinedButtonText}>Reserve</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
-
-      {/* Options Modal */}
-      <Modal
-        visible={showOptionModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowOptionModal(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowOptionModal(false)}
-        >
-          <View style={styles.modalWrapper}>
-            {/* Floating Close Icon */}
-            <TouchableOpacity
-              style={styles.closeIconOutside}
-              onPress={() => setShowOptionModal(false)}
-            >
-              <Ionicons name="close-circle" size={32} color="#fff" />
-            </TouchableOpacity>
-
-            {/* Modal Box */}
-            <Pressable
-              style={styles.optionModalContainer}
-              onPress={(e) => e.stopPropagation()}
-            >
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => {
-                  setShowOptionModal(false);
-                  router.push('/(authenticated)/create-event');
-                }}
-              >
-                <Text style={styles.optionButtonText}>Initiate Open Play</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => {
-                  setShowOptionModal(false);
-                  router.push('/(authenticated)/find-player');
-                }}
-              >
-                <Text style={styles.optionButtonText}>Initiate Find Player</Text>
-              </TouchableOpacity>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
     </TouchableOpacity>
   );
 };
@@ -214,53 +165,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 12,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalWrapper: {
-    width: '85%',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  optionModalContainer: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 15,
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-  },
-  closeIconOutside: {
-    position: 'absolute',
-    top: -40,
-    right: -10,
-    zIndex: 10,
-  },  
-  optionButton: {
-    width: '100%',
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#3F7CFF',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    marginVertical: 6,
-  },
-  optionButtonText: {
-    fontSize: 16,
-    color: '#3F7CFF',
-    fontWeight: '600',
-  },
-  modalFooter: {
-    flexDirection: 'row', justifyContent: 'space-around', padding: 10,
   },
 });

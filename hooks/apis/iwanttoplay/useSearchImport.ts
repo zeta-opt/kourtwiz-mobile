@@ -14,7 +14,7 @@ export const useSearchImport = ({
   search,
   userId,
   page = 0,
-  size = 1,
+  size = 10,
 }: SearchImportParams) => {
   const [data, setData] = useState<any | null>(null);
   const [status, setStatus] = useState<'loading' | 'error' | 'success'>('loading');
