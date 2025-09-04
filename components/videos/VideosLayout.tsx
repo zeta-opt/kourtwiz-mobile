@@ -202,7 +202,9 @@ const VideosLayout = () => {
           <View style={styles.headerTextContainer}>
             <Text style={styles.mainTitle}>Videos</Text>
           </View>
-          <UserAvatar size={30} />
+          <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+            <UserAvatar size={30} />
+          </TouchableOpacity>
         </View>
       </View>
 

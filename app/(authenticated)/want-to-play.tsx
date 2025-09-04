@@ -162,7 +162,7 @@ const IWantToPlayScreen = () => {
           {/* HEADER */}
           <View style={styles.header}>
             <TouchableOpacity
-              onPress={() => router.replace('/(authenticated)/home')}
+              onPress={() => router.back()}
               style={styles.backButton}
             >
               <Ionicons name="arrow-back" size={24} color="#cce5e3" />
@@ -171,7 +171,9 @@ const IWantToPlayScreen = () => {
               <Text style={styles.title}>I Want To Play</Text>
               <Text style={styles.subtitle}>Send out message to players</Text>
             </View>
-            <UserAvatar size={30} />
+            <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+              <UserAvatar size={30} />
+            </TouchableOpacity>
           </View>
 
           {/* CARD */}

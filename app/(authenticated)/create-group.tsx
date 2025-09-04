@@ -105,7 +105,7 @@ export default function CreateGroup() {
         {/* Header */}
         <View style={styles.headerContainer}>
             <TouchableOpacity
-                onPress={() => router.replace("/(authenticated)/groups")}
+                onPress={() => router.back()}
                 style={styles.backButton}
             >
                 <Ionicons name="arrow-back" size={24} color="#cce5e3" />
