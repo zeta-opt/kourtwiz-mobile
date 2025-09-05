@@ -11,17 +11,20 @@ import {
   Pressable,
   Modal,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import UserAvatar from '@/assets/UserAvatar';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Picker } from '@react-native-picker/picker';
 import { useSetUnavailability } from '@/hooks/apis/set-availability/useSetUnavailability';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import AvailabilityCalendar from './AvailabilityCalendar';
+import { useUpdatetUnavailability } from '@/hooks/apis/set-availability/useUpdateUnavailability';
 type UnavailabilityData = {
   reason: string;
   startTime: string;
@@ -33,12 +36,25 @@ type UnavailabilityData = {
   repeatOnDates: string[];
 };
 
+type ScheduleEvent = {
+  sessionId: string;
+  title: string;
+  reason: string;
+  startTime: string;
+  endTime: string;
+};
+type PropsForm = {
+  event: ScheduleEvent | null; // null for new slot
+  onClose: () => void;
+  onSave: () => void; // callback to refresh calendar after save/update
+};
+export default function SetAvailabilityForm({ event, onClose, onSave }: PropsForm) {
+  const isEditing = !!event?.sessionId;
 
-export default function SetAvailabilityForm() {
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(event?.reason || '');
+  const [startDate, setStartDate] = useState(event ? new Date(event.startTime) : new Date());
+  const [endDate, setEndDate] = useState(event ? new Date(event.endTime) : new Date());
   const [allDay, setAllDay] = useState(false);
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
   const [isStartDatePickerVisible, setStartDatePickerVisible] = useState(false);
   const [isStartTimePickerVisible, setStartTimePickerVisible] = useState(false);
   const [isEndDatePickerVisible, setEndDatePickerVisible] = useState(false);
@@ -52,6 +68,22 @@ export default function SetAvailabilityForm() {
   const [customRepeatDates, setCustomRepeatDates] = useState<Date[]>([]);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [showCustomModal, setShowCustomModal] = useState(false);
+
+  const { data } = useLocalSearchParams();
+  // console.log("whole data", data)
+
+    const formatDateToLocalISOString = (date: Date) => {
+    const pad = (num: number) => String(num).padStart(2, '0');
+
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
+  };
     const [customRepeat, setCustomRepeat] = useState<
       'daily' | 'weekly' | 'monthly' | 'yearly'
     >('daily');
@@ -67,21 +99,10 @@ export default function SetAvailabilityForm() {
     const [customInterval, setCustomInterval] = useState(1);
     const user = useSelector((state: RootState) => state.auth.user);
     const userId = user?.userId;
+    const { updateUnavailability, status: updateStatus, error: updateError } = useUpdatetUnavailability(userId);
 
     const { setUnavailability, status, error } = useSetUnavailability(userId);
 
-    const formatDateToLocalISOString = (date: Date) => {
-    const pad = (num: number) => String(num).padStart(2, '0');
-
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1);
-    const day = pad(date.getDate());
-    const hours = pad(date.getHours());
-    const minutes = pad(date.getMinutes());
-    const seconds = pad(date.getSeconds());
-
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
-  };
 
 
 const showStartTimePicker = () => setStartTimePickerVisible(true);
@@ -119,6 +140,29 @@ const handleEndDateConfirm = (date: Date) => {
   setEndDate(updated);
   hideEndDatePicker();
 };
+const handleUpdate = async () => {
+  const payload = {
+    sessionId: event!.sessionId,
+    title: "what is this for",
+    reason,
+    startTime: startDate.toISOString(),
+    endTime: endDate.toISOString(),
+  };
+
+  console.log('Update payload:', payload);
+
+  try {
+    await updateUnavailability(payload);
+    Alert.alert('Success', 'Event updated successfully!');
+    onSave();
+    onClose();
+  } catch (err) {
+    console.error(err);
+    Alert.alert('Error', 'Failed to update event');
+  }
+};
+
+
   const handleRepeatChange = (value: string) => {
     if (value === 'custom') {
       setShowCustomModal(true);
@@ -147,19 +191,19 @@ const handleEndDateConfirm = (date: Date) => {
     }
 };
 
-  const formatDatesArray = (dates: Date[]) =>
-    dates.map(formatDateToLocalISOString);
-    const handleSubmit = async () => {
-  const payload: UnavailabilityData = {
-    reason,
-    startTime: formatDateToLocalISOString(startDate),
-    endTime: formatDateToLocalISOString(endDate),
-    eventRepeatType: 'NONE',
-    repeatEndDate: formatDateToLocalISOString(repeatEndDate || endDate),
-    repeatInterval: 0,
-    repeatOnDays: [],
-    repeatOnDates: [],
-  };
+  const formatDatesArray = (dates: Date[]) => dates.map(formatDateToLocalISOString);
+
+    const handleCreate = async () => {
+    const payload: UnavailabilityData = {
+      reason,
+      startTime: formatDateToLocalISOString(startDate),
+      endTime: formatDateToLocalISOString(endDate),
+      eventRepeatType: 'NONE',
+      repeatEndDate: formatDateToLocalISOString(endDate),
+      repeatInterval: 0,
+      repeatOnDays: [],
+      repeatOnDates: [],
+    };
 
   // Handle repeat logic
   if (repeat && repeat.toUpperCase() !== 'NONE') {
@@ -219,16 +263,24 @@ const handleEndDateConfirm = (date: Date) => {
     }
   }
 
-  try {
-    await setUnavailability(userId);
-    console.log('payload',payload)
-    console.log('Unavailability set successfully!');
-    alert('Unavailability set successfully!');
-    router.replace('/(authenticated)/home')
-  } catch (err) {
-    console.error('Failed to set unavailability', err);
-  }
-};
+try {
+      await setUnavailability(payload);
+      console.log(payload)
+      Alert.alert('Success', 'Event created successfully!');
+      onSave();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to create event');
+    }
+  };
+
+    const handleSubmit = () => {
+    if (isEditing) handleUpdate();
+    else handleCreate();
+  };
+
+
 
     const handleCustomApply = () => {
     setRepeat('custom');
@@ -259,163 +311,163 @@ const handleEndDateConfirm = (date: Date) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.replace('/(authenticated)/home')}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#cce5e3" />
-        </TouchableOpacity>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.replace('/(authenticated)/home')}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="#cce5e3" />
+          </TouchableOpacity>
 
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.title}>Set Availability</Text>
-        </View>
-
-        <UserAvatar size={30} />
-      </View>
-
-      {/* Content */}
-      <View style={styles.formContainer}>
-        <TextInput
-          placeholder="Reason of unavailability..."
-          placeholderTextColor="#888"
-          style={styles.textArea}
-          multiline
-          numberOfLines={4}
-          value={reason}
-          onChangeText={setReason}
-        />
-
-        <View style={styles.card}>
-          {/* All Day Toggle */}
-          <View style={styles.row}>
-            <Text style={styles.label}>All Day</Text>
-            <Switch
-              value={allDay}
-              onValueChange={setAllDay}
-              trackColor={{ false: '#ccc', true: '#2F7C83' }}
-              thumbColor="#fff"
-            />
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.title}>Set Availability</Text>
           </View>
 
+          <UserAvatar size={30} />
+        </View>
+
+        {/* Scrollable Form */}
+        <ScrollView contentContainerStyle={{ padding: 20 }}>
+          {/* Reason Input */}
+          <TextInput
+            placeholder="Reason of unavailability..."
+            placeholderTextColor="#888"
+            style={styles.textArea}
+            multiline
+            numberOfLines={4}
+            value={reason}
+            onChangeText={setReason}
+          />
+
+          {/* Card containing All Day toggle and Calendar */}
+          <View style={styles.card}>
+            {/* All Day Toggle */}
             <View style={styles.row}>
-            <Text style={styles.label}>Starts</Text>
-            <Pressable onPress={showStartDatePicker}>
+              <Text style={styles.label}>All Day</Text>
+              <Switch
+                value={allDay}
+                onValueChange={setAllDay}
+                trackColor={{ false: '#ccc', true: '#2F7C83' }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            {/* Start Date/Time */}
+            <View style={styles.row}>
+              <Text style={styles.label}>Starts</Text>
+              <Pressable onPress={showStartDatePicker}>
                 <Text style={styles.dateText}>{startDate.toLocaleDateString()}</Text>
-            </Pressable>
-            {!allDay && (
+              </Pressable>
+              {!allDay && (
                 <Pressable onPress={showStartTimePicker}>
-                <Text style={styles.dateText}>
+                  <Text style={styles.dateText}>
                     {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+                  </Text>
                 </Pressable>
-            )}
+              )}
             </View>
 
-
+            {/* End Date/Time */}
             <View style={styles.row}>
-            <Text style={styles.label}>Ends</Text>
-            <Pressable onPress={showEndDatePicker}>
+              <Text style={styles.label}>Ends</Text>
+              <Pressable onPress={showEndDatePicker}>
                 <Text style={styles.dateText}>{endDate.toLocaleDateString()}</Text>
-            </Pressable>
-            {!allDay && (
+              </Pressable>
+              {!allDay && (
                 <Pressable onPress={showEndTimePicker}>
-                <Text style={styles.dateText}>
+                  <Text style={styles.dateText}>
                     {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+                  </Text>
                 </Pressable>
-            )}
+              )}
             </View>
 
-          <View style={styles.repeatSection}>
-            <View style={styles.repeatRow}>
+            {/* Repeat Section */}
+            <View style={styles.repeatSection}>
+              <View style={styles.repeatRow}>
                 <Text style={styles.label}>Repeat Event</Text>
                 <View style={styles.pickerWrapper}>
-                <Picker
+                  <Picker
                     selectedValue={repeat}
                     onValueChange={handleRepeatChange}
                     style={styles.picker}
                     itemStyle={{ color: '#000' }}
-                >
+                  >
                     <Picker.Item label="None" value="NONE" />
                     <Picker.Item label="Daily" value="DAILY" />
                     <Picker.Item label="Weekly" value="WEEKLY" />
                     <Picker.Item label="Monthly" value="MONTHLY" />
                     <Picker.Item label="Custom" value="custom" />
-                </Picker>
+                  </Picker>
                 </View>
-            </View>
+              </View>
 
-            <TouchableOpacity onPress={() => setShowRepeatEndDatePicker(true)}>
+              <TouchableOpacity onPress={() => setShowRepeatEndDatePicker(true)}>
                 <Text style={styles.enddate}>
-                {repeatEndDate
+                  {repeatEndDate
                     ? `Repeat Ends: ${repeatEndDate.toDateString()}`
                     : 'Set Repeat End Date'}
                 </Text>
-            </TouchableOpacity>
-
-            {showRepeatEndDatePicker && (
-                <DateTimePickerModal
-                isVisible={showRepeatEndDatePicker}
-                mode="date"
-                onConfirm={(date) => {
-                    setShowRepeatEndDatePicker(false);
-                    setRepeatEndDate(date);
-                }}
-                onCancel={() => setShowRepeatEndDatePicker(false)}
-                date={repeatEndDate || new Date()}
-                display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
-                minimumDate={new Date(2000, 0, 1)}
-                maximumDate={new Date(2100, 11, 31)}
-                />
-            )}
+              </TouchableOpacity>
             </View>
-
           </View>
-        </View>
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.doneButton} onPress={handleSubmit}>
-          <Text style={styles.doneText}>Done</Text>
-        </TouchableOpacity>
-      </View>
+          {/* Done Button */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.doneButton} onPress={handleSubmit}>
+              <Text style={styles.doneText}>{isEditing ? 'Update' : 'Save'}</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
 
+        {/* DateTime Pickers */}
         <DateTimePickerModal
-        isVisible={isStartDatePickerVisible}
-        mode="date"
-        date={startDate}
-        onConfirm={handleStartDateConfirm}
-        onCancel={hideStartDatePicker}
-        display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+          isVisible={isStartDatePickerVisible}
+          mode="date"
+          date={startDate}
+          onConfirm={handleStartDateConfirm}
+          onCancel={hideStartDatePicker}
+          display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+        />
+        <DateTimePickerModal
+          isVisible={isStartTimePickerVisible}
+          mode="time"
+          date={startDate}
+          onConfirm={handleStartTimeConfirm}
+          onCancel={hideStartTimePicker}
+          display="spinner"
+        />
+        <DateTimePickerModal
+          isVisible={isEndDatePickerVisible}
+          mode="date"
+          date={endDate}
+          onConfirm={handleEndDateConfirm}
+          onCancel={hideEndDatePicker}
+          display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+        />
+        <DateTimePickerModal
+          isVisible={isEndTimePickerVisible}
+          mode="time"
+          date={endDate}
+          onConfirm={handleEndTimeConfirm}
+          onCancel={hideEndTimePicker}
+          display="spinner"
         />
 
         <DateTimePickerModal
-        isVisible={isStartTimePickerVisible}
-        mode="time"
-        date={startDate}
-        onConfirm={handleStartTimeConfirm}
-        onCancel={hideStartTimePicker}
-        display="spinner"
+          isVisible={showRepeatEndDatePicker}
+          mode="date"
+          date={repeatEndDate || new Date()}
+          onConfirm={(date) => {
+            setRepeatEndDate(date);
+            setShowRepeatEndDatePicker(false);
+          }}
+          onCancel={() => setShowRepeatEndDatePicker(false)}
+          display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
         />
 
-        <DateTimePickerModal
-        isVisible={isEndDatePickerVisible}
-        mode="date"
-        date={endDate}
-        onConfirm={handleEndDateConfirm}
-        onCancel={hideEndDatePicker}
-        display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
-        />
 
-        <DateTimePickerModal
-        isVisible={isEndTimePickerVisible}
-        mode="time"
-        date={endDate}
-        onConfirm={handleEndTimeConfirm}
-        onCancel={hideEndTimePicker}
-        display="spinner"
-        />
         <Modal visible={showCustomModal} animationType='slide' transparent>
           <View style={styles.overlay}>
             <View style={styles.modalWrapper}>
