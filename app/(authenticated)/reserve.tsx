@@ -5,7 +5,7 @@ import { useSearchImport } from '@/hooks/apis/iwanttoplay/useSearchImport';
 import { RootState } from '@/store';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -183,7 +183,7 @@ const ReserveCourtScreen = () => {
     }, 0);
   };
 
-  const renderItem = ({ item }: { item: CourtData }) => (
+  const renderItem = useCallback(({ item }: { item: CourtData }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() =>
@@ -194,11 +194,7 @@ const ReserveCourtScreen = () => {
       }
     >
       <Image
-        source={
-          (item.courtPurpose ?? "").toLowerCase().includes("pickleball")
-            ? require("@/assets/images/pickleball_player.png")
-            : require("@/assets/images/FindPlayerCardImage.png")
-        }
+        source={require("@/assets/images/FindPlayerCardImage.png")}
         style={styles.image}
       />
       <View style={styles.infoContainer}>
@@ -218,10 +214,9 @@ const ReserveCourtScreen = () => {
         )}
       </View>
     </TouchableOpacity>
-  );
+  ), []);
 
-  const initialLoading =
-    (preferredStatus === "loading" || nearbyStatus === "loading") && !searchMode;
+  const initialLoading = (preferredStatus === "loading" || nearbyStatus === "loading") && !searchMode && page === 0;
 
   const searchLoading = searchMode && importStatus === "loading";
 
@@ -233,7 +228,9 @@ const ReserveCourtScreen = () => {
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Reserve Court</Text>
-        <UserAvatar size={36} />
+        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+            <UserAvatar size={36} />
+        </TouchableOpacity>
       </View>
 
       {/* Search bar: name-only + submit on Enter or icon */}
@@ -264,7 +261,7 @@ const ReserveCourtScreen = () => {
       ) : (
         <FlatList
           data={dataToDisplay}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}

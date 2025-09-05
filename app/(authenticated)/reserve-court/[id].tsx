@@ -76,7 +76,7 @@ export default function PlaceDetailsScreen() {
       {/* Top Image */}
       <View>
       <Image
-          source={require('@/assets/images/collins-park.png')}
+          source={require("@/assets/images/FindPlayerCardImage.png")}
           style={styles.topImage}
           resizeMode="cover"
         />
