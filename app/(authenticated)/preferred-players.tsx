@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
   Alert,
   SafeAreaView,
   KeyboardAvoidingView,
@@ -8,183 +12,211 @@ import {
   TextInput,
 } from 'react-native';
 import { Checkbox } from 'react-native-paper';
-import { useSelector} from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
-import PreferredPlayersModal, {Contact} from '@/components/preferred-players-modal/PreferredPlayersModal';
+import PreferredPlayersModal, { Contact } from '@/components/preferred-players-modal/PreferredPlayersModal';
 import { getToken } from '@/shared/helpers/storeToken';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
-  
+
 const PreferredPlayersScreen = () => {
-    const router = useRouter();
-    const user = useSelector((state: any) => state.auth.user);
-    const userId = user?.userId;
-    const { data: userData } = useGetUserDetails({ userId });
-    const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
+  const router = useRouter();
+  const user = useSelector((state: any) => state.auth.user);
+  const userId = user?.userId;
+  const { data: userData } = useGetUserDetails({ userId });
+  const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
   const [preferredPlayers, setPreferredPlayers] = useState<Contact[]>([]);
   const [showRegisteredModal, setShowRegisteredModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [filteredPreferredPlayers, setFilteredPreferredPlayers] = useState<Contact[]>([]);
 
+  // --- Normalize contact ---
+  const normalizeContact = (c: any): Contact => ({
+    contactName: c.contactName ?? c.name ?? '',
+    contactPhoneNumber: c.contactPhoneNumber ?? c.phoneNumber ?? '',
+  });
+
+  // --- Ensure uniqueness by phone number ---
+  const setUniquePreferredPlayers = (players: Contact[]) => {
+    const unique = new Map<string, Contact>();
+    players.forEach((p) => {
+      const normalized = normalizeContact(p);
+      if (normalized.contactPhoneNumber) {
+        unique.set(normalized.contactPhoneNumber, normalized);
+      }
+    });
+    setPreferredPlayers(Array.from(unique.values()));
+  };
+
+  // --- Load from API (dedupe immediately) ---
   useEffect(() => {
     const fetched = userData?.playerDetails?.preferToPlayWith ?? [];
-    const normalized = fetched.map(normalizeContact);
-    setPreferredPlayers(normalized);
+    setUniquePreferredPlayers(fetched);
   }, [userData]);
 
-    const normalizeContact = (c: any): Contact => ({
-        contactName: c.contactName ?? c.name ?? '',
-        contactPhoneNumber: c.contactPhoneNumber ?? c.phoneNumber ?? '',
+  const isSelected = (phoneNumber: string) =>
+    preferredPlayers.some((p) => p.contactPhoneNumber === phoneNumber);
+
+  const toggleSelect = (item: Contact) => {
+    if (isSelected(item.contactPhoneNumber)) {
+      setUniquePreferredPlayers(
+        preferredPlayers.filter((p) => p.contactPhoneNumber !== item.contactPhoneNumber)
+      );
+    } else {
+      setUniquePreferredPlayers([...preferredPlayers, item]);
+    }
+  };
+
+  const handleSavePreferredPlayers = async () => {
+    const token = await getToken();
+    const updatedPlayerDetails = {
+      ...userData?.playerDetails,
+      preferToPlayWith: preferredPlayers,
+    };
+
+    try {
+      const res = await fetch(`${BASE_URL}/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...userData,
+          playerDetails: updatedPlayerDetails,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update preferred players.');
+
+      setShowRegisteredModal(false);
+      router.replace('/profile');
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to save preferred players.');
+    }
+  };
+
+  // --- Search ---
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setFilteredPreferredPlayers(preferredPlayers);
+      return;
+    }
+
+    const lower = searchText.toLowerCase();
+    const filtered = preferredPlayers.filter((player) => {
+      const name = player.contactName?.toLowerCase() || '';
+      const phone = player.contactPhoneNumber?.toLowerCase() || '';
+      return name.includes(lower) || phone.includes(lower);
     });
 
-    const isSelected = (phoneNumber: string) =>
-        preferredPlayers.some(p => p.contactPhoneNumber === phoneNumber);
+    setFilteredPreferredPlayers(filtered);
+  }, [searchText, preferredPlayers]);
 
-    const toggleSelect = (item: Contact) => {
-        setPreferredPlayers(prev =>
-          isSelected(item.contactPhoneNumber)
-            ? prev.filter(p => p.contactPhoneNumber !== item.contactPhoneNumber)
-            : [...prev, item]
-        );
-    }; 
-
-    const handleSavePreferredPlayers = async () => {
-        const token = await getToken();
-        const updatedPlayerDetails = {
-        ...userData?.playerDetails,
-        preferToPlayWith: preferredPlayers,
-        };
-    
-        try {
-        const res = await fetch(`${BASE_URL}/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-            ...userData,
-            playerDetails: updatedPlayerDetails,
-            }),
-        });
-  
-        if (!res.ok) throw new Error('Failed to update preferred players.');
-    
-        setShowRegisteredModal(false);
-        router.replace('/profile'); // move after save
-        } catch (err) {
-        console.error(err);
-        Alert.alert('Error', 'Failed to save preferred players.');
-        }
-    };
-    
-    useEffect(() => {
-        if (!searchText.trim()) {
-          setFilteredPreferredPlayers(preferredPlayers);
-          return;
-        }
-      
-        const lower = searchText.toLowerCase();
-        const filtered = preferredPlayers.filter((player) => {
-          const name = player.contactName?.toLowerCase() || '';
-          const phone = player.contactPhoneNumber?.toLowerCase() || '';
-          return name.includes(lower) || phone.includes(lower);
-        });
-      
-        setFilteredPreferredPlayers(filtered);
-      }, [searchText, preferredPlayers]);
-
-    return (
+  return (
     <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-              behavior="padding"
-              style={{ flex: 1 }}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-            >
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.replace('/profile')} style={styles.backButton}>
-                <Ionicons name="chevron-back" size={24} color="#000" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Preferred Players</Text>
-                <UserAvatar size={32} onPress={() => console.log('Clicked Avatar')} />
-            </View>
+      <KeyboardAvoidingView
+        behavior="padding"
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.replace('/profile')}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Preferred Players</Text>
+          <UserAvatar size={32} onPress={() => console.log('Clicked Avatar')} />
+        </View>
 
-            <View style={styles.searchWrapper}>
-                <TextInput
-                    placeholder="Search"
-                    style={styles.searchInput}
-                    value={searchText}
-                    onChangeText={setSearchText}
-                />
-                </View>
+        {/* SEARCH */}
+        <View style={styles.searchWrapper}>
+          <TextInput
+            placeholder="Search"
+            style={styles.searchInput}
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+        </View>
 
-                {preferredPlayers.length === 0 ? (
-                <View style={styles.emptyMessageWrapper}>
-                    <Text style={styles.emptyMessage}>No preferred players added yet.</Text>
-                </View>
-                ) : filteredPreferredPlayers.length === 0 ? (
-                <View style={styles.emptyMessageWrapper}>
-                    <Text style={styles.emptyMessage}>No results found</Text>
-                </View>
-                ) : (
-                <>
-                    <Text style={styles.sectionLabel}>
-                    {preferredPlayers.length} Preferred Players Selected
-                    </Text>
-                    <View style={styles.optionsContainer}>
-                    <FlatList
-                        data={[...filteredPreferredPlayers].sort((a, b) => a.contactName.toLowerCase().localeCompare(b.contactName.toLowerCase()))}
-                        keyExtractor={(item) => item.contactPhoneNumber}
-                        keyboardShouldPersistTaps="handled"
-                        renderItem={({ item }) => {
-                        const checked = isSelected(item.contactPhoneNumber);
-
-                        return (
-                            <TouchableOpacity
-                                style={styles.item}
-                                onPress={() => toggleSelect(item)}
-                            >
-                            <View style={styles.iconCircle}>
-                                <Ionicons name="person" size={16} color="#2CA6A4" />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.name}>{item.contactName}</Text>
-                                <Text style={styles.phoneText}>{item.contactPhoneNumber}</Text>
-                            </View>
-                            <Checkbox
-                                status={checked ? "checked" : "unchecked"}
-                                onPress={() => toggleSelect(item)}
-                                color="#327D85"
-                            />
-                            </TouchableOpacity>
-                        );
-                        }}
-                    />
-                    </View>
-                </>
+        {/* LIST */}
+        {preferredPlayers.length === 0 ? (
+          <View style={styles.emptyMessageWrapper}>
+            <Text style={styles.emptyMessage}>No preferred players added yet.</Text>
+          </View>
+        ) : filteredPreferredPlayers.length === 0 ? (
+          <View style={styles.emptyMessageWrapper}>
+            <Text style={styles.emptyMessage}>No results found</Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.sectionLabel}>
+              {preferredPlayers.length} Preferred Players Selected
+            </Text>
+            <View style={styles.optionsContainer}>
+              <FlatList
+                data={[...filteredPreferredPlayers].sort((a, b) =>
+                  a.contactName.toLowerCase().localeCompare(b.contactName.toLowerCase())
                 )}
-
-            <View style={styles.buttonsContainer}>
-                <TouchableOpacity style={styles.addButton} onPress={() => setShowRegisteredModal(true)}>
-                    <Text style={styles.addButtonText}>Add Players</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.doneButton} onPress={handleSavePreferredPlayers}>
-                    <Text style={styles.doneButtonText}>Save</Text>
-                </TouchableOpacity>
-            </View>
-
-            <PreferredPlayersModal
-                visible={showRegisteredModal}
-                onClose={() => setShowRegisteredModal(false)}
-                onSelectPlayers={(selected) => {
-                    setPreferredPlayers(selected.map(normalizeContact));
+                keyExtractor={(item) => item.contactPhoneNumber}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item }) => {
+                  const checked = isSelected(item.contactPhoneNumber);
+                  return (
+                    <TouchableOpacity
+                      style={styles.item}
+                      onPress={() => toggleSelect(item)}
+                    >
+                      <View style={styles.iconCircle}>
+                        <Ionicons name="person" size={16} color="#2CA6A4" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.name}>{item.contactName}</Text>
+                        <Text style={styles.phoneText}>{item.contactPhoneNumber}</Text>
+                      </View>
+                      <Checkbox
+                        status={checked ? 'checked' : 'unchecked'}
+                        onPress={() => toggleSelect(item)}
+                        color="#327D85"
+                      />
+                    </TouchableOpacity>
+                  );
                 }}
-                selectedPlayers={preferredPlayers}
-            />
-        </KeyboardAvoidingView>
+              />
+            </View>
+          </>
+        )}
+
+        {/* FOOTER BUTTONS */}
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setShowRegisteredModal(true)}
+          >
+            <Text style={styles.addButtonText}>Add Players</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.doneButton} onPress={handleSavePreferredPlayers}>
+            <Text style={styles.doneButtonText}>Save</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* MODAL */}
+        <PreferredPlayersModal
+          visible={showRegisteredModal}
+          onClose={() => setShowRegisteredModal(false)}
+          onSelectPlayers={(selected) => {
+            setUniquePreferredPlayers(selected);
+          }}
+          selectedPlayers={preferredPlayers}
+        />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
