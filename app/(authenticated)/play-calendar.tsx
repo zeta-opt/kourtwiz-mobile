@@ -507,8 +507,14 @@ export default function PlayCalendarPage() {
           <TouchableOpacity onPress={() => setSelectedDate(today)}>
             <Text style={styles.navText}>Today</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/(authenticated)/set-availability')}
+         <TouchableOpacity
+            onPress={() => {
+              const encodedSchedule = encodeURIComponent(JSON.stringify(schedule));
+              router.push({
+                pathname: '/(authenticated)/set-availability',
+                params: { data: encodedSchedule },
+              });
+            }}
           >
             <Text style={styles.navText}>Set Availability</Text>
           </TouchableOpacity>

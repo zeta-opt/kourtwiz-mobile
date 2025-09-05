@@ -4,23 +4,20 @@ import Constants from 'expo-constants';
 import { getToken } from '@/shared/helpers/storeToken';
 
 interface UnavailabilityData {
+  sessionsId: string;
+  title: string;
   reason: string;
   startTime: string;
   endTime: string;
-  eventRepeatType: 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY'|'DAYS';
-  repeatEndDate?: string;
-  repeatInterval?: number;
-  repeatOnDays?: string[];
-  repeatOnDates?: string[];
 }
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
-export const useSetUnavailability = (userId: string) => {
+export const useUpdatetUnavailability = (userId: string) => {
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  const setUnavailability = async (data: UnavailabilityData): Promise<void> => {
+  const updateUnavailability = async (data: UnavailabilityData): Promise<void> => {
     setStatus('loading');
     setError(null);
 
@@ -29,7 +26,7 @@ export const useSetUnavailability = (userId: string) => {
       const token = await getToken();
       if (!token) throw new Error('No token found');
 
-      await axios.post(`${BASE_URL}/player-calendar/set-unavailability?userId=${userId}`, data, {
+      await axios.post(`${BASE_URL}/player-calendar/edit-unavailability?userId=${userId}`, data, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -45,7 +42,7 @@ export const useSetUnavailability = (userId: string) => {
   };
 
   return {
-    setUnavailability,
+    updateUnavailability,
     status,
     error,
   };
