@@ -15,23 +15,22 @@ import { Checkbox } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 import PreferredPlayersModal, { Contact } from '@/components/preferred-players-modal/PreferredPlayersModal';
-import { getToken } from '@/shared/helpers/storeToken';
-import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
+import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
 
 const PreferredPlayersScreen = () => {
   const router = useRouter();
   const user = useSelector((state: any) => state.auth.user);
   const userId = user?.userId;
   const { data: userData } = useGetUserDetails({ userId });
-  const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
   const [preferredPlayers, setPreferredPlayers] = useState<Contact[]>([]);
   const [showRegisteredModal, setShowRegisteredModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [filteredPreferredPlayers, setFilteredPreferredPlayers] = useState<Contact[]>([]);
+  const { updateUserById } = useUpdateUserById();
 
   // --- Normalize contact ---
   const normalizeContact = (c: any): Contact => ({
@@ -71,27 +70,17 @@ const PreferredPlayersScreen = () => {
   };
 
   const handleSavePreferredPlayers = async () => {
-    const token = await getToken();
-    const updatedPlayerDetails = {
-      ...userData?.playerDetails,
-      preferToPlayWith: preferredPlayers,
-    };
-
     try {
-      const res = await fetch(`${BASE_URL}/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+      await updateUserById(userId, {
+        ...userData,
+        playerDetails: {
+          ...userData?.playerDetails,
+          preferToPlayWith: preferredPlayers.map((p) => ({
+            contactName: p.contactName,
+            contactPhoneNumber: p.contactPhoneNumber,
+          })),
         },
-        body: JSON.stringify({
-          ...userData,
-          playerDetails: updatedPlayerDetails,
-        }),
       });
-
-      if (!res.ok) throw new Error('Failed to update preferred players.');
-
       setShowRegisteredModal(false);
       router.replace('/profile');
     } catch (err) {
