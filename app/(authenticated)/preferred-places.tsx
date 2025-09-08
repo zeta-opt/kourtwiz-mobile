@@ -15,7 +15,6 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Checkbox } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import UserAvatar from '@/assets/UserAvatar';
 import { router } from 'expo-router';
@@ -191,18 +190,25 @@ export default function PreferredPlacesScreen() {
 
   const renderPlaceItem = ({ item }: { item: Place }) => {
     const checked = selectedPlaces.includes(item.id);
+
     return (
       <TouchableOpacity style={styles.placeItem} onPress={() => toggleSelect(item.id)}>
-        <View style={styles.iconCircle}><FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" /></View>
+        <View style={styles.iconCircle}>
+          <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" />
+        </View>
+
         <View style={{ flex: 1 }}>
           <Text style={styles.placeName}>{item.Name}</Text>
           {item.Location && <Text style={styles.placeSubtitle}>{item.Location}</Text>}
         </View>
-        <Checkbox
-          status={checked ? 'checked' : 'unchecked'}
-          onPress={() => toggleSelect(item.id)}
-          color="#327D85"
-        />
+
+        <TouchableOpacity onPress={() => toggleSelect(item.id)}>
+          {checked ? (
+            <Ionicons name="close-circle" size={22} color="#D4D4D4" />
+          ) : (
+            <Ionicons name="ellipse-outline" size={22} color="#ccc" />
+          )}
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   };

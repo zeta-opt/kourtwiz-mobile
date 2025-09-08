@@ -11,7 +11,6 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
-import { Checkbox } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 import PreferredPlayersModal, { Contact } from '@/components/preferred-players-modal/PreferredPlayersModal';
@@ -170,11 +169,15 @@ const PreferredPlayersScreen = () => {
                         <Text style={styles.name}>{item.contactName}</Text>
                         <Text style={styles.phoneText}>{item.contactPhoneNumber}</Text>
                       </View>
-                      <Checkbox
-                        status={checked ? 'checked' : 'unchecked'}
-                        onPress={() => toggleSelect(item)}
-                        color="#327D85"
-                      />
+
+                      {/* Replace Checkbox with conditional icon */}
+                      <TouchableOpacity onPress={() => toggleSelect(item)}>
+                        {checked ? (
+                          <Ionicons name="close-circle" size={22} color="#D4D4D4" />
+                        ) : (
+                          <Ionicons name="ellipse-outline" size={22} color="#327D85" />
+                        )}
+                      </TouchableOpacity>
                     </TouchableOpacity>
                   );
                 }}
@@ -263,7 +266,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         paddingLeft: 16,
-        paddingRight: 8,
+        paddingRight: 16,
         borderBottomWidth: 1,
         borderColor: '#ECECEC',
     },  

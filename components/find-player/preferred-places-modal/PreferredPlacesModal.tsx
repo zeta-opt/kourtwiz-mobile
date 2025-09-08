@@ -9,7 +9,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Keyboard,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -78,7 +77,6 @@ const PreferredPlacesModal = ({
     data: nearbyPlaces,
     status: nearbyStatus,
     refetch,
-    isFetching,
   } = useGetSearchPlaces({
     userId: user?.userId,
     lat: coords?.lat ?? 0,
@@ -165,7 +163,7 @@ useEffect(() => {
     (locationPermissionGranted && nearbyStatus === 'loading' && !coords);
 
   const loadMore = () => {
-    if (!isFetching && hasMore && !isFetchingMore) {
+    if (nearbyStatus !== 'loading' && hasMore && !isFetchingMore) {
       setIsFetchingMore(true);
       setPage((prev) => prev + 1);
       setTimeout(() => {
@@ -236,12 +234,9 @@ useEffect(() => {
                           >
                             {place.name}
                             {place.isPreferred && (
-                              <Icon
-                                source="check"
-                                size={20}
-                                color="#2C7E88"
-                                style={styles.preferredIcon}
-                              />
+                              <View style={styles.preferredIcon}>
+                                <Icon source="check" size={20} color="#2C7E88" />
+                              </View>
                             )}
                           </Text>
 
