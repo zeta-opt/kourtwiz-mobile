@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
@@ -23,7 +24,11 @@ const PreferredPlayersScreen = () => {
   const router = useRouter();
   const user = useSelector((state: any) => state.auth.user);
   const userId = user?.userId;
-  const { data: userData } = useGetUserDetails({ userId });
+  const { data: userData, status } = useGetUserDetails({ userId });
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    setIsLoading(status === 'loading');
+  }, [status]);
 
   const [preferredPlayers, setPreferredPlayers] = useState<Contact[]>([]);
   const [showRegisteredModal, setShowRegisteredModal] = useState(false);
@@ -134,55 +139,65 @@ const PreferredPlayersScreen = () => {
           />
         </View>
 
-        {/* LIST */}
-        {preferredPlayers.length === 0 ? (
-          <View style={styles.emptyMessageWrapper}>
-            <Text style={styles.emptyMessage}>No preferred players added yet.</Text>
+        {/* Loader */}
+        {isLoading && (
+          <View style={{ padding: 10, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color="#2CA6A4" />
+            <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>Loading preferred players...</Text>
           </View>
-        ) : filteredPreferredPlayers.length === 0 ? (
-          <View style={styles.emptyMessageWrapper}>
-            <Text style={styles.emptyMessage}>No results found</Text>
-          </View>
-        ) : (
-          <>
-            <Text style={styles.sectionLabel}>
-              {preferredPlayers.length} Preferred Players Selected
-            </Text>
-            <View style={styles.optionsContainer}>
-              <FlatList
-                data={[...filteredPreferredPlayers].sort((a, b) =>
-                  a.contactName.toLowerCase().localeCompare(b.contactName.toLowerCase())
-                )}
-                keyExtractor={(item) => item.contactPhoneNumber}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => {
-                  const checked = isSelected(item.contactPhoneNumber);
-                  return (
-                    <TouchableOpacity
-                      style={styles.item}
-                      onPress={() => toggleSelect(item)}
-                    >
-                      <View style={styles.iconCircle}>
-                        <Ionicons name="person" size={16} color="#2CA6A4" />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.name}>{item.contactName}</Text>
-                        <Text style={styles.phoneText}>{item.contactPhoneNumber}</Text>
-                      </View>
+        )}
 
-                      {/* Replace Checkbox with conditional icon */}
-                      <TouchableOpacity onPress={() => toggleSelect(item)}>
-                        {checked ? (
-                          <Ionicons name="close-circle" size={22} color="#D4D4D4" />
-                        ) : (
-                          <Ionicons name="ellipse-outline" size={22} color="#327D85" />
-                        )}
-                      </TouchableOpacity>
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            </View>
+        {/* List or empty message (only after loading) */}
+        {!isLoading && (
+          <>
+            {preferredPlayers.length === 0 ? (
+              <View style={styles.emptyMessageWrapper}>
+                <Text style={styles.emptyMessage}>No preferred players added yet.</Text>
+              </View>
+            ) : filteredPreferredPlayers.length === 0 ? (
+              <View style={styles.emptyMessageWrapper}>
+                <Text style={styles.emptyMessage}>No results found</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.sectionLabel}>
+                  {preferredPlayers.length} Preferred Players Selected
+                </Text>
+                <View style={styles.optionsContainer}>
+                  <FlatList
+                    data={[...filteredPreferredPlayers].sort((a, b) =>
+                      a.contactName.toLowerCase().localeCompare(b.contactName.toLowerCase())
+                    )}
+                    keyExtractor={(item) => item.contactPhoneNumber}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item }) => {
+                      const checked = isSelected(item.contactPhoneNumber);
+                      return (
+                        <TouchableOpacity
+                          style={styles.item}
+                          onPress={() => toggleSelect(item)}
+                        >
+                          <View style={styles.iconCircle}>
+                            <Ionicons name="person" size={16} color="#2CA6A4" />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.name}>{item.contactName}</Text>
+                            <Text style={styles.phoneText}>{item.contactPhoneNumber}</Text>
+                          </View>
+                          <TouchableOpacity onPress={() => toggleSelect(item)}>
+                            {checked ? (
+                              <Ionicons name="close-circle" size={22} color="#D4D4D4" />
+                            ) : (
+                              <Ionicons name="ellipse-outline" size={22} color="#327D85" />
+                            )}
+                          </TouchableOpacity>
+                        </TouchableOpacity>
+                      );
+                    }}
+                  />
+                </View>
+              </>
+            )}
           </>
         )}
 

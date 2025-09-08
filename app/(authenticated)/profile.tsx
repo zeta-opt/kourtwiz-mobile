@@ -79,6 +79,12 @@ const UserProfile = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const profileImage = useSelector((state: RootState) => state.auth.profileImage);
+  const InfoLoader = ({ value }: { value?: string | number }) => {
+    if (value === undefined || value === null || value === "") {
+      return <ActivityIndicator size="small" color="#2C7E88" />;
+    }
+    return <Text style={styles.inputReadonly}>{value}</Text>;
+  };
 
   const handleLogout = () => {
     Alert.alert('Confirm Logout', 'Are you sure you want to log out?', [
@@ -205,8 +211,16 @@ const UserProfile = () => {
           )}
         </View>
         <View style={styles.profileInfo}>
-          <Text style={styles.nameText}>{userData.name || 'User Name'}</Text>
-          <Text style={styles.emailText}>{userData.email || 'email@example.com'}</Text>
+          {userData.name ? (
+            <Text style={styles.nameText}>{userData.name}</Text>
+          ) : (
+            <ActivityIndicator size="small" color="#fff" />
+          )}
+          {userData.email ? (
+            <Text style={styles.emailText}>{userData.email}</Text>
+          ) : (
+            <ActivityIndicator size="small" color="#fff" />
+          )}
         </View>
         <TouchableOpacity
           style={styles.editButton}
@@ -225,30 +239,45 @@ const UserProfile = () => {
         />
       </View>
 
-      <Text style={[styles.sectionTitle, {marginBottom: 0, marginLeft:40, fontWeight:600,}]}>PERSONAL DETAILS</Text>
+      <Text style={[styles.sectionTitle,{ marginBottom: 0, marginLeft: 40, fontWeight: 600 },]}>
+        PERSONAL DETAILS
+      </Text>
       <View style={styles.DetailsCard}>
-      <Text style={styles.sectionTitle}>ADDRESS</Text>
-      <Text style={styles.multiLineText}>
-        {`${userData.address}, \n${userData.city}, \n${userData.state},  ${userData.country}, \n${userData.zipCode}`}
-      </Text>
+        {!userData || !userData.address ? (
+          // Single loader for whole card
+          <View style={{ padding: 20, alignItems: "center" }}>
+            <ActivityIndicator size="large" color="#2C7E88" />
+          </View>
+        ) : (
+          <>
+            <Text style={styles.sectionTitle}>ADDRESS</Text>
+            <InfoLoader
+              value={`${userData.address}, \n${userData.city}, \n${userData.state}, ${userData.country}, \n${userData.zipCode}`}
+            />
 
-      <Text style={styles.sectionTitle}>DOB</Text>
-      <Text style={styles.inputReadonly}>
-        {Array.isArray(userData.dateOfBirth)
-          ? `${String(userData.dateOfBirth[2]).padStart(2, '0')}/${String(userData.dateOfBirth[1]).padStart(2, '0')}/${userData.dateOfBirth[0]}`
-          : new Date(userData.dateOfBirth).toLocaleDateString('en-GB')}
-      </Text>
+            <Text style={styles.sectionTitle}>DOB</Text>
+            <InfoLoader
+              value={
+                Array.isArray(userData.dateOfBirth)
+                  ? `${String(userData.dateOfBirth[2]).padStart(2, "0")}/${String(
+                      userData.dateOfBirth[1]
+                    ).padStart(2, "0")}/${userData.dateOfBirth[0]}`
+                  : new Date(userData.dateOfBirth).toLocaleDateString("en-GB")
+              }
+            />
 
-        <Text style={styles.sectionTitle}>GENDER</Text>
-        <Text style={styles.inputReadonly}>{userData.gender}</Text>
+            <Text style={styles.sectionTitle}>GENDER</Text>
+            <InfoLoader value={userData.gender} />
 
-        <Text style={styles.sectionTitle}>PHONE NO.</Text>
-        <Text style={styles.inputReadonly}>{userData.phoneNumber}</Text>
+            <Text style={styles.sectionTitle}>PHONE NO.</Text>
+            <InfoLoader value={userData.phoneNumber} />
 
-        <Text style={styles.sectionTitle}>SKILL RATING</Text>
-        <Text style={[styles.inputReadonly, {backgroundColor: '#fffadc',}]}>
-          {Number(userData.skillLevel ?? 1).toFixed(1)}
-        </Text>
+            <Text style={styles.sectionTitle}>SKILL RATING</Text>
+            <Text style={[styles.inputReadonly, { backgroundColor: "#fffadc" }]}>
+              {Number(userData.skillLevel ?? 1).toFixed(1)}
+            </Text>
+          </>
+        )}
       </View>
 
       {/* PLAY PREFERENCES */}
@@ -296,10 +325,10 @@ const UserProfile = () => {
         <TouchableOpacity 
           style={styles.optionRow} 
           onPress={() => {
-            router.replace('/(authenticated)/groups');
+            router.replace('/(authenticated)/create-group');
           }}
           >
-          <Text style={styles.optionText}>Create Groups</Text>
+          <Text style={styles.optionText}>Create Group</Text>
           <Text style={styles.optionArrow}>{'>'}</Text>
         </TouchableOpacity>
         </View>
