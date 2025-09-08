@@ -320,7 +320,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
         .filter((p) => !existingIds.has(p.id))
         .map((p) => ({ ...p, initiated: true }));
 
-      allPlays = [...allPlays, ...extra];
+      allPlays = [...allPlays];
     }
 
     const courtMap: Record<string, string> = {};
