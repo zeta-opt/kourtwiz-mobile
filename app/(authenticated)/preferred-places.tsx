@@ -1,4 +1,3 @@
-import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -14,14 +13,16 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { Checkbox } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import UserAvatar from '@/assets/UserAvatar';
 import { router } from 'expo-router';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
+import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 
 type Place = {
   id: string;
@@ -31,6 +32,8 @@ type Place = {
 
 export default function PreferredPlacesScreen() {
   const { user } = useSelector((state: RootState) => state.auth);
+  const { data: userData } = useGetUserDetails({userId: user?.userId ?? '', enabled: !!user?.userId});
+  const { updateUserById } = useUpdateUserById();
   const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
   const [preferredPlaces, setPreferredPlaces] = useState<Place[]>([]);
@@ -39,6 +42,7 @@ export default function PreferredPlacesScreen() {
   const [filteredPreferredPlaces, setFilteredPreferredPlaces] = useState<Place[]>(preferredPlaces);
   const [filteredSuggestedPlaces, setFilteredSuggestedPlaces] = useState<Place[]>(suggestedPlaces);
   const [initialPreferredIds, setInitialPreferredIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const newSelections = selectedPlaces.filter(id => !initialPreferredIds.includes(id));
   const isAddDisabled = newSelections.length === 0;
   const [showPlaceModal, setShowPlaceModal] = useState(false);
@@ -49,68 +53,66 @@ export default function PreferredPlacesScreen() {
     Location: place.Location || place.location || '',
   });  
 
+  // Initialize selected preferred IDs when modal opens
   useEffect(() => {
-    if (showPlaceModal) {
-      const ids = preferredPlaces.map((place) => place.id);
-      setInitialPreferredIds(ids);
+    if (showPlaceModal && preferredPlaces.length) {
+      setInitialPreferredIds(preferredPlaces.map((place) => place.id));
+      setSelectedPlaces(preferredPlaces.map((place) => place.id));
     }
-  }, [showPlaceModal]);
+  }, [showPlaceModal, preferredPlaces]);
 
+  // Fetch preferred + suggested places when userData is available
   useEffect(() => {
-    fetchPreferredPlaces();
-  }, []);
+    if (!userData) return;
 
-  const fetchPreferredPlaces = async (): Promise<void> => {
-    try {
-      const profileRes = await axios.get(`${BASE_URL}/users/${user?.userId}`);
-      const profile = profileRes.data;
-  
-      const preferred: Place[] = (profile?.playerDetails?.preferPlacesToPlay || []).map(normalizePlace);
-      const preferredIds = new Set(preferred.map((p) => p.id));
-  
-      let nearby: Place[] = [];
-  
-      // Build the query only once
-      const queryParams = new URLSearchParams({
-        userId: user?.userId ?? '',
-        address: profile.address || '6 Parkwood Lane',
-        city: profile.city || 'Mendham',
-        state: profile.state || 'New Jersey',
-        zipCode: profile.zipCode || '07945',
-        country: profile.country || 'United States',
-        maxDistanceInKm: '5',
-        page: '0',
-        limit: '20',
-      }).toString();
-  
+    const fetchSuggestedPlaces = async (): Promise<void> => {
+      setIsLoading(true);
       try {
-        const nearbyRes = await axios.get(`${BASE_URL}/api/import/nearbyaddress?${queryParams}`);
-        nearby = (nearbyRes.data || []).map(normalizePlace);
-      } catch {
-        console.warn('⚠️ First nearby fetch failed, trying fallback');
+        const preferred: Place[] = (userData.playerDetails?.preferPlacesToPlay || []).map(normalizePlace);
+        const preferredIds = new Set(preferred.map((p) => p.id));
+
+        // Build the query for nearby places
+        const queryParams = new URLSearchParams({
+          userId: user?.userId ?? '',
+          address: userData.address || '6 Parkwood Lane',
+          city: userData.city || 'Mendham',
+          state: userData.state || 'New Jersey',
+          zipCode: userData.zipCode || '07945',
+          country: userData.country || 'United States',
+          maxDistanceInKm: '5',
+          page: '0',
+          limit: '20',
+        }).toString();
+
+        let nearby: Place[] = [];
         try {
-          const fallbackRes = await axios.get(`${BASE_URL}/api/import/nearbyaddress?${queryParams}`);
-          nearby = (fallbackRes.data || []).map(normalizePlace);
-        } catch (fallbackError) {
-          console.warn('❗ Fallback location fetch failed', fallbackError);
+          const nearbyRes = await axios.get(`${BASE_URL}/api/import/nearbyaddress?${queryParams}`);
+          nearby = (nearbyRes.data || []).map(normalizePlace);
+        } catch (err) {
+          console.warn('⚠️ Nearby fetch failed', err);
           nearby = [];
         }
+
+        const otherSuggested = nearby.filter((place) => !preferredIds.has(place.id));
+
+        setPreferredPlaces(preferred);
+        setSuggestedPlaces(otherSuggested);
+        setSelectedPlaces(preferred.map((p) => p.id));
+      } catch (err) {
+        console.error('❌ Error processing suggested places:', err);
+        Alert.alert('Error', 'Failed to load preferred places.');
+      } finally {
+        setIsLoading(false);
       }
-  
-      const otherSuggested = nearby.filter((place) => !preferredIds.has(place.id));
-  
-      setPreferredPlaces(preferred);
-      setSuggestedPlaces(otherSuggested);
-      setSelectedPlaces(preferred.map((p) => p.id));
-    } catch (err) {
-      console.error('❌ Error fetching preferred places:', err);
-      Alert.alert('Error', 'Failed to load preferred places.');
-    }
-  };  
+    };
+
+    fetchSuggestedPlaces();
+  }, [userData]);
 
   const handleSavePlaces = async (): Promise<void> => {
+    if (!user?.userId) return;
+
     try {
-      const token = await getToken();
       const payload = {
         playerDetails: {
           preferPlacesToPlay: selectedPlaces.map((id) => ({ id })),
@@ -118,20 +120,17 @@ export default function PreferredPlacesScreen() {
         },
       };
 
-      await axios.put(`${BASE_URL}/users/${user?.userId}`, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await updateUserById(user.userId, payload);
 
       Alert.alert('Success', 'Preferred places updated.');
       setShowPlaceModal(false);
+
       setPreferredPlaces(
         [...preferredPlaces, ...suggestedPlaces]
           .filter((p) => selectedPlaces.includes(p.id))
-          .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i) // prevent duplicates
-      );            
+          .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i)
+      );
+
       router.replace('/profile');
     } catch (err) {
       console.error('❌ Update error:', err);
@@ -191,18 +190,25 @@ export default function PreferredPlacesScreen() {
 
   const renderPlaceItem = ({ item }: { item: Place }) => {
     const checked = selectedPlaces.includes(item.id);
+
     return (
       <TouchableOpacity style={styles.placeItem} onPress={() => toggleSelect(item.id)}>
-        <View style={styles.iconCircle}><FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" /></View>
+        <View style={styles.iconCircle}>
+          <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" />
+        </View>
+
         <View style={{ flex: 1 }}>
           <Text style={styles.placeName}>{item.Name}</Text>
           {item.Location && <Text style={styles.placeSubtitle}>{item.Location}</Text>}
         </View>
-        <Checkbox
-          status={checked ? 'checked' : 'unchecked'}
-          onPress={() => toggleSelect(item.id)}
-          color="#327D85"
-        />
+
+        <TouchableOpacity onPress={() => toggleSelect(item.id)}>
+          {checked ? (
+            <Ionicons name="close-circle" size={22} color="#D4D4D4" />
+          ) : (
+            <Ionicons name="ellipse-outline" size={22} color="#ccc" />
+          )}
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -229,27 +235,35 @@ export default function PreferredPlacesScreen() {
           value={searchText}
           onChangeText={setSearchText}
         />
+        {isLoading && (
+          <View style={{ padding: 10, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color="#2CA6A4" />
+            <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>Loading places...</Text>
+          </View>
+        )}
       </View>
       
-      {filteredPlaces.selectedData.length > 0 && (
+      {isLoading ? null : (
         <>
-          <Text style={styles.sectionLabel}>{selectedPlaces.length} Preferred Places Selected</Text>
-          <View style={styles.optionsContainer}>
-            <FlatList
-              data={filteredPlaces.selectedData}
-              keyExtractor={(item) => `place-${item.id}`}
-              renderItem={renderPlaceItem}
-              keyboardShouldPersistTaps="handled"
-            />
-          </View>
+          {filteredPlaces.selectedData.length > 0 ? (
+            <>
+              <Text style={styles.sectionLabel}>{selectedPlaces.length} Preferred Places Selected</Text>
+              <View style={styles.optionsContainer}>
+                <FlatList
+                  data={filteredPlaces.selectedData}
+                  keyExtractor={(item) => `place-${item.id}`}
+                  renderItem={renderPlaceItem}
+                  keyboardShouldPersistTaps="handled"
+                />
+              </View>
+            </>
+          ) : (
+            <View style={styles.emptyMessageWrapper}>
+              <Text style={styles.emptyMessage}>No preferred places added yet.</Text>
+            </View>
+          )}
         </>
       )}
-      {filteredPreferredPlaces.length === 0 && (
-        <View style={styles.emptyMessageWrapper}>
-          <Text style={styles.emptyMessage}>No preferred places added yet.</Text>
-        </View>
-      )}
-
       <View style={styles.buttonsContainer}>
         <TouchableOpacity onPress={() => setShowPlaceModal(true)} style={styles.addButton}>
           <Text style={styles.addButtonText}>Add Places</Text>

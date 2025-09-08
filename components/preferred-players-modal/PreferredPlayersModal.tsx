@@ -605,7 +605,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
           </Button>
 
           {/* Conditionally render Create New Group button */}
-          {pathname !== "/(authenticated)/create-group" && (
+          {!pathname.includes("create-group") && (
             <Button
               mode="contained"
               onPress={() => router.replace("/(authenticated)/create-group")}

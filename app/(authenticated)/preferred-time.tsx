@@ -7,102 +7,53 @@ import {
   SafeAreaView,
   FlatList,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import UserAvatar from '@/assets/UserAvatar';
-import { getToken} from '@/shared/helpers/storeToken';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import Constants from 'expo-constants';
+import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
+import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
 
 const PREFERRED_TIMES = ['Morning', 'Afternoon', 'Evening', 'Anytime'];
-type UserData = {
-    name: string;
-    email: string;
-    phoneNumber: string;
-    preferredTime: string;
-  };
 
 const PreferredTimeScreen = () => {
-    const { user } = useSelector((state: RootState) => state.auth);
-    const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
-    const [userData, setUserData] = useState<UserData>({
-        name: '',
-        email: '',
-        phoneNumber: '',
-        preferredTime: '',
-        });
-    const [selectedTime, setSelectedTime] = useState(userData.preferredTime || '');
+  const { user } = useSelector((state: RootState) => state.auth);
 
-    useEffect(() => {
-        const fetchProfile = async () => {
-          try {
-            const token = await getToken();
-      
-            // Step 1: Get the logged-in user metadata
-            const meRes = await fetch(`${BASE_URL}/users/me`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-      
-            if (!meRes.ok) throw new Error('Failed to fetch user metadata');
-            const meData = await meRes.json();
-      
-            // Step 2: Fetch full user profile using userId
-            const profileRes = await fetch(`${BASE_URL}/users/${meData.userId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-      
-            if (!profileRes.ok) throw new Error('Failed to fetch full user profile');
-            const profileData = await profileRes.json();
-      
-            console.log('📥 Full user profile:', profileData);
-      
-            // Step 3: Update state
-            setUserData(profileData);
-            setSelectedTime(profileData.preferredTime || ''); // Set initial selection
-          } catch (err) {
-            console.error('❌ Error fetching profile:', err);
-            Alert.alert('Error', 'Failed to load profile. Please try again.');
-          }
-        };
-      
-        fetchProfile();
-      }, [BASE_URL]);
-      
+  // ✅ fetch profile
+  const { data: userData, status } = useGetUserDetails({
+    userId: user?.userId ?? '',
+    enabled: !!user?.userId,
+  });
 
-    
-    const handleSavePreferredTime = async () => {
-    if (!selectedTime || !user) return;
+  const { updateUserById, status: updateStatus } = useUpdateUserById();
+  const [selectedTime, setSelectedTime] = useState('');
+
+  // ✅ sync local state when userData changes
+  useEffect(() => {
+    if (userData?.preferredTime) {
+      setSelectedTime(userData.preferredTime);
+    }
+  }, [userData]);
+
+  const handleSavePreferredTime = async () => {
+    if (!selectedTime || !user?.userId) return;
 
     try {
-        const token = await getToken();
-
-        const payload = {
-        name: userData.name,
-        email: userData.email,
-        phoneNumber: userData.phoneNumber,
+      const payload = {
+        ...userData,
         preferredTime: selectedTime,
-        };
+      };
 
-        const response = await fetch(`${BASE_URL}/users/${user.userId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) throw new Error('Failed to update preferred time');
-
-        Alert.alert('Success', 'Preferred time updated successfully');
-        router.replace('/profile');
+      await updateUserById(user.userId, payload);
+      Alert.alert('Success', 'Preferred time updated successfully');
+      router.replace('/profile');
     } catch (err) {
-        console.error('❌ Error updating preferred time:', err);
-        Alert.alert('Error', 'Failed to update preferred time');
+      Alert.alert('Error', 'Failed to update preferred time');
     }
-    };
+  };
 
   const renderItem = ({ item }: { item: string }) => {
     const isSelected = item === selectedTime;
@@ -112,13 +63,9 @@ const PreferredTimeScreen = () => {
         onPress={() => setSelectedTime(item)}
         activeOpacity={0.7}
       >
-        <Text style={styles.optionText}>
-          {item}
-        </Text>
+        <Text style={styles.optionText}>{item}</Text>
         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-          {isSelected && (
-            <Ionicons name="checkmark" size={18} color="white" />
-          )}
+          {isSelected && <Ionicons name="checkmark" size={18} color="white" />}
         </View>
       </TouchableOpacity>
     );
@@ -126,33 +73,48 @@ const PreferredTimeScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.replace('/profile')} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color="#000" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Preferred Time</Text>
-            <UserAvatar size={32} onPress={() => console.log('Clicked Avatar')} />
-        </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.replace('/profile')}
+          style={styles.backButton}
+        >
+          <Ionicons name="chevron-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Preferred Time</Text>
+        <UserAvatar size={32} onPress={() => console.log('Clicked Avatar')} />
+      </View>
 
-        {/* Subtitle */}
-        <Text style={styles.subtitle}>Preferred Time</Text>
+      {/* Subtitle */}
+      <Text style={styles.subtitle}>Preferred Time</Text>
 
-        {/* Options list */}
-        <View style={styles.optionsContainer}>
-            <FlatList
+      {/* Options list */}
+      <View style={styles.optionsContainer}>
+        {status === 'loading' ? ( // ✅ fixed
+          <View style={{ padding: 20, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="large" color="#2C7E88" />
+          </View>
+        ) : (
+          <FlatList
             data={PREFERRED_TIMES}
             renderItem={renderItem}
             keyExtractor={(item) => item}
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             scrollEnabled={false}
-            />
-        </View>
+          />
+        )}
+      </View>
 
       {/* Footer Done button */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.doneButton} onPress={handleSavePreferredTime}>
-            <Text style={styles.doneButtonText}>Done</Text>
+        <TouchableOpacity
+          style={[styles.doneButton, (updateStatus === 'loading' || status === 'loading') && { opacity: 0.5 }]}
+          onPress={handleSavePreferredTime}
+          disabled={updateStatus === 'loading' || status === 'loading'}
+        >
+          <Text style={styles.doneButtonText}>
+            {updateStatus === 'loading' ? 'Saving...' : 'Done'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
