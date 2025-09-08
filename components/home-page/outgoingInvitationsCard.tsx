@@ -89,7 +89,13 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite,
           <View style={styles.datePeopleRow}>
             <Text style={styles.dateText}>{dateString} | {timeString}</Text>
             <Text style={styles.separator}>|</Text>
-            <Text style={styles.peopleText}>{invite.placeToPlay}</Text>
+            <Text 
+              style={styles.peopleText} 
+              numberOfLines={1} 
+              ellipsizeMode="tail"
+            >
+              {invite.placeToPlay}
+            </Text>
           </View>
         </View>
 

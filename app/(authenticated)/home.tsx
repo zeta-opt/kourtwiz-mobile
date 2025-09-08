@@ -618,7 +618,7 @@ const Dashboard = () => {
           </Text>
           <PlayersNearbyMap />
 
-          <NewMessages userId={user?.userId} />
+          <NewMessages />
         </ScrollView>
       </LinearGradient>
     </PaperProvider>
