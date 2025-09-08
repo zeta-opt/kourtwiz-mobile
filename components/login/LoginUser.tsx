@@ -17,9 +17,20 @@ import {
 import { Button, Text, TextInput } from 'react-native-paper';
 import { z } from 'zod';
 
-// 📄 Zod validation schema
+// 📄 Zod validation schema - now accepts email or phone number
 const loginSchema = z.object({
-  username: z.string().email({ message: 'Invalid email address' }),
+  username: z.string().refine(
+    (value) => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex =
+        /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{4,6}$/;
+
+      return (
+        emailRegex.test(value) || phoneRegex.test(value.replace(/\s/g, ''))
+      );
+    },
+    { message: 'Please enter a valid email address or phone number' }
+  ),
   password: z
     .string()
     .min(6, { message: 'Password must be at least 6 characters' }),
@@ -98,7 +109,7 @@ export default function LoginUser() {
             name='username'
             render={({ field: { onChange, value } }) => (
               <TextInput
-                label='Email'
+                label='Email or Phone Number'
                 value={value}
                 onChangeText={onChange}
                 autoCapitalize='none'
