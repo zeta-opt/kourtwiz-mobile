@@ -8,7 +8,7 @@ import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest }: { invites: any[];onCancel: (invite: any) => void;onWithdraw: (invite: any) => void; onWithdrawSentRequest?: (invite: any) => void; }) => {
+const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,onCancelInitiated, }: { invites: any[];onCancel: (invite: any) => void;onWithdraw: (invite: any) => void; onWithdrawSentRequest?: (invite: any) => void;onCancelInitiated?: (invite: any) => void; }) => {
   const router = useRouter();
 
   const renderStatusBadge = (status: string) => {
@@ -99,6 +99,10 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest }:
     } else if (type === 'outgoing') {
       statusText = 'Sent';
     }
+    else if (type === 'initiated') {
+      statusText = 'Initiated';
+    }
+
 
     const eventName =
       invite.eventName ||
@@ -161,33 +165,33 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest }:
               </>
               
             )}
-            {type === 'outgoing' && (
-  <>
-    <TouchableOpacity
-      onPress={() => {
-        router.push({
-          pathname: '/(authenticated)/chat-summary',
-          params: { requestId: invite.requestId },
-        });
-      }}
-    >
-      <MaterialCommunityIcons
-        name="message-text-outline"
-        size={18}
-        color="#007BFF"
-      />
-    </TouchableOpacity>
+              {type === 'outgoing' && (
+                <>
+                  <TouchableOpacity
+                    onPress={() => {
+                      router.push({
+                        pathname: '/(authenticated)/chat-summary',
+                        params: { requestId: invite.requestId },
+                      });
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="message-text-outline"
+                      size={18}
+                      color="#007BFF"
+                    />
+                  </TouchableOpacity>
 
-    {onWithdrawSentRequest && (
-      <TouchableOpacity
-        style={styles.withdrawButton}
-        onPress={() => onWithdrawSentRequest(invite)}
-      >
-        <Text style={styles.withdrawButtonText}>Withdraw</Text>
-      </TouchableOpacity>
-    )}
-  </>
-)}
+                  {onWithdrawSentRequest && (
+                    <TouchableOpacity
+                      style={styles.withdrawButton}
+                      onPress={() => onWithdrawSentRequest(invite)}
+                    >
+                      <Text style={styles.withdrawButtonText}>Withdraw</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
 
             {type === 'openplay' && invite.isRegistered && (
               <>
@@ -210,6 +214,28 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest }:
                 </TouchableOpacity>
               </>
             )}
+            {type === 'initiated' && (
+              <>
+                <TouchableOpacity
+                  onPress={() => {
+                              router.push({ pathname: '/(authenticated)/chat-summary', params: { sessionId: invite.id } });
+                            }}
+                >
+                  <MaterialCommunityIcons
+                    name="message-text-outline"
+                    size={18}
+                    color="#007BFF"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.withdrawButton}
+                  onPress={() => onCancelInitiated?.(invite)}
+                >
+                  <Text style={styles.withdrawButtonText}>Cancel Play</Text>
+                </TouchableOpacity>
+              </>
+)}
+
           </View>
 
           <Text style={styles.subtitle}>
@@ -221,6 +247,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest }:
           <Text style={styles.timeText}>{timeString}</Text>
         </View>
       </TouchableOpacity>
+      
     );
   };
 
@@ -238,6 +265,10 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest }:
             // registered openplay events only
             return invite.isRegistered === true;
           }
+          else if (invite.type === 'initiated') {
+            return true; // show all initiated plays
+          }
+
           return false;
         })
         .map((invite, index) => renderInviteRow(invite, index))}

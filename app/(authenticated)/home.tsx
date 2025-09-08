@@ -9,6 +9,7 @@ import PlayersNearbyMap from '@/components/players-nearby/PlayersNearbyMap';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useGetInvitations } from '@/hooks/apis/invitations/useGetInvitations';
+import { useCancelOpenPlay } from '@/hooks/apis/join-play/useCancelOpenPlay';
 import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import { useGetPlays } from '@/hooks/apis/join-play/useGetPlays';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
@@ -201,6 +202,27 @@ const Dashboard = () => {
         id: play.id,
       };
     }),
+    ...(initiatedPlays || []).map((play) => {
+    const startDate = new Date(
+      play.startTime[0],
+      play.startTime[1] - 1,
+      play.startTime[2],
+      play.startTime[3] || 0,
+      play.startTime[4] || 0
+    );
+    return {
+      type: 'initiated' as const,
+      playTime: play.startTime,
+      placeToPlay: play.allCourts?.Name || 'Unknown Court',
+      dateTimeMs: startDate.getTime(),
+      eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
+      isWaitlisted: play.waitlistedPlayers?.includes(userId),
+      accepted: play.registeredPlayers?.length ?? 0,
+      playersNeeded: play.maxPlayers ?? 1,
+      isRegistered: play.registeredPlayers?.includes(userId) ?? false,
+      id: play.id,
+    };
+  }),
   ];
   const {
     withdrawRequest,
@@ -253,6 +275,41 @@ const Dashboard = () => {
       setLoadingId(null);
     }
   };
+  const { cancel } = useCancelOpenPlay();
+
+const handleCancelInitiatedPlay = async (invite: any) => {
+  Alert.alert(
+    'Cancel Open Play',
+    'Are you sure you want to cancel this open play? This cannot be undone.',
+    [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await cancel({ sessionId: invite.id });
+            Toast.show({
+              type: 'success',
+              text1: 'Open play canceled successfully',
+              topOffset: 100,
+            });
+            await Promise.all([refetchOpenPlay(), refetchInitiated()]);
+          } catch (err: any) {
+            Toast.show({
+              type: 'error',
+              text1: 'Failed to cancel open play',
+              text2: err?.message || 'Unknown error',
+              topOffset: 100,
+            });
+          }
+        },
+      },
+    ]
+  );
+};
+
+
 
   useEffect(() => {
     if (isFocused) {
@@ -559,6 +616,7 @@ const Dashboard = () => {
                   onCancel={(invite) => showCommentDialog(invite, 'cancel')}
                   onWithdraw={handleWithdrawFromOpenPlay}
                   onWithdrawSentRequest={handleWithdrawFromSentRequest}
+                   onCancelInitiated={handleCancelInitiatedPlay}
                 />
               </ScrollView>
             )}
