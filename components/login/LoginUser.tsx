@@ -78,12 +78,7 @@ export default function LoginUser() {
   };
 
   const onSubmit = async (data: LoginFormData) => {
-    const loginPayload = {
-      ...data,
-      isAppDownloaded: true,
-    };
-
-    await login(loginPayload, {
+    await login(data, {
       onSuccess: handleSuccess,
       onError: handleError,
     });
