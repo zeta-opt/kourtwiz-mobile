@@ -122,7 +122,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
             pathname: '/(authenticated)/sentRequestsDetailedView',
             params: { data: encoded },
           });
-        } else if (type === 'openplay') {
+        } else if (type === 'openplay' || type === 'initiated') {
           router.push({
             pathname: '/(authenticated)/openPlayDetailedView',
             params: { sessionId: invite.id },
