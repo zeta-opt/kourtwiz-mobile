@@ -81,6 +81,7 @@ export const PostCommentPlayerFinder: React.FC<Props> = ({
           value={commentText}
           onChangeText={setCommentText}
           placeholder="Type your message here..."
+          placeholderTextColor="#000000"
           multiline
           style={styles.input}
         />
@@ -139,6 +140,7 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     backgroundColor: 'white',
     textAlignVertical: 'top',
+    
   },
   previewImage: {
     width: 100,
