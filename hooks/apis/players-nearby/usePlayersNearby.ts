@@ -48,7 +48,7 @@ export const usePlayersNearby = ({ lat, lng, radius }: NearbyParams) => {
 
         setData(res.data || []);
       } catch (err: any) {
-        console.error("API Error:", err);
+        console.error("Player Near By API Error:", err);
         setError(err?.message || "Something went wrong");
       } finally {
         setLoading(false);
