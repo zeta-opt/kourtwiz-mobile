@@ -1,9 +1,11 @@
+import Constants from 'expo-constants';
+import Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import Constants from 'expo-constants';
 import {
   ActivityIndicator,
   Image,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -74,10 +76,26 @@ const DoneStep = ({ onRetry }: DoneStepProps) => {
 
         return res.json();
       })
-      .then((responseJson) => {
+      .then(async (responseJson) => {
         console.log('Signup API success:', responseJson);
         setSuccess(true);
         setLoading(false);
+
+        // Get device token after successful signup
+        try {
+          let token;
+          if (Platform.OS === 'ios') {
+            token = (await Notifications.getDevicePushTokenAsync()).data;
+          } else {
+            token = (await Notifications.getExpoPushTokenAsync()).data;
+          }
+          console.log(token, 'device token');
+
+          // TODO: Need to make another API call here to update the user's device token
+        } catch (tokenError) {
+          console.error('Failed to get device token:', tokenError);
+          // Don't fail the signup process if we can't get the token
+        }
       })
       .catch((err) => {
         console.error('Signup API error:', err);
@@ -86,7 +104,9 @@ const DoneStep = ({ onRetry }: DoneStepProps) => {
           setError('An account already exists with this email address.');
           setRetryStep(1);
         } else {
-          setError('Signup failed. Please check if all the required fields are filled, or call support.');
+          setError(
+            'Signup failed. Please check if all the required fields are filled, or call support.'
+          );
           setRetryStep(0);
         }
 
@@ -112,7 +132,7 @@ const DoneStep = ({ onRetry }: DoneStepProps) => {
       <View style={styles.card}>
         {loading ? (
           <>
-            <ActivityIndicator size="large" color="#116AAD" />
+            <ActivityIndicator size='large' color='#116AAD' />
             <Text style={styles.infoText}>Creating Profile...</Text>
             <View style={[styles.doneBtn, { backgroundColor: '#ccc' }]}>
               <Text style={styles.doneText}>Done</Text>
