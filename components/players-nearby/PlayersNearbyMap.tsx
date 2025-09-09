@@ -1,5 +1,3 @@
-import { usePlayersNearby } from "@/hooks/apis/players-nearby/usePlayersNearby";
-import { RootState } from "@/store";
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import {
   Modal,
@@ -8,158 +6,189 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
+  Linking,
+  Platform,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Region } from "react-native-maps";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useSelector } from "react-redux";
+import * as Location from "expo-location";
+import { usePlayersNearby } from "@/hooks/apis/players-nearby/usePlayersNearby";
 
-const MapComponent = React.memo(
-  ({
-    mapRefInstance,
-    onMarkerPress,
-    markers,
-  }: {
-    mapRefInstance: React.RefObject<MapView | null>;
-    onMarkerPress: (marker: any) => void;
-    markers: any[];
-  }) => {
-    const [positions, setPositions] = useState<
-      { [key: string]: { x: number; y: number } }
-    >({});
-    const [offset, setOffset] = useState({ x: 0, y: 0 });
-
-    const updatePositions = async () => {
-      if (!mapRefInstance.current) return;
-      const newPositions: { [key: string]: { x: number; y: number } } = {};
-      for (const m of markers) {
-        try {
-          const point = await mapRefInstance.current.pointForCoordinate({
-            latitude: m.lat,
-            longitude: m.lng,
-          });
-          if (point) {
-            newPositions[m.key] = {
-              x: point.x - offset.x,
-              y: point.y - offset.y,
-            };
-          }
-        } catch (e) {}
-      }
-      setPositions(newPositions);
-    };
-
-    useEffect(() => {
-      updatePositions();
-    }, [markers, offset]);
-
-    return (
-      <View
-        style={{ flex: 1 }}
-        onLayout={(e) => {
-          const { x, y } = e.nativeEvent.layout;
-          setOffset({ x, y });
-        }}
-      >
-        <MapView
-          ref={mapRefInstance}
-          style={{ flex: 1 }}
-          initialRegion={{
-            latitude: markers[0]?.lat ?? 40.73,
-            longitude: markers[0]?.lng ?? -74.06,
-            latitudeDelta: 0.1,
-            longitudeDelta: 0.1,
-          }}
-          onRegionChangeComplete={updatePositions}
-        >
-          {markers.map((marker) => (
-            <Marker
-              key={marker.key}
-              coordinate={{ latitude: marker.lat, longitude: marker.lng }}
-              onPress={() => onMarkerPress(marker)}
-            >
-              <Icon name="map-marker" size={36} color="red" />
-            </Marker>
-          ))}
-        </MapView>
-
-        {markers.map(
-          (marker) =>
-            positions[marker.key] && (
-                <Text
-                  key={`label-${marker.key}`}
-                  style={[
-                    styles.label,
-                    {
-                      left: positions[marker.key].x - 40,
-                      top: positions[marker.key].y - 30,
-                    },
-                  ]}
-                >
-                  {marker.bookings.length} {marker.bookings.length === 1 ? "player" : "players"}
-                </Text>
-            )
-        )}
-      </View>
-    );
-  }
-);
-
-const Overlay = ({ marker, onClose }) => {
-  if (!marker) return null;
-  return (
-    <View style={styles.overlay}>
-      <View style={styles.overlayCard}>
-        <View style={styles.overlayHeader}>
-          <Text style={styles.overlayTitle}>📍 {marker.clubName}</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Icon name="close" size={20} color="#333" />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.overlaySubtitle}>👤 {marker.contactName}</Text>
-        <ScrollView style={{ maxHeight: 150 }}>
-          {marker.bookings.map((b, i) => (
-            <Text key={i} style={styles.overlayText}>
-              📅 {b.date} | ⏰ {b.startTime.hour}:
-              {String(b.startTime.minute).padStart(2, "0")} - {b.endTime.hour}:
-              {String(b.endTime.minute).padStart(2, "0")}
-            </Text>
-          ))}
-        </ScrollView>
-      </View>
-    </View>
-  );
-};
-
-// --- Main Component ---
 const PlayersNearbyMap = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { data, error } = usePlayersNearby(user?.userId, 3);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [selectedMarker, setSelectedMarker] = useState<any>(null);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [radius, setRadius] = useState<number | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<
+    "granted" | "denied" | "undetermined"
+  >("undetermined");
+
+  const { data } = usePlayersNearby({
+    lat: coords?.lat ?? null,
+    lng: coords?.lng ?? null,
+    radius,
+  });
 
   const mapRef = useRef<MapView>(null);
   const fullscreenMapRef = useRef<MapView>(null);
 
-  const markers = (data || []).flatMap((contact) =>
-    contact.bookings.map((club) => ({
-      key: `${club.clubName}-${contact.preferredContactUserId}`,
-      lat: club.clubLat,
-      lng: club.clubLong,
-      clubName: club.clubName,
-      contactName: contact.preferredContactName,
-      bookings: club.bookingDetails,
-    }))
-  );
+  const [positions, setPositions] = useState<any>({});
+  const [fullscreen, setFullscreen] = useState(false);
+  const [selectedMarker, setSelectedMarker] = useState<any>(null);
 
-  const shouldShowNoData =
-    error || !data || data.length === 0 || markers.length === 0;
+  const requestLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      setPermissionStatus("denied");
+      return;
+    }
+    setPermissionStatus("granted");
+    const loc = await Location.getCurrentPositionAsync({});
+    setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+    setRadius(20);
+    
+  };
 
-  const handleMarkerPress = useCallback((marker: any) => {
-    setSelectedMarker(marker);
+  const onRegionChangeComplete = (region: Region) => {
+    setCoords({ lat: region.latitude, lng: region.longitude });
+    setRadius(Math.round(region.latitudeDelta * 111));
+    updatePositions(region === undefined ? mapRef : fullscreenMapRef);
+  };
+
+  const updatePositions = async (ref: React.RefObject<MapView> | undefined) => {
+    if (!ref?.current || !data) return;
+    const newPositions: any = {};
+    const markers = (data || []).flatMap((contact) =>
+      contact.bookings.map((club: any) => ({
+        key: `${club.clubName}-${contact.playerUserId}`,
+        lat: club.clubLat,
+        lng: club.clubLong,
+        clubName: club.clubName,
+        contactName: contact.playerName,
+        playerUserId: contact.playerUserId,
+        bookings: club.bookingDetails,
+      }))
+    );
+
+    for (const m of markers) {
+      try {
+        const point = await ref.current.pointForCoordinate({
+          latitude: m.lat,
+          longitude: m.lng,
+        });
+        if (point) newPositions[m.key] = { x: point.x, y: point.y };
+      } catch {}
+    }
+    setPositions(newPositions);
+  };
+
+  const markers =
+    (data || []).flatMap((contact) =>
+      contact.bookings.map((club: any) => ({
+        key: `${club.clubName}-${contact.playerUserId}`,
+        lat: club.clubLat,
+        lng: club.clubLong,
+        clubName: club.clubName,
+        contactName: contact.playerName,
+        playerUserId: contact.playerUserId,
+        bookings: club.bookingDetails,
+      }))
+    ) ?? [];
+
+    // Group players per club
+    const playersPerClub: Record<string, Set<string>> = {};
+    markers.forEach((m) => {
+      if (!playersPerClub[m.clubName]) playersPerClub[m.clubName] = new Set();
+      playersPerClub[m.clubName].add(m.playerUserId); // unique players
+    });
+
+  const handleMarkerPress = useCallback((marker: any) => setSelectedMarker(marker), []);
+
+  useEffect(() => {
+    if (permissionStatus === "undetermined") requestLocation();
   }, []);
+
+  console.log("Markers:", markers);
 
   return (
     <View style={{ height: 300, borderRadius: 12, overflow: "hidden" }}>
+      {permissionStatus === "denied" && (
+        <View style={styles.permissionBanner}>
+          <Text style={styles.bannerText}>
+            ⚠️ Location access needed to show nearby players
+          </Text>
+          <TouchableOpacity
+            onPressIn={() => {
+              if (Platform.OS === "ios") {
+                Linking.openURL("app-settings:"); // iOS
+              } else {
+                Linking.openSettings(); // Android
+              }
+            }}
+            style={styles.allowButton}
+          >
+            <Text style={{ color: "white" }}>Allow</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {coords && (
+        <MapView
+          ref={mapRef}
+          style={{ flex: 1 }}
+          initialRegion={
+            markers[0]
+              ? {
+                  latitude: coords.lat,
+                  longitude: coords.lng,
+                  latitudeDelta: 0.1,
+                  longitudeDelta: 0.1,
+                }
+              : {
+                  latitude: coords.lat,
+                  longitude: coords.lng,
+                  latitudeDelta: 0.1,
+                  longitudeDelta: 0.1,
+                }
+          }
+          onRegionChangeComplete={(region) => {
+            updatePositions(mapRef);
+            onRegionChangeComplete(region);
+          }}
+          showsUserLocation
+        />
+      )}
+
+      {/* Player count arrow boxes */}
+      {markers.map((marker) =>
+        positions[marker.key] ? (
+          <View
+            key={`label-${marker.key}`}
+            style={{
+              position: "absolute",
+              left: positions[marker.key].x - 30,
+              top: positions[marker.key].y - 50,
+              alignItems: "center",
+              zIndex: 10,
+            }}
+          >
+            <View style={styles.arrowBox}>
+              <Text style={styles.markerText} onPress={() => handleMarkerPress(marker)}>
+                {playersPerClub[marker.clubName]?.size ?? 0}{" "}
+                {playersPerClub[marker.clubName]?.size === 1 ? "player" : "players"}
+              </Text>
+            </View>
+            <View style={styles.arrowDown} />
+          </View>
+        ) : null
+      )}
+
+      {/* Overlay for marker details (normal mode) */}
+      {selectedMarker && !fullscreen && (
+        <View style={styles.overlay}>
+          <OverlayContent marker={selectedMarker} close={() => setSelectedMarker(null)} />
+        </View>
+      )}
+
+      {/* Expand button */}
       <TouchableOpacity
         onPress={() => setFullscreen(true)}
         style={styles.expandButton}
@@ -167,25 +196,7 @@ const PlayersNearbyMap = () => {
         <Icon name="arrow-expand" size={24} color="#333" />
       </TouchableOpacity>
 
-      {shouldShowNoData && (
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>
-            ⚠️ No bookings for preferred contacts found
-          </Text>
-        </View>
-      )}
-
-      {/* Small Map */}
-      <MapComponent
-        mapRefInstance={mapRef}
-        onMarkerPress={handleMarkerPress}
-        markers={markers}
-      />
-
-      {/* Overlay */}
-      <Overlay marker={selectedMarker} onClose={() => setSelectedMarker(null)} />
-
-      {/* Fullscreen Map */}
+      {/* Fullscreen map */}
       <Modal visible={fullscreen} animationType="slide">
         <View style={{ flex: 1 }}>
           <TouchableOpacity
@@ -195,24 +206,95 @@ const PlayersNearbyMap = () => {
             <Icon name="close" size={28} color="#333" />
           </TouchableOpacity>
 
-          <MapComponent
-            mapRefInstance={fullscreenMapRef}
-            onMarkerPress={handleMarkerPress}
-            markers={markers}
-          />
+          {coords && (
+            <MapView
+              ref={fullscreenMapRef}
+              style={{ flex: 1 }}
+              initialRegion={
+                markers[0]
+                  ? {
+                      latitude: coords.lat,
+                      longitude: coords.lng,
+                      latitudeDelta: 0.1,
+                      longitudeDelta: 0.1,
+                    }
+                  : {
+                      latitude: coords.lat,
+                      longitude: coords.lng,
+                      latitudeDelta: 0.1,
+                      longitudeDelta: 0.1,
+                    }
+              }
+              onRegionChangeComplete={(region) => {
+                updatePositions(fullscreenMapRef);
+                onRegionChangeComplete(region);
+              }}
+              showsUserLocation
+            />
+          )}
 
-          <Overlay
-            marker={selectedMarker}
-            onClose={() => setSelectedMarker(null)}
-          />
+          {/* Fullscreen labels */}
+          {markers.map((marker) =>
+            positions[marker.key] ? (
+              <View
+                key={`label-full-${marker.key}`}
+                style={{
+                  position: "absolute",
+                  left: positions[marker.key].x - 30,
+                  top: positions[marker.key].y - 50,
+                  alignItems: "center",
+                  zIndex: 10,
+                }}
+              >
+                <View style={styles.arrowBox}>
+                  <Text
+                    style={styles.markerText}
+                    onPress={() => handleMarkerPress(marker)}
+                  >
+                    {playersPerClub[marker.clubName]?.size ?? 0}{" "}
+                    {playersPerClub[marker.clubName]?.size === 1 ? "player" : "players"}
+                  </Text>
+                </View>
+                <View style={styles.arrowDown} />
+              </View>
+            ) : null
+          )}
+
+          {/* Overlay inside fullscreen */}
+          {selectedMarker && fullscreen && (
+            <View style={styles.overlay}>
+              <OverlayContent marker={selectedMarker} close={() => setSelectedMarker(null)} />
+            </View>
+          )}
         </View>
       </Modal>
     </View>
   );
 };
 
-MapComponent.displayName = "MapComponent";
 export default PlayersNearbyMap;
+
+// Overlay component
+const OverlayContent = ({ marker, close }: { marker: any; close: () => void }) => (
+  <View style={styles.overlayCard}>
+    <View style={styles.overlayHeader}>
+      <Text style={styles.overlayTitle}>📍 {marker.clubName}</Text>
+      <TouchableOpacity onPress={close}>
+        <Icon name="close" size={20} color="#333" />
+      </TouchableOpacity>
+    </View>
+    <Text style={styles.overlaySubtitle}>👤 {marker.contactName}</Text>
+    <ScrollView style={{ maxHeight: 150 }}>
+      {marker.bookings.map((b: any, i: number) => (
+        <Text key={i} style={styles.overlayText}>
+          📅 {b.date} | ⏰ {b.startTime.hour}:
+          {String(b.startTime.minute).padStart(2, "0")} - {b.endTime.hour}:
+          {String(b.endTime.minute).padStart(2, "0")}
+        </Text>
+      ))}
+    </ScrollView>
+  </View>
+);
 
 const styles = StyleSheet.create({
   expandButton: {
@@ -241,7 +323,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 10,
   },
-  banner: {
+  permissionBanner: {
     position: "absolute",
     top: 60,
     alignSelf: "center",
@@ -251,6 +333,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: "#ffeeba",
     borderWidth: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    maxWidth: "90%",
+  },
+  allowButton: {
+    marginTop: 5,
+    backgroundColor: "#007bff",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
   bannerText: {
     color: "#856404",
@@ -280,17 +373,32 @@ const styles = StyleSheet.create({
   overlayTitle: { fontSize: 16, fontWeight: "bold" },
   overlaySubtitle: { marginVertical: 4, color: "#555" },
   overlayText: { fontSize: 14, marginVertical: 2 },
-  label: {
-    position: "absolute",
+  arrowBox: {
     backgroundColor: "white",
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    alignItems: "center",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  markerText: {
     fontSize: 12,
     fontWeight: "600",
-    elevation: 4, // Android shadow
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+  },
+  arrowDown: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: "white",
+    marginTop: -1,
   },
 });

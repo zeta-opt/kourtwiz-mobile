@@ -5,6 +5,7 @@ import OpenPlayCard from '@/components/home-page/openPlayCard';
 import OutgoingInviteCardItem from '@/components/home-page/outgoingInvitationsCard';
 import PlayCalendarCard from '@/components/home-page/PlayCalendarCard';
 import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
+import ErrorBoundary from '@/components/players-nearby/ErrorBoundary';
 import PlayersNearbyMap from '@/components/players-nearby/PlayersNearbyMap';
 import { groupInviteeByRequestId } from '@/helpers/find-players/groupInviteeByRequestId';
 import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
@@ -674,7 +675,10 @@ const handleCancelInitiatedPlay = async (invite: any) => {
           <Text style={styles.playersNearByDesc}>
             See users playing near by
           </Text>
-          <PlayersNearbyMap />
+          <ErrorBoundary>
+            <PlayersNearbyMap />
+          </ErrorBoundary>
+
 
           <NewMessages />
         </ScrollView>

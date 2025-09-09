@@ -1,55 +1,62 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import Constants from 'expo-constants';
-import { getToken } from '@/shared/helpers/storeToken';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { getToken } from "@/shared/helpers/storeToken";
+import Constants from "expo-constants";
 
-export const usePlayersNearby = (userId: string, days: number) => {
+interface NearbyParams {
+  lat: number;
+  lng: number;
+  radius: number;
+}
+
+export const usePlayersNearby = ({ lat, lng, radius }: NearbyParams) => {
   const [data, setData] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-  if (!userId) return;
+    if (lat == null || lng == null || radius == null) return;
 
-  const fetchNearby = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await getToken();
+    const fetchNearby = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const today = new Date();
+        const startDate = today.toISOString().split("T")[0];
+
+        const end = new Date(today);
+        end.setDate(today.getDate() + 3);
+        const endDate = end.toISOString().split("T")[0];
+
+        const token = await getToken();
       
       console.log('📦 Token from getToken():', token);
       const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
+        const url = `${BASE_URL}/api/bookings/user-data/date-range?startDate=${startDate}&endDate=${endDate}&latitude=${lat}&longitude=${lng}&radius=${radius}`;
 
-      console.log('Calling API with:', userId, BASE_URL, days);
+        console.log("Calling API:", url);
 
-      const res = await axios.get(
-        `${BASE_URL}/api/bookings/user-data/${userId}/date-range?dateRange=${days}`,
-        {
+        const res = await axios.get(url, {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+            Accept: "*/*",
           },
-        }
-      );
+        });
 
-      console.log('API response:', res.data);
+        console.log("API Response:", res.data);
 
-      setData(res.data || []);
-    } catch (err: any) {
-  console.error('Full error object:', err);
+        setData(res.data || []);
+      } catch (err: any) {
+        console.error("API Error:", err);
+        setError(err?.message || "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const message =
-    err?.response?.data?.message || err?.message || 'Something went wrong';
+    fetchNearby();
+  }, [lat, lng, radius]);
 
-  console.error('API Error:', message);
-  setError(message);
-} finally {
-      setLoading(false);
-    }
-  };
-
-  fetchNearby();
-}, [userId, days]);
-
-  return { data, error, loading };
+  return { data, loading, error };
 };
