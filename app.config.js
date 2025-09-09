@@ -4,7 +4,7 @@ export default {
   expo: {
     name: 'kourtwiz-mobile',
     slug: 'kourtwiz-mobile',
-    version: '1.0.19',
+    version: '1.0.21',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'kourtwizmobile',
@@ -14,17 +14,18 @@ export default {
       url: 'https://u.expo.dev/0c917ae5-4e2b-4c2b-bef1-928702cf4737',
     },
 
-    runtimeVersion: "1.0.19",
+    runtimeVersion: "1.0.21",
 
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.kourtwiz.mobile',
-      buildNumber: '1.0.19',
+      buildNumber: '1.0.21',
       infoPlist: {
         NSContactsUsageDescription:
           'This app needs access to your contacts to let you invite or select players.',
         NSLocationWhenInUseUsageDescription:
           'This app needs your location to help you find nearby courts.',
+        UIBackgroundModes: ["remote-notification"],
       },
       config: {
         googleMapsApiKey: "AIzaSyC3JM_8P23tGrP6laoq7K8fIGI0DQxNSog", // ✅ iOS key goes here
