@@ -30,6 +30,7 @@ export default {
       config: {
         googleMapsApiKey: "AIzaSyC3JM_8P23tGrP6laoq7K8fIGI0DQxNSog", // ✅ iOS key goes here
       },
+      googleServicesFile: "./ios/GoogleService-Info.plist"
     },
 
     android: {
@@ -46,6 +47,7 @@ export default {
           apiKey: "AIzaSyDQvA6q1C1dt9JoOo-_6iG6mOGFozGfqwk", // ✅ Android key goes here
         },
       },
+      googleServicesFile: "./android/app/google-services.json"
     },
 
     web: {

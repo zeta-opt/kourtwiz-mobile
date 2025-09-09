@@ -23,12 +23,13 @@ const loginSchema = z.object({
   username: z.string().refine(
     (value) => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneRegex =
-        /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{4,6}$/;
+      // ✅ New regex: allows 10–15 digits with or without spaces/+, -, ()
+      const phoneRegex = /^[0-9]{10,15}$/;
 
-      return (
-        emailRegex.test(value) || phoneRegex.test(value.replace(/\s/g, ''))
-      );
+      // Remove non-digit characters before testing
+      const normalizedValue = value.replace(/\D/g, '');
+
+      return emailRegex.test(value) || phoneRegex.test(normalizedValue);
     },
     { message: 'Please enter a valid email address or phone number' }
   ),
@@ -36,7 +37,6 @@ const loginSchema = z.object({
     .string()
     .min(6, { message: 'Password must be at least 6 characters' }),
 });
-
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginUser() {
@@ -81,6 +81,8 @@ export default function LoginUser() {
   const getDeviceToken = async (): Promise<string | null> => {
     try {
       if (Platform.OS === 'ios') {
+        return (await Notifications.getDevicePushTokenAsync()).data;
+      } else if (Platform.OS === 'android') {
         return (await Notifications.getDevicePushTokenAsync()).data;
       } else {
         return (await Notifications.getExpoPushTokenAsync()).data;

@@ -1,3 +1,4 @@
+import { setupFCMHandlers } from '@/services/notifications/fcmHandler';
 import * as Notifications from 'expo-notifications';
 import { Slot } from 'expo-router';
 import { useEffect } from 'react';
@@ -9,7 +10,7 @@ import { Provider as ReduxProvider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { persistor, store } from '../store';
 
-// Configure notification handler
+// Configure how notifications should be handled when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -22,27 +23,68 @@ Notifications.setNotificationHandler({
 
 export default function RootLayout() {
   useEffect(() => {
-    // Request notification permissions on app launch
-    const requestNotificationPermissions = async () => {
-      if (Platform.OS === 'ios') {
+    // ✅ Only run FCM setup on Android (skip iOS to avoid Firebase error)
+    if (Platform.OS === 'android') {
+      setupFCMHandlers();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Setup Expo notification permissions and channels
+    const setupExpoNotifications = async () => {
+      try {
+        // Check current permission status
         const { status: existingStatus } =
           await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
 
-        // Only ask if we don't already have permission
+        // Request permission if not already granted
         if (existingStatus !== 'granted') {
           const { status } = await Notifications.requestPermissionsAsync();
-          if (status === 'granted') {
-            console.log('✅ Notification permissions granted');
-          } else {
-            console.log('❌ Notification permissions denied');
+          finalStatus = status;
+        }
+
+        if (finalStatus === 'granted') {
+          console.log(`✅ Notification permissions granted on ${Platform.OS}`);
+
+          // Setup Android notification channel
+          if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('default', {
+              name: 'default',
+              importance: Notifications.AndroidImportance.MAX,
+              vibrationPattern: [0, 250, 250, 250],
+              lightColor: '#FF231F7C',
+              sound: 'default',
+            });
           }
         } else {
-          console.log('✅ Notification permissions already granted');
+          console.log(`❌ Notification permissions denied on ${Platform.OS}`);
         }
+      } catch (error) {
+        console.error('❌ Error setting up notifications:', error);
       }
     };
 
-    requestNotificationPermissions();
+    setupExpoNotifications();
+
+    // Optional: Listen for notification events (when using Expo to display)
+    const notificationListener = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log('📱 Expo Notification received:', notification);
+      }
+    );
+
+    const responseListener =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log('👆 Expo Notification clicked:', response);
+        // Handle navigation based on notification data
+      });
+
+    // Cleanup
+    return () => {
+      notificationListener.remove();
+      responseListener.remove();
+    };
   }, []);
 
   return (

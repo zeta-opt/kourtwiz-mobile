@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "757106359512",
+    "project_id": "kourtwiz-fa0eb",
+    "storage_bucket": "kourtwiz-fa0eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:757106359512:android:ee7f1f264be9873974abad",
+        "android_client_info": {
+          "package_name": "com.kourtwiz.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcnRKtk6ozvUJ6DcEHqbxIjlgkp4X9o6Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
