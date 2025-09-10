@@ -2,7 +2,7 @@ import { getToken } from '@/shared/helpers/storeToken';
 import Constants from 'expo-constants';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { login, setProfileImage } from '../../../store/authSlice';
+import { login, logout, setProfileImage } from '../../../store/authSlice';
 import { useRouter } from 'expo-router';
 
 export const useFetchUser = () => {
@@ -26,7 +26,8 @@ export const useFetchUser = () => {
       });
       
       if (!response.ok){ 
-        router.replace('/login');
+        dispatch(logout());
+        router.replace('/');
         throw new Error('Failed to fetch user data')
       };
 
