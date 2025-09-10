@@ -29,7 +29,7 @@ const statusIconMap: Record<string, string> = {
   PENDING: 'clock',
   DECLINED: 'times-circle',
   WITHDRAWN: 'minus-circle',
-  CANCELLED: 'minus-circle',
+  CANCELLED: 'ban',
 };
 
 function arrayToDate(arr: number[] = []): Date {
@@ -206,11 +206,11 @@ export default function SentRequestDetailedView() {
               pathname: '/(authenticated)/find-player',
               params: {
                 isEditMode: 'true',
-                finderId: invite.requestId,       // main id for PUT
-                requesterId: invite.requesterId,  // required by API
+                finderId: invite.requestId,
+                requesterId: invite.requesterId,
                 placeToPlay: invite.placeToPlay,
-                playTime: invite.playTime,        // ISO string
-                playEndTime: invite.playEndTime,  // ISO string
+                playTime: invite.playTime,
+                playEndTime: invite.playEndTime,
                 playersNeeded: invite.playersNeeded,
                 skillLevel: invite.skillLevel,
               },

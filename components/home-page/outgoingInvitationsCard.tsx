@@ -1,12 +1,23 @@
-import React from 'react';
-import { StyleSheet, View, TouchableOpacity, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import axios from 'axios';
+import { getToken } from '@/shared/helpers/storeToken';
+
+const API_URL = 'https://api.vddette.com';
 
 export type Invite = {
   requestId: string;
-  playTime: [number, number, number, number?, number?];
+  playTime: [number, number, number, number?, number?] | string | null;
   placeToPlay: string;
   dateTimeMs: number;
   accepted: number;
@@ -22,19 +33,72 @@ type OutgoingInviteCardItemProps = {
   onViewPlayers: (requestId: string) => void;
 };
 
-const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite, disabled = false, onViewPlayers }) => {
+const parsePlayTimeToMs = (playTime: any): number => {
+  if (!playTime) return Date.now();
+  if (Array.isArray(playTime)) {
+    const [y, m, d, h = 0, min = 0, s = 0] = playTime;
+    return new Date(y, (m as number) - 1, d, h, min, s).getTime();
+  }
+  const t = new Date(playTime).getTime();
+  return Number.isFinite(t) ? t : Date.now();
+};
+
+const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
+  invite,
+  disabled = false,
+  onViewPlayers,
+}) => {
   const router = useRouter();
 
-  const acceptedCount = invite.accepted + 1 || 0;
-  const totalPlayers = invite.playersNeeded + 1 || 0;
-  console.log('Invite:', invite);
+  // local copy of invite that we update after a fetch
+  const [inviteData, setInviteData] = useState<Invite>(() => ({
+    ...invite,
+    Requests: invite.Requests || [],
+    dateTimeMs: invite.dateTimeMs || parsePlayTimeToMs(invite.playTime),
+  }));
 
-  const isFullyAccepted = acceptedCount === totalPlayers;
+  // loaders
+  const [loadingCard, setLoadingCard] = useState(false);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
+
+  useEffect(() => {
+    setInviteData((prev) => {
+      if (!prev || prev.requestId !== invite.requestId) {
+        return {
+          ...invite,
+          Requests: invite.Requests || [],
+          dateTimeMs: invite.dateTimeMs || parsePlayTimeToMs(invite.playTime),
+        };
+      }
+      return prev;
+    });
+  }, [invite.requestId]);
+
+  // compute displayed counts preferring Requests if present
+  const computeCountsFromRequests = (requests: any[], playersNeededFallback: number) => {
+    const acceptedRaw = (requests || []).filter((p) => (p.status ?? '').toUpperCase() === 'ACCEPTED').length;
+    const accepted = acceptedRaw + 1; // keep your +1 behaviour if you want organizer counted
+    const total = (requests[0]?.playersNeeded ?? playersNeededFallback) + 1;
+    return { accepted, total };
+  };
+
+  const baseAccepted = typeof inviteData.accepted === 'number' ? inviteData.accepted : 0;
+  const baseTotal = typeof inviteData.playersNeeded === 'number' ? inviteData.playersNeeded : 0;
+
+  let displayedAccepted = baseAccepted;
+  let displayedTotal = baseTotal;
+  if (inviteData.Requests && inviteData.Requests.length > 0) {
+    const computed = computeCountsFromRequests(inviteData.Requests, inviteData.playersNeeded || baseTotal);
+    displayedAccepted = computed.accepted;
+    displayedTotal = computed.total;
+  }
+
+  const isFullyAccepted = displayedAccepted === displayedTotal;
   const statusText = isFullyAccepted ? 'Accepted' : 'Pending';
   const statusColor = isFullyAccepted ? '#429645' : '#c47602';
   const statusCount = isFullyAccepted
-  ? `${acceptedCount}/${totalPlayers}`
-  : `${totalPlayers - acceptedCount}/${totalPlayers}`;
+    ? `${displayedAccepted}/${displayedTotal}`
+    : `${displayedTotal - displayedAccepted}/${displayedTotal}`;
 
   const formatDateParts = (timestamp: number) => {
     const dateObj = new Date(timestamp);
@@ -52,68 +116,127 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({ invite,
     return { dateString, timeString };
   };
 
-  const { dateString, timeString } = formatDateParts(invite.dateTimeMs);
+  const { dateString, timeString } = formatDateParts(inviteData.dateTimeMs || Date.now());
 
-  const handlePress = () => {
-    if (!invite) return;
-  
+  // fetch fresh invite and return structured result (do NOT rely on inviteData after this — use returned value)
+  const fetchFreshInviteAndMerge = async () => {
     try {
-      const encoded = encodeURIComponent(JSON.stringify(invite));
-      console.log('Encoded invite for navigation:', encoded);
+      const token = await getToken();
+      const res = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
+        params: { requestId: inviteData.requestId },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const payload = Array.isArray(res.data) ? res.data : res.data?.results ?? res.data;
+      const first = Array.isArray(payload) && payload.length > 0 ? payload[0] : null;
+
+      const accCount = Array.isArray(payload)
+        ? payload.filter((p: any) => (p.status ?? '').toUpperCase() === 'ACCEPTED').length + 1
+        : inviteData.accepted;
+
+      const newInvite: Invite = {
+        ...inviteData,
+        Requests: Array.isArray(payload) ? payload : inviteData.Requests,
+        playersNeeded: first?.playersNeeded ?? inviteData.playersNeeded,
+        eventName: first?.eventName ?? inviteData.eventName,
+        placeToPlay: first?.placeToPlay ?? inviteData.placeToPlay,
+        dateTimeMs: first?.playTime ? parsePlayTimeToMs(first.playTime) : inviteData.dateTimeMs,
+        accepted: accCount,
+      };
+
+      // set local state (so UI updates)
+      setInviteData(newInvite);
+
+      return { success: true, invite: newInvite, players: Array.isArray(payload) ? payload : [] };
+    } catch (err) {
+      console.error('fetchFreshInviteAndMerge error', err);
+      return { success: false, error: err, invite: null, players: [] };
+    }
+  };
+
+  // full card press: fetch fresh, update local, then navigate using returned fresh invite
+  const handlePressUpdate = async () => {
+    if (!inviteData) return;
+    setLoadingCard(true);
+    try {
+      const { success, invite: freshInvite } = await fetchFreshInviteAndMerge();
+      const toEncode = success && freshInvite ? freshInvite : inviteData;
+      const encoded = encodeURIComponent(JSON.stringify(toEncode));
       router.push({
         pathname: '/(authenticated)/sentRequestsDetailedView',
         params: { data: encoded },
       });
-    } catch (error) {
-      console.error('Failed to encode invite:', error);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to fetch and open invite');
+      console.error(err);
+    } finally {
+      setLoadingCard(false);
     }
   };
-  
+
+  // view players press: fetch fresh, update local, then call parent with requestId (parent fetches if needed)
+  const handleViewPlayersPress = async (e: any) => {
+    e.stopPropagation();
+    setLoadingPlayers(true);
+    try {
+      const { success, invite: freshInvite } = await fetchFreshInviteAndMerge();
+      if (success && freshInvite) {
+        onViewPlayers(freshInvite.requestId);
+      } else {
+        onViewPlayers(inviteData.requestId);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to fetch players');
+      console.error(err);
+    } finally {
+      setLoadingPlayers(false);
+    }
+  };
 
   return (
-    <TouchableOpacity style={styles.card} disabled={disabled} onPress={handlePress}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', }}>
+    <TouchableOpacity
+      style={styles.card}
+      disabled={disabled || loadingCard}
+      onPress={handlePressUpdate}
+      activeOpacity={0.9}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <View style={{ flex: 1 }}>
           <View style={styles.statusBadgeContainer}>
             <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-              <Text style={styles.statusBadgeText}>
-              {statusCount} {statusText}
-              </Text>
+              <Text style={styles.statusBadgeText}>{statusCount} {statusText}</Text>
             </View>
           </View>
 
           <Text style={styles.placeText} numberOfLines={1}>
-          {invite.eventName?.trim() || invite.Requests?.[0]?.eventName?.trim() || "Untitled Event"}
+            {inviteData.eventName?.trim() || 'Untitled Event'}
           </Text>
 
           <View style={styles.datePeopleRow}>
             <Text style={styles.dateText}>{dateString} | {timeString}</Text>
             <Text style={styles.separator}>|</Text>
-            <Text 
-              style={styles.peopleText} 
-              numberOfLines={1} 
-              ellipsizeMode="tail"
-            >
-              {invite.placeToPlay}
+            <Text style={styles.peopleText} numberOfLines={1} ellipsizeMode="tail">
+              {inviteData.placeToPlay}
             </Text>
           </View>
         </View>
 
-        {/* View Players Row */}
         <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            onViewPlayers?.(invite.requestId);
-          }}
-          style={({ pressed }) => [
-            styles.acceptedBox,
-            pressed && styles.pressedStyle,
-          ]}
+          onPress={handleViewPlayersPress}
+          style={({ pressed }) => [styles.acceptedBox, pressed && styles.pressedStyle]}
         >
           <MaterialCommunityIcons name="account" size={14} color="#007BFF" />
-          <Text style={styles.acceptedTextSmall}>{acceptedCount} / {totalPlayers} Accepted</Text>
+          <Text style={styles.acceptedTextSmall}>
+            {displayedAccepted} / {displayedTotal} Accepted
+          </Text>
         </Pressable>
       </View>
+
+      {loadingCard && (
+        <View style={styles.cardLoaderOverlay}>
+          <ActivityIndicator size="large" color="#007BFF" />
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -183,5 +306,12 @@ const styles = StyleSheet.create({
   peopleText: {
     fontSize: 14,
     color: '#555',
+  },
+  cardLoaderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
   },
 });

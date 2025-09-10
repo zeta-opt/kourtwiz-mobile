@@ -79,91 +79,141 @@ export default function NewMessages() {
   const previewMessages = sortedMessages.slice(0, 2);
 
   const handleMessagePress = (msg: Comment) => {
-    if (msg.eventType === 'IWantToPlayEvent') {
-      if (msg.joined) {
-        return; // do nothing if already joined
-      } else {
+    if (!msg) {
+      alert("Chat details not available.");
+      return;
+    }
+  
+    switch (msg.eventType) {
+      case 'IWantToPlayEvent':
         handleJoin(msg);
-        return; // stop here so we don't fall through
-      }
+        break;
+  
+      case 'CreateEvent':
+        if (msg.requestId) {
+          setModalVisible(false);
+          router.replace({
+            pathname: '/(authenticated)/chat-summary',
+            params: { sessionId: msg.requestId },
+          });
+        } else {
+          alert("Chat not available for this event.");
+        }
+        break;
+  
+      default:
+        if (msg.requestId) {
+          setModalVisible(false);
+          router.replace({
+            pathname: '/(authenticated)/chat-summary',
+            params: { requestId: msg.requestId },
+          });
+        } else {
+          alert("Chat not available for this event.");
+        }
+        break;
     }
-
-    if (msg.eventType === 'CreateEvent') {
-      setModalVisible(false);
-      router.replace({
-        pathname: '/(authenticated)/chat-summary',
-        params: { sessionId: msg.requestId },
-      });
-      return;
-    }
-
-    // default fallback for other events
-    setModalVisible(false);
-    router.replace({
-      pathname: '/(authenticated)/chat-summary',
-      params: { requestId: msg.requestId },
-    });
   };
-
+  
   const handleJoin = async (msg: Comment) => {
-    if (msg.eventType === 'GroupEvent') {
-      setModalVisible(false);
-      router.push({
-        pathname: '/(authenticated)/chat-summary',
-        params: { id: msg.requestId },
-      });
+    if (!msg) {
+      alert("Chat details not available.");
       return;
     }
-
-    if (msg.eventType === 'PlayerFinderEvent') {
-      setModalVisible(false);
-      router.push({
-        pathname: '/(authenticated)/chat-summary',
-        params: { requestId: msg.requestId },
-      });
-      return;
-    }
-
-    if (msg.eventType === 'CreateEvent') {
-      setModalVisible(false);
-      router.push({
-        pathname: '/(authenticated)/chat-summary',
-        params: { sessionId: msg.requestId },
-      });
-      return;
-    }
-
-    if (msg.eventType === 'IWantToPlayEvent') {
-      try {
-        setJoiningSessionId(msg.requestId);
-
-        await joinMutation.joinSession({
-          sessionId: msg.requestId,
-          userId: user?.userId ?? '',
-          callbacks: {
-            onSuccess: () => {
-              setJoiningSessionId(null);
-              setModalVisible(false);
-              router.push({
-                pathname: '/(authenticated)/chat-summary',
-                params: {
-                  directUserId: msg.userId,
-                  directUserName: msg.userName,
-                  requestId: msg.id,
-                  initialMessage: msg.commentText,
+  
+    switch (msg.eventType) {
+      case 'GroupEvent':
+        if (msg.requestId) {
+          setModalVisible(false);
+          router.push({
+            pathname: '/(authenticated)/chat-summary',
+            params: { id: msg.requestId },
+          });
+        } else {
+          alert("Group chat not available.");
+        }
+        break;
+  
+      case 'PlayerFinderEvent':
+        if (msg.requestId) {
+          setModalVisible(false);
+          router.push({
+            pathname: '/(authenticated)/chat-summary',
+            params: { requestId: msg.requestId },
+          });
+        } else {
+          alert("PlayerFinder chat not available.");
+        }
+        break;
+  
+      case 'CreateEvent':
+        if (msg.requestId) {
+          setModalVisible(false);
+          router.push({
+            pathname: '/(authenticated)/chat-summary',
+            params: { sessionId: msg.requestId },
+          });
+        } else {
+          alert("Session chat not available.");
+        }
+        break;
+  
+        case 'IWantToPlayEvent':
+          if (!msg.requestId) {
+            alert("Session chat not available.");
+            break;
+          }
+        
+          if (msg.joined) {
+            // Already joined → just route
+            setModalVisible(false);
+            router.push({
+              pathname: '/(authenticated)/chat-summary',
+              params: {
+                directUserId: msg.userId,
+                directUserName: msg.userName,
+                requestId: msg.id,
+                initialMessage: msg.commentText,
+              },
+            });
+            break;
+          }
+        
+          // Not joined → join first, then route
+          try {
+            setJoiningSessionId(msg.requestId);
+            await joinMutation.joinSession({
+              sessionId: msg.requestId,
+              userId: user?.userId ?? '',
+              callbacks: {
+                onSuccess: () => {
+                  setJoiningSessionId(null);
+                  setModalVisible(false);
+                  router.push({
+                    pathname: '/(authenticated)/chat-summary',
+                    params: {
+                      directUserId: msg.userId,
+                      directUserName: msg.userName,
+                      requestId: msg.id,
+                      initialMessage: msg.commentText,
+                    },
+                  });
                 },
-              });
-            },
-            onError: (error) => {
-              setJoiningSessionId(null);
-              alert(`Failed to join session: ${error.message}`);
-            },
-          },
-        });
-      } catch (err) {
-        setJoiningSessionId(null);
-        alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      }
+                onError: (error) => {
+                  setJoiningSessionId(null);
+                  alert(`Failed to join session: ${error.message}`);
+                },
+              },
+            });
+          } catch (err) {
+            setJoiningSessionId(null);
+            alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
+          break;        
+  
+      default:
+        alert("Unknown chat type, cannot open.");
+        break;
     }
   };
 

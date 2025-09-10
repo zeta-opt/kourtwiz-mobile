@@ -401,6 +401,15 @@ export default function GroupsScreen() {
         renderItem={renderItem}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={() => (
+          <View style={styles.loaderContainer}>
+            <Ionicons name="people" size={50} color="#999" />
+            <Text style={styles.loaderText}>No groups yet</Text>
+            <Text style={styles.errorText}>
+              Start by creating a new group and invite your friends!
+            </Text>
+          </View>
+        )}
       />
 
         {/* Open Modal Button */}
@@ -629,7 +638,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 15,
     fontWeight: '500',
-    color: '#ccc',
+    color: '#777',
     marginVertical: 10,
-  },  
+  },
 });

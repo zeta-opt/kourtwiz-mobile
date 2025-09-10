@@ -170,6 +170,57 @@ const FindPlayerLayout = () => {
     setLocationPermissionGranted(status === 'granted');
   };
 
+  const arrayToDate = (arr: number[] | string | undefined): Date | null => {
+    if (!arr) return null;
+    if (typeof arr === 'string') return new Date(arr);
+    if (arr.length >= 5) {
+      return new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], arr[5] || 0);
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    if (!isEditMode || !params) return;
+
+    // Place
+    if (params.placeToPlay && typeof params.placeToPlay === 'string') {
+      dispatch(setPlaceToPlay(params.placeToPlay));
+    }
+  
+    // Players needed
+    if (params.playersNeeded && typeof params.playersNeeded === 'string') {
+      setPlayerCount(Number(params.playersNeeded));
+    }
+  
+    // Skill level
+    if (params.skillLevel && typeof params.skillLevel === 'string') {
+      setSkillLevel(Number(params.skillLevel));
+    }
+  
+    const toNumberArray = (value: string | string[]): number[] => {
+      if (!value) return [];
+      if (Array.isArray(value)) {
+        return value.map((v) => Number(v));
+      }
+      return [Number(value)];
+    };
+    
+    // Dates
+    if (params.playTime) {
+      const start = arrayToDate(toNumberArray(params.playTime));
+      if (start) {
+        setSelectedDate(start);
+        setStartTime(start);
+      }
+    }
+    
+    if (params.playEndTime) {
+      const end = arrayToDate(toNumberArray(params.playEndTime));
+      if (end) setEndTime(end);
+    }
+
+  }, [isEditMode, params, dispatch]);    
+
   const handleClubDetailsClick = async () => {
     // First check if we already have permission
     const { status: currentStatus } =
