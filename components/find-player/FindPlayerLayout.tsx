@@ -1,5 +1,6 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { useRequestPlayerFinder } from '@/hooks/apis/player-finder/useRequestPlayerFinder';
+import { useUpdatePlayerFinderEvent } from '@/hooks/apis/player-finder/useUpdateInvite';
 import { AppDispatch, RootState } from '@/store';
 import {
   Contact,
@@ -82,6 +83,9 @@ const FindPlayerLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const params = useLocalSearchParams();
+  // Explicitly derive editMode from params
+  const isEditMode = params?.isEditMode === 'true';
+  const finderId = params?.finderId as string | undefined;
 
   // Get user from Redux
   const { user } = useSelector((state: RootState) => state.auth);
@@ -104,9 +108,11 @@ const FindPlayerLayout = () => {
   const [placeToSave, setPlaceToSave] = useState<PlaceToSave | null>(null);
 
   // Add the hook for player finder
-  const { requestPlayerFinder, status: finderStatus } =
-    useRequestPlayerFinder();
-
+  const { requestPlayerFinder, status: finderStatus } = useRequestPlayerFinder();
+  const { updateEvent, status: editStatus, error: editError } = useUpdatePlayerFinderEvent(() =>
+    dispatch(triggerInvitationsRefetch())
+  );
+  
   const preferredContacts = useSelector(
     (state: RootState) => state.playerFinder.preferredContacts
   );
@@ -308,41 +314,63 @@ const FindPlayerLayout = () => {
       finalEndTime = new Date(playTime.getTime() + 2 * 60 * 60 * 1000);
     }
 
-    const requestData = {
-      finderData: {
-        eventName,
-        requestorId: userId,
+    if (isEditMode && finderId) {
+      // ----- EDIT MODE (PUT)
+      const updatePayload = {
         placeToPlay: finalPlaceToPlay,
         playTime: toLocalISOString(playTime),
         playEndTime: toLocalISOString(finalEndTime),
         playersNeeded: playerCount,
-        skillRating: skillLevel,
-        preferredContacts,
-      },
-      // Include placeToSave if it exists (from AddPlace)
-      ...(placeToSave && { placeToSave }),
-    };
+        skillLevel: String(skillLevel),
+      };
 
-    console.log('Request Data:', requestData);
+      console.log('Update Payload:', updatePayload);
 
-    requestPlayerFinder({
-      finderData: requestData.finderData,
-      placeToSave: requestData.placeToSave,
-      callbacks: {
-        onSuccess: () => {
-          dispatch(resetPlayerFinderData());
-          dispatch(triggerInvitationsRefetch());
-          setSubmitted(true);
+      const success = await updateEvent(finderId, userId!, updatePayload);
 
-          // Show success message
-          Alert.alert(
-            'Success!',
-            'Your player finder request has been submitted.',
-            [
+      if (success) {
+        Alert.alert('Success!', 'Your player finder request has been updated.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.replace('/(authenticated)/home');
+            },
+          },
+        ]);
+      } else {
+        setConflictDialogVisible(true);
+      }
+    } else {
+      // ----- CREATE MODE (POST)
+      const requestData = {
+        finderData: {
+          eventName,
+          requestorId: userId,
+          placeToPlay: finalPlaceToPlay,
+          playTime: toLocalISOString(playTime),
+          playEndTime: toLocalISOString(finalEndTime),
+          playersNeeded: playerCount,
+          skillRating: skillLevel,
+          preferredContacts,
+        },
+        ...(placeToSave && { placeToSave }),
+      };
+
+      console.log('Create Payload:', requestData);
+
+      requestPlayerFinder({
+        finderData: requestData.finderData,
+        placeToSave: requestData.placeToSave,
+        callbacks: {
+          onSuccess: () => {
+            dispatch(resetPlayerFinderData());
+            dispatch(triggerInvitationsRefetch());
+            setSubmitted(true);
+
+            Alert.alert('Success!', 'Your player finder request has been submitted.', [
               {
                 text: 'OK',
                 onPress: () => {
-                  // Reset form
                   setSelectedDate(null);
                   setStartTime(null);
                   setEndTime(null);
@@ -351,21 +379,20 @@ const FindPlayerLayout = () => {
                   setSubmitted(false);
                   setPlaceToSave(null);
                   dispatch(setPlaceToPlay(''));
-
                   setTimeout(() => {
                     router.replace('/(authenticated)/home');
                   }, 100);
                 },
               },
-            ]
-          );
+            ]);
+          },
+          onError: () => {
+            setConflictDialogVisible(true);
+          },
         },
-        onError: () => {
-          setConflictDialogVisible(true);
-        },
-      },
-    });
-  };
+      });
+    }
+  }; 
 
   const sliderWidth = useRef(0);
   const animatedValue = useRef(new Animated.Value(skillLevel)).current;
@@ -394,9 +421,13 @@ const FindPlayerLayout = () => {
             <Ionicons name='arrow-back' size={24} color='#cce5e3' />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.MainTitle}>Find Player</Text>
+            <Text style={styles.MainTitle}>
+              {isEditMode ? 'Edit Player Finder' : 'Find Player'}
+            </Text>
             <Text style={styles.subtitle}>
-              Fill out details to find a player
+              {isEditMode
+                ? 'Update your player finder details'
+                : 'Fill out details to find a player'}
             </Text>
           </View>
           <UserAvatar size={30} />
@@ -404,33 +435,37 @@ const FindPlayerLayout = () => {
       </View>
 
       <ScrollView style={styles.formScrollView}>
-        {/* Event Name Section */}
-        <Text style={styles.sectionTitle}>Event Name</Text>
-        <EventNameSearch
-          value={eventName}
-          onChange={setEventName}
-          requesterId={userId}
-          onSelect={(event) => {
-            setEventName(event.eventName);
-            setSkillLevel(event.skillRating);
-            setPlayerCount(event.playersNeeded);
-            dispatch(setPlaceToPlay(event.placeToPlay));
-            if (event.name?.length > 0) {
-              dispatch(
-                setPreferredContacts([
-                  {
-                    contactName: event.name,
-                    contactPhoneNumber: event.phoneNumber,
-                  },
-                ])
-              );
-            }
-          }}
-          error={false}
-        />
+      {isEditMode !== true && (
+        <>
+          {/* Event Name */}
+          <Text style={styles.sectionTitle}>Event Name</Text>
+          <EventNameSearch
+            value={eventName}
+            onChange={setEventName}
+            requesterId={userId}
+            onSelect={(event) => {
+              setEventName(event.eventName);
+              setSkillLevel(event.skillRating);
+              setPlayerCount(event.playersNeeded);
+              dispatch(setPlaceToPlay(event.placeToPlay));
+              if (event.name?.length > 0) {
+                dispatch(
+                  setPreferredContacts([
+                    {
+                      contactName: event.name,
+                      contactPhoneNumber: event.phoneNumber,
+                    },
+                  ])
+                );
+              }
+            }}
+            error={false}
+          />
+        </>
+        )}
 
         {/* Club Name Section */}
-        <Text style={styles.sectionTitle}>Place</Text>
+        <Text style={[styles.sectionTitle, {marginTop:25}]}>Place</Text>
         <View style={styles.dropdownRow}>
           <Button
             mode='outlined'
@@ -515,39 +550,52 @@ const FindPlayerLayout = () => {
           />
         </View>
 
-        {/* Preferred Players Section */}
-        <PreferredPlayersSelector
-          preferredContacts={preferredContacts}
-          onShowPreferredPlayers={showPreferredPlayers}
-          onAddContact={handleAddContact}
-          onRemovePlayer={handleRemovePlayer}
-        />
+      {isEditMode !== true && (
+        <>
+          {/* Preferred Players */}
+          <PreferredPlayersSelector
+              preferredContacts={preferredContacts}
+              onShowPreferredPlayers={showPreferredPlayers}
+              onAddContact={handleAddContact}
+              onRemovePlayer={handleRemovePlayer}
+            />
 
-        <PreferredPlayersModal
-          visible={preferredPlayersModal}
-          onClose={() => dispatch(closePreferredPlayersModal())}
-          onSelectPlayers={handleSelectPlayers}
-          selectedPlayers={preferredContacts}
-        />
+            <PreferredPlayersModal
+              visible={preferredPlayersModal}
+              onClose={() => dispatch(closePreferredPlayersModal())}
+              onSelectPlayers={handleSelectPlayers}
+              selectedPlayers={preferredContacts}
+            />
 
-        <ContactsModal
-          visible={contactsModalVisible}
-          onClose={() => setContactsModalVisible(false)}
-          onSelectContacts={handleSelectContactsFromDevice}
-          selectedContacts={preferredContacts}
-        />
+            <ContactsModal
+              visible={contactsModalVisible}
+              onClose={() => setContactsModalVisible(false)}
+              onSelectContacts={handleSelectContactsFromDevice}
+              selectedContacts={preferredContacts}
+            />
+        </>
+      )}
 
-        <View style={styles.actionButtonContainer}>
+      {/* Action Button */}
+      <View style={styles.actionButtonContainer}>
           <Button
-            mode='contained'
+            mode="contained"
             style={styles.findPlayerButton}
             onPress={handleSubmit}
-            icon='magnify'
-            loading={finderStatus === 'loading'}
-            disabled={finderStatus === 'loading' || submitted}
-            buttonColor='#2C7E88'
+            icon={'magnify'}
+            loading={finderStatus === 'loading' || editStatus === 'loading'}
+            disabled={
+              finderStatus === 'loading' ||
+              editStatus === 'loading' ||
+              submitted
+            }
+            buttonColor="#2C7E88"
           >
-            {submitted ? 'Submitted' : 'Find Player'}
+            {submitted
+              ? 'Submitted'
+              : isEditMode === true
+              ? 'Update Request'
+              : 'Find Player'}
           </Button>
         </View>
       </ScrollView>

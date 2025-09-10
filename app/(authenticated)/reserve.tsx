@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useSelector } from 'react-redux';
 import * as Location from 'expo-location';
+import { useQuery } from "@tanstack/react-query";
 
 type CourtData = {
   id: string;
@@ -34,6 +35,27 @@ const PAGE_SIZE = 20;
 
 const ReserveCourtScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  // ---------------- Feature flag with React Query ----------------
+  const {
+    data: flags,
+    isLoading: flagsLoading,
+    isError: flagsError,
+  } = useQuery({
+    queryKey: ["feature-flags", user?.userId],
+    queryFn: async () => {
+      // Replace with your real endpoint later
+      // Example: const res = await axios.get(`/api/feature-flags?userId=${user?.userId}`);
+      // return res.data;
+
+      // TEMP: return mock data until backend is ready
+      return { reserveCourtFlow: true };
+    },
+    enabled: !!user?.userId, // only fetch if user is known
+    staleTime: 5 * 60 * 1000, // cache for 5 mins
+  });
+
+  // Safe accessor
+  const isFeatureEnabled = flags?.reserveCourtFlow ?? false;
 
   // ----- Local UI state
   const [searchText, setSearchText] = useState("");      // input box text
@@ -217,8 +239,24 @@ const ReserveCourtScreen = () => {
   ), []);
 
   const initialLoading = (preferredStatus === "loading" || nearbyStatus === "loading") && !searchMode && page === 0;
-
   const searchLoading = searchMode && importStatus === "loading";
+
+  // ---------------- Guard UI ----------------
+  if (flagsLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (flagsError || !isFeatureEnabled) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>Reserve Court feature coming soon 🚧</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

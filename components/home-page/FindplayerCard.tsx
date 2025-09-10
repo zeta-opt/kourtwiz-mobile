@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Image, Modal, StyleSheet, Text, TouchableOpacity, View, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 
 const FindplayerCard = () => {
   const router = useRouter();
@@ -48,12 +47,12 @@ const FindplayerCard = () => {
               <Text style={styles.outlinedButtonText}>I want to Play</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[styles.featuredButton, styles.outlinedButton]}
               onPress={() => router.push('/(authenticated)/reserve')}
             >
               <Text style={styles.outlinedButtonText}>Reserve</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
       </View>
@@ -88,7 +87,8 @@ const styles = StyleSheet.create({
 
   featuredImage: {
     width: 120,
-    height: 220,
+    //height: 220,
+    height: 180,
     borderRadius: 12,
     backgroundColor: '#eee',
   },
@@ -140,9 +140,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderColor: '#3F7CFF',
     borderWidth: 1,
-    borderRadius:5,
-    paddingVertical:8,
-    paddingBlockStart:4,
+    borderRadius: 5,
+    paddingVertical: 8,
+    paddingBlockStart: 4,
     alignItems:'center',
   },
     
