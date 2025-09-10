@@ -392,12 +392,18 @@ const handleCancelInitiatedPlay = async (invite: any) => {
     try {
       setLoadingId(selectedInvite.id);
       if (selectedAction === 'accept' || selectedAction === 'reject') {
-        const baseUrl =
-          selectedAction === 'accept'
-            ? selectedInvite.acceptUrl
-            : selectedInvite.declineUrl;
-        const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
-        const response = await fetch(url);
+          const oldUrl =
+              selectedAction === 'accept'
+                  ? selectedInvite.acceptUrl
+                   : selectedInvite.declineUrl;
+
+          const newBase = 'https://api.vddette.com';
+          const urlObj = new URL(oldUrl);
+          console.log('Parsed URL:', urlObj);
+          const newUrl = `${newBase}${urlObj.pathname}${urlObj.search}&comments=${encodeURIComponent(comment)}`;
+
+          console.log('Submitting to URL:', newUrl);
+        const response = await fetch(newUrl);
         if (response.status === 200) {
           Alert.alert('Success', `Invitation ${selectedAction}ed`);
           refetch();
@@ -447,6 +453,14 @@ const handleCancelInitiatedPlay = async (invite: any) => {
       );
       setSelectedPlayers(res.data);
       setPlayerDetailsVisible(true);
+       const total = res.data[0]?.playersNeeded + 1 || 1;
+      const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length + 1;
+
+    // Update playerCounts state for this requestId
+    setPlayerCounts((prevCounts) => ({
+      ...prevCounts,
+      [requestId]: { accepted, total },
+    }));
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch player details');
     }
