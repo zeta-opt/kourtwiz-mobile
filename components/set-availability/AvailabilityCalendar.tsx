@@ -19,9 +19,9 @@ type ScheduleEvent = {
 
 type Props = {
   schedule: ScheduleEvent[];
+  refetch: () => Promise<void>;
 };
-
-export default function AvailabilityCalendar({ schedule }: Props) {
+export default function AvailabilityCalendar({ schedule, refetch }: Props) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showForm, setShowForm] = useState(false);
 const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
@@ -95,7 +95,7 @@ const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   }, [sanitizedSchedule]);
 
   return (
-     <SafeAreaView style={styles.container}>
+     <SafeAreaView>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -148,14 +148,14 @@ const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   }}
 />
 <Modal visible={showForm} animationType="slide">
-  <SetAvailabilityForm
-    event={editingEvent}
-    onClose={() => setShowForm(false)}
-    onSave={() => {
-      setShowForm(false);
-      // refresh schedule data if needed
-    }}
-  />
+<SetAvailabilityForm
+  event={editingEvent}
+  onClose={() => setShowForm(false)}
+   onSave={async () => {
+            setShowForm(false);
+            await refetch(); // 👈 refresh after save
+          }}
+/>
 </Modal>
 
     </SafeAreaView>

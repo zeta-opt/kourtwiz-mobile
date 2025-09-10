@@ -1,10 +1,18 @@
 import AvailabilityCalendar from '@/components/set-availability/AvailabilityCalendar';
+import { useGetPlayerSchedule } from '@/hooks/apis/set-availability/useGetPlayerSchedule';
+import { RootState } from '@/store';
 import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useSelector } from 'react-redux';
  
 const SetAvailabilityPage = () => {
     const { data } = useLocalSearchParams();
+    const user = useSelector((state: RootState) => state.auth.user);
+
+    const userId = user?.userId;
+    const { data: schedule, refetch : fetchSchedule} = useGetPlayerSchedule(userId);
+
     console.log("whole data", data)
   
       const formatDateToLocalISOString = (date: Date) => {
@@ -38,7 +46,7 @@ const SetAvailabilityPage = () => {
 
   return (
     <View style={styles.container}>
-      <AvailabilityCalendar schedule={parsedSchedule} />
+      <AvailabilityCalendar schedule={parsedSchedule} refetch={fetchSchedule} />
     </View>
   );
 };

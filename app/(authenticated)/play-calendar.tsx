@@ -61,7 +61,7 @@ export default function PlayCalendarPage() {
     selectedDate,
     userId
   );
-  const { data: schedule } = useGetPlayerSchedule(userId);
+  const { data: schedule, refetch: fetchSchedule } = useGetPlayerSchedule(userId);
   const { data: initiatedData } = useGetInitiatedPlays(userId);
 
   const {

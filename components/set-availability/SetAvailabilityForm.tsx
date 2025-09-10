@@ -156,6 +156,7 @@ const handleUpdate = async () => {
     Alert.alert('Success', 'Event updated successfully!');
     onSave();
     onClose();
+    router.replace("/(authenticated)/home");
   } catch (err) {
     console.error(err);
     Alert.alert('Error', 'Failed to update event');
@@ -269,6 +270,7 @@ try {
       Alert.alert('Success', 'Event created successfully!');
       onSave();
       onClose();
+      router.replace("/(authenticated)/home");
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Failed to create event');
@@ -310,8 +312,9 @@ try {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView>
         {/* Header */}
+        
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.replace('/(authenticated)/home')}
@@ -739,12 +742,13 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     gap: 16,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    marginBottom:15,
   },
   row: {
     flexDirection: 'row',
@@ -765,6 +769,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   buttonContainer: {
+    
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: '#fff',
