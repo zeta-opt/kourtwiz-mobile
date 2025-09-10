@@ -1,3 +1,4 @@
+import { setupAPNsHandlers } from '@/services/notifications/apnsHandlers'; // 👈 you'll create this file
 import { setupFCMHandlers } from '@/services/notifications/fcmHandler';
 import * as Notifications from 'expo-notifications';
 import { Slot } from 'expo-router';
@@ -23,9 +24,10 @@ Notifications.setNotificationHandler({
 
 export default function RootLayout() {
   useEffect(() => {
-    // ✅ Only run FCM setup on Android (skip iOS to avoid Firebase error)
     if (Platform.OS === 'android') {
       setupFCMHandlers();
+    } else if (Platform.OS === 'ios') {
+      setupAPNsHandlers();
     }
   }, []);
 
@@ -38,7 +40,6 @@ export default function RootLayout() {
           await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
 
-        // Request permission if not already granted
         if (existingStatus !== 'granted') {
           const { status } = await Notifications.requestPermissionsAsync();
           finalStatus = status;
@@ -47,7 +48,6 @@ export default function RootLayout() {
         if (finalStatus === 'granted') {
           console.log(`✅ Notification permissions granted on ${Platform.OS}`);
 
-          // Setup Android notification channel
           if (Platform.OS === 'android') {
             await Notifications.setNotificationChannelAsync('default', {
               name: 'default',
@@ -67,7 +67,6 @@ export default function RootLayout() {
 
     setupExpoNotifications();
 
-    // Optional: Listen for notification events (when using Expo to display)
     const notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
         console.log('📱 Expo Notification received:', notification);
@@ -77,10 +76,8 @@ export default function RootLayout() {
     const responseListener =
       Notifications.addNotificationResponseReceivedListener((response) => {
         console.log('👆 Expo Notification clicked:', response);
-        // Handle navigation based on notification data
       });
 
-    // Cleanup
     return () => {
       notificationListener.remove();
       responseListener.remove();
