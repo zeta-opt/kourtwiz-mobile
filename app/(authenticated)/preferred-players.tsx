@@ -13,12 +13,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
-import PreferredPlayersModal, { Contact } from '@/components/preferred-players-modal/PreferredPlayersModal';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
+import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
+import PreferredPlayersModal, { Contact } from '@/components/preferred-players-modal/PreferredPlayersModal';
 
 const PreferredPlayersScreen = () => {
   const router = useRouter();
@@ -75,16 +75,28 @@ const PreferredPlayersScreen = () => {
 
   const handleSavePreferredPlayers = async () => {
     try {
-      await updateUserById(userId, {
-        ...userData,
+      // Deduplicate by phone number
+      const uniqueMap = new Map<string, Contact>();
+      preferredPlayers.forEach((p) => {
+        const normalized = normalizeContact(p);
+        if (normalized.contactPhoneNumber) {
+          uniqueMap.set(normalized.contactPhoneNumber, normalized);
+        }
+      });
+  
+      const uniquePreferredPlayers = Array.from(uniqueMap.values());
+      const payload = {
         playerDetails: {
-          ...userData?.playerDetails,
-          preferToPlayWith: preferredPlayers.map((p) => ({
+          preferToPlayWith: uniquePreferredPlayers.map((p) => ({
             contactName: p.contactName,
             contactPhoneNumber: p.contactPhoneNumber,
           })),
         },
-      });
+      };
+  
+      await updateUserById(userId, payload);
+  
+      setPreferredPlayers(uniquePreferredPlayers);
       setShowRegisteredModal(false);
       router.replace('/profile');
     } catch (err) {

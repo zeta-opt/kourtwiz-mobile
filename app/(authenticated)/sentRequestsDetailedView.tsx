@@ -178,28 +178,47 @@ export default function SentRequestDetailedView() {
           onPress={() =>
             router.push({
               pathname: '/(authenticated)/chat-summary',
-              params: { requestId: invite.requestId }, // or whatever variable holds it
+              params: { requestId: invite.requestId },
             })
           }
         >
           <Text style={styles.joinButtonText}>Join Chat</Text>
         </TouchableOpacity>
-        </View>
+      </View>
 
       {/* Withdraw Button */}
-      <View style={styles.withdrawContainer}>
+      <View style={styles.chatPreviewContainer}>
         <Text style={styles.chatPreviewText}>Withdraw the game for all...</Text>
-
-        <TouchableOpacity
-  style={[
-    styles.joinButton,
-  ]}
-  onPress={() => {
-      setCommentModalVisible(true);
-  }}
->
+        <TouchableOpacity 
+          style={[styles.joinButton,]} 
+          onPress={() => {setCommentModalVisible(true)}}>
           <Text style={styles.joinButtonText}>Withdraw Request</Text>
-</TouchableOpacity>
+        </TouchableOpacity>
+      </View>
+
+      {/* Edit Event Button */}
+      <View style={[styles.chatPreviewContainer, {marginBottom: 80}]}>
+        <Text style={styles.chatPreviewText}>Edit game details here...</Text>
+        <TouchableOpacity
+          style={styles.joinButton}
+          onPress={() =>
+            router.push({
+              pathname: '/(authenticated)/find-player',
+              params: {
+                isEditMode: 'true',
+                finderId: invite.requestId,       // main id for PUT
+                requesterId: invite.requesterId,  // required by API
+                placeToPlay: invite.placeToPlay,
+                playTime: invite.playTime,        // ISO string
+                playEndTime: invite.playEndTime,  // ISO string
+                playersNeeded: invite.playersNeeded,
+                skillLevel: invite.skillLevel,
+              },
+            })
+          }
+        >
+          <Text style={styles.joinButtonText}>Edit Event</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Modal */}
@@ -361,13 +380,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 12,
-  },
-  withdrawContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 6,
-    elevation: 2,
   },
   disabledButton: {
     backgroundColor: '#ccc',

@@ -7,6 +7,7 @@ import {
   FlatList,
   Image,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import UserAvatar from "@/assets/UserAvatar";
@@ -382,8 +383,16 @@ export default function GroupsScreen() {
         </Text>
       )} */}
 
-      {status === 'loading' && <Text>Loading groups...</Text>}
-      {status === 'error' && <Text>Error: {error}</Text>}
+      {status === 'loading' && (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#2E7165" style={{ marginBottom: 10 }} />
+          <Text style={styles.loaderText}>Loading groups...</Text>
+        </View>
+      )}
+
+      {status === 'error' && (
+        <Text style={styles.errorText}>Error: {error}</Text>
+      )}
 
       {/* Message list */}
       <FlatList
@@ -605,4 +614,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loaderText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#2E7165',
+  },
+  errorText: {
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#ccc',
+    marginVertical: 10,
+  },  
 });
