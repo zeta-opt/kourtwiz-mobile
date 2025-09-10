@@ -61,7 +61,6 @@ export default function NewMessages() {
   const { user } = useSelector((state: RootState) => state.auth);
   const { data: allMessages, status } = useGetAllComments({ userId: user?.userId ?? '' });
   const joinMutation = useJoinIWantToPlay();
-  // console.log('All messages:', allMessages);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
@@ -87,8 +86,18 @@ export default function NewMessages() {
         handleJoin(msg);
         return; // stop here so we don't fall through
       }
-    } 
-    
+    }
+
+    if (msg.eventType === 'CreateEvent') {
+      setModalVisible(false);
+      router.replace({
+        pathname: '/(authenticated)/chat-summary',
+        params: { sessionId: msg.requestId },
+      });
+      return;
+    }
+
+    // default fallback for other events
     setModalVisible(false);
     router.replace({
       pathname: '/(authenticated)/chat-summary',
@@ -97,7 +106,6 @@ export default function NewMessages() {
   };
 
   const handleJoin = async (msg: Comment) => {
-    // Guard to ensure this only runs for IWantToPlayEvent
     if (msg.eventType === 'GroupEvent') {
       setModalVisible(false);
       router.push({
@@ -106,50 +114,57 @@ export default function NewMessages() {
       });
       return;
     }
-    if (msg.eventType === 'PlayerFinderEvent') {
-    setModalVisible(false);
-    router.push({
-      pathname: '/(authenticated)/chat-summary',
-      params: {
-        
-        requestId: msg.requestId,
-        
-      },
-    });
-    return;
-  }
-  if (msg.eventType === 'IWantToPlayEvent') {
-    try {
-      setJoiningSessionId(msg.requestId);
 
-      await joinMutation.joinSession({
-        sessionId: msg.requestId,
-        userId: user?.userId ?? '',
-        callbacks: {
-          onSuccess: () => {
-            setJoiningSessionId(null);
-            setModalVisible(false);
-            router.push({
-              pathname: '/(authenticated)/chat-summary',
-              params: {
-                directUserId: msg.userId,
-                directUserName: msg.userName,
-                requestId: msg.id,
-                initialMessage: msg.commentText,
-              },
-            });
-          },
-          onError: (error) => {
-            setJoiningSessionId(null);
-            alert(`Failed to join session: ${error.message}`);
-          },
-        },
+    if (msg.eventType === 'PlayerFinderEvent') {
+      setModalVisible(false);
+      router.push({
+        pathname: '/(authenticated)/chat-summary',
+        params: { requestId: msg.requestId },
       });
-    } catch (err) {
-      setJoiningSessionId(null);
-      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      return;
     }
-  }
+
+    if (msg.eventType === 'CreateEvent') {
+      setModalVisible(false);
+      router.push({
+        pathname: '/(authenticated)/chat-summary',
+        params: { sessionId: msg.requestId },
+      });
+      return;
+    }
+
+    if (msg.eventType === 'IWantToPlayEvent') {
+      try {
+        setJoiningSessionId(msg.requestId);
+
+        await joinMutation.joinSession({
+          sessionId: msg.requestId,
+          userId: user?.userId ?? '',
+          callbacks: {
+            onSuccess: () => {
+              setJoiningSessionId(null);
+              setModalVisible(false);
+              router.push({
+                pathname: '/(authenticated)/chat-summary',
+                params: {
+                  directUserId: msg.userId,
+                  directUserName: msg.userName,
+                  requestId: msg.id,
+                  initialMessage: msg.commentText,
+                },
+              });
+            },
+            onError: (error) => {
+              setJoiningSessionId(null);
+              alert(`Failed to join session: ${error.message}`);
+            },
+          },
+        });
+      } catch (err) {
+        setJoiningSessionId(null);
+        alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+    }
   };
 
   const renderMessageRow = (msg: Comment, isModal = false) => (
@@ -181,19 +196,17 @@ export default function NewMessages() {
           </Text>
         </TouchableOpacity>
 
-        {(
-          <TouchableOpacity
-            style={styles.joinButton}
-            onPress={() => handleJoin(msg)}
-            disabled={joiningSessionId === msg.requestId}
-          >
-            {joiningSessionId === msg.requestId ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.joinButtonText}>Reply</Text>
-            )}
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.joinButton}
+          onPress={() => handleJoin(msg)}
+          disabled={joiningSessionId === msg.requestId}
+        >
+          {joiningSessionId === msg.requestId ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.joinButtonText}>Reply</Text>
+          )}
+        </TouchableOpacity>
       </View>
       <View style={styles.separator}></View>
     </View>
