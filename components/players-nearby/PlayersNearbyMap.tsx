@@ -168,6 +168,7 @@ const PlayersNearbyMap = () => {
                 latitudeDelta: 0.1,
                 longitudeDelta: 0.1,
               }}
+              onRegionChangeComplete={onRegionChangeComplete}
               showsUserLocation
             >
               {clubs.map((club: any) => (
