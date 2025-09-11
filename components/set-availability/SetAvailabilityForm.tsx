@@ -151,28 +151,51 @@ export default function SetAvailabilityForm({
     setEndDate(updated);
     hideEndDatePicker();
   };
-  const handleUpdate = async () => {
-    const payload = {
-      sessionId: event!.sessionId,
-      title: 'what is this for',
-      reason,
-      startTime: startDate.toISOString(),
-      endTime: endDate.toISOString(),
-    };
+ const handleUpdate = async () => {
+  let start = startDate;
+  let end = endDate;
 
-    console.log('Update payload:', payload);
+  if (!start || !end) {
+    Alert.alert('Error', 'Please select start and end time');
+    return;
+  }
 
-    try {
-      await updateUnavailability(payload);
-      Alert.alert('Success', 'Event updated successfully!');
-      onSave();
-      onClose();
-      router.replace('/(authenticated)/home');
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Error', 'Failed to update event');
-    }
+  if (allDay) {
+    start = new Date(start);
+    start.setHours(0, 0, 0, 0);
+
+    end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+  }
+
+  let repeatEnd = repeatEndDate;
+  if (allDay && repeatEndDate) {
+    repeatEnd = new Date(repeatEndDate);
+    repeatEnd.setHours(23, 59, 59, 999);
+  }
+
+  const payload = {
+    sessionId: event!.sessionId,
+    title: 'what is this for',
+    reason,
+    startTime: formatDateToLocalISOString(start),
+    endTime: formatDateToLocalISOString(end),
+    repeatEndDate: repeatEnd ? formatDateToLocalISOString(repeatEnd) : undefined,
   };
+
+  console.log('Update payload:', payload);
+
+  try {
+    await updateUnavailability(payload);
+    Alert.alert('Success', 'Event updated successfully!');
+    onSave();
+    onClose();
+    router.replace('/(authenticated)/home');
+  } catch (err) {
+    console.error(err);
+    Alert.alert('Error', 'Failed to update event');
+  }
+};
 
   const handleRepeatChange = (value: string) => {
     if (value === 'custom') {
@@ -206,10 +229,21 @@ export default function SetAvailabilityForm({
     dates.map(formatDateToLocalISOString);
 
   const handleCreate = async () => {
+    let start = startDate;
+    let end = endDate;
+
+    if (allDay && startDate) {
+
+      start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+
+      end = new Date(startDate);
+      end.setHours(23, 59, 59, 999);
+    }
     const payload: UnavailabilityData = {
       reason,
-      startTime: formatDateToLocalISOString(startDate),
-      endTime: formatDateToLocalISOString(endDate),
+      startTime: formatDateToLocalISOString(start),
+      endTime: formatDateToLocalISOString(end),
       eventRepeatType: 'NONE',
       repeatEndDate: formatDateToLocalISOString(endDate),
       repeatInterval: 0,

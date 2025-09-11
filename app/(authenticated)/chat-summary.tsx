@@ -130,12 +130,12 @@ export default function ChatSummaryPage() {
 
         {isGroupChat ? (
           <TouchableOpacity onPress={() => router.push(`/group-info/${grpId}`)}>
-            <Text style={styles.headerTitle}>{title || "Request"}</Text>
+            <Text style={styles.headerTitle}>{title || "Group"}</Text>
           </TouchableOpacity>
         ) : isDirectChat ? (
-          <TouchableOpacity onPress={() => router.push(`/group-info/${directUserId}`)}>
+
             <Text style={styles.headerTitle}>{title || "Chat"}</Text>
-          </TouchableOpacity>
+
         ) : (
           <Text style={styles.headerTitle}>{title || "Request"}</Text>
         )}
