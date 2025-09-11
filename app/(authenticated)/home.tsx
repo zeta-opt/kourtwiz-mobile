@@ -132,6 +132,7 @@ const Dashboard = () => {
     }) || []
   );
   const outgoingInvites = Object.values(groupedOutgoing);
+  // console.log(outgoingInvites, 'outgoing request');
   const pendingOutCount = outgoingInvites.length;
 
   const getPlayDate = (play: any) => {
@@ -204,26 +205,26 @@ const Dashboard = () => {
       };
     }),
     ...(initiatedPlays || []).map((play) => {
-    const startDate = new Date(
-      play.startTime[0],
-      play.startTime[1] - 1,
-      play.startTime[2],
-      play.startTime[3] || 0,
-      play.startTime[4] || 0
-    );
-    return {
-      type: 'initiated' as const,
-      playTime: play.startTime,
-      placeToPlay: play.allCourts?.Name || 'Unknown Court',
-      dateTimeMs: startDate.getTime(),
-      eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
-      isWaitlisted: play.waitlistedPlayers?.includes(userId),
-      accepted: play.registeredPlayers?.length ?? 0,
-      playersNeeded: play.maxPlayers ?? 1,
-      isRegistered: play.registeredPlayers?.includes(userId) ?? false,
-      id: play.id,
-    };
-  }),
+      const startDate = new Date(
+        play.startTime[0],
+        play.startTime[1] - 1,
+        play.startTime[2],
+        play.startTime[3] || 0,
+        play.startTime[4] || 0
+      );
+      return {
+        type: 'initiated' as const,
+        playTime: play.startTime,
+        placeToPlay: play.allCourts?.Name || 'Unknown Court',
+        dateTimeMs: startDate.getTime(),
+        eventName: play.eventName?.replace(/_/g, ' ') || 'Unknown Play',
+        isWaitlisted: play.waitlistedPlayers?.includes(userId),
+        accepted: play.registeredPlayers?.length ?? 0,
+        playersNeeded: play.maxPlayers ?? 1,
+        isRegistered: play.registeredPlayers?.includes(userId) ?? false,
+        id: play.id,
+      };
+    }),
   ];
   const {
     withdrawRequest,
@@ -278,39 +279,37 @@ const Dashboard = () => {
   };
   const { cancel } = useCancelOpenPlay();
 
-const handleCancelInitiatedPlay = async (invite: any) => {
-  Alert.alert(
-    'Cancel Open Play',
-    'Are you sure you want to cancel this open play? This cannot be undone.',
-    [
-      { text: 'No', style: 'cancel' },
-      {
-        text: 'Yes, Cancel',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await cancel({ sessionId: invite.id });
-            Toast.show({
-              type: 'success',
-              text1: 'Open play canceled successfully',
-              topOffset: 100,
-            });
-            await Promise.all([refetchOpenPlay(), refetchInitiated()]);
-          } catch (err: any) {
-            Toast.show({
-              type: 'error',
-              text1: 'Failed to cancel open play',
-              text2: err?.message || 'Unknown error',
-              topOffset: 100,
-            });
-          }
+  const handleCancelInitiatedPlay = async (invite: any) => {
+    Alert.alert(
+      'Cancel Open Play',
+      'Are you sure you want to cancel this open play? This cannot be undone.',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancel({ sessionId: invite.id });
+              Toast.show({
+                type: 'success',
+                text1: 'Open play canceled successfully',
+                topOffset: 100,
+              });
+              await Promise.all([refetchOpenPlay(), refetchInitiated()]);
+            } catch (err: any) {
+              Toast.show({
+                type: 'error',
+                text1: 'Failed to cancel open play',
+                text2: err?.message || 'Unknown error',
+                topOffset: 100,
+              });
+            }
+          },
         },
-      },
-    ]
-  );
-};
-
-
+      ]
+    );
+  };
 
   useEffect(() => {
     if (isFocused) {
@@ -392,17 +391,19 @@ const handleCancelInitiatedPlay = async (invite: any) => {
     try {
       setLoadingId(selectedInvite.id);
       if (selectedAction === 'accept' || selectedAction === 'reject') {
-          const oldUrl =
-              selectedAction === 'accept'
-                  ? selectedInvite.acceptUrl
-                   : selectedInvite.declineUrl;
+        const oldUrl =
+          selectedAction === 'accept'
+            ? selectedInvite.acceptUrl
+            : selectedInvite.declineUrl;
 
-          const newBase = 'https://api.vddette.com';
-          const urlObj = new URL(oldUrl);
-          console.log('Parsed URL:', urlObj);
-          const newUrl = `${newBase}${urlObj.pathname}${urlObj.search}&comments=${encodeURIComponent(comment)}`;
+        const newBase = 'https://api.vddette.com';
+        const urlObj = new URL(oldUrl);
+        console.log('Parsed URL:', urlObj);
+        const newUrl = `${newBase}${urlObj.pathname}${
+          urlObj.search
+        }&comments=${encodeURIComponent(comment)}`;
 
-          console.log('Submitting to URL:', newUrl);
+        console.log('Submitting to URL:', newUrl);
         const response = await fetch(newUrl);
         if (response.status === 200) {
           Alert.alert('Success', `Invitation ${selectedAction}ed`);
@@ -453,19 +454,23 @@ const handleCancelInitiatedPlay = async (invite: any) => {
       );
       setSelectedPlayers(res.data);
       setPlayerDetailsVisible(true);
-       const total = res.data[0]?.playersNeeded + 1 || 1;
-      const accepted = res.data.filter((p: any) => p.status === 'ACCEPTED').length + 1;
+      const total = res.data[0]?.playersNeeded + 1 || 1;
+      const accepted =
+        res.data.filter((p: any) => p.status === 'ACCEPTED').length + 1;
 
-    // Update playerCounts state for this requestId
-    setPlayerCounts((prevCounts) => ({
-      ...prevCounts,
-      [requestId]: { accepted, total },
-    }));
+      // Update playerCounts state for this requestId
+      setPlayerCounts((prevCounts) => ({
+        ...prevCounts,
+        [requestId]: { accepted, total },
+      }));
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch player details');
     }
   };
 
+  const updateOutgoingInvite = (updatedInvite: any) => {
+    refetchOutgoing();
+  };
   return (
     <PaperProvider>
       <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
@@ -590,6 +595,7 @@ const handleCancelInitiatedPlay = async (invite: any) => {
                           key={invite.requestId}
                           invite={invite}
                           onViewPlayers={handleViewPlayers}
+                          onInviteUpdate={updateOutgoingInvite}
                         />
                       ))
                   )
@@ -631,7 +637,7 @@ const handleCancelInitiatedPlay = async (invite: any) => {
                   onCancel={(invite) => showCommentDialog(invite, 'cancel')}
                   onWithdraw={handleWithdrawFromOpenPlay}
                   onWithdrawSentRequest={handleWithdrawFromSentRequest}
-                   onCancelInitiated={handleCancelInitiatedPlay}
+                  onCancelInitiated={handleCancelInitiatedPlay}
                 />
               </ScrollView>
             )}
@@ -692,7 +698,6 @@ const handleCancelInitiatedPlay = async (invite: any) => {
           <ErrorBoundary>
             <PlayersNearbyMap />
           </ErrorBoundary>
-
 
           <NewMessages />
         </ScrollView>

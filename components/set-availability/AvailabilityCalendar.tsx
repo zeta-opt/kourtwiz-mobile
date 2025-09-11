@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { View, Alert,  StyleSheet, TouchableOpacity,SafeAreaView, Text, Modal } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
 import { Calendar as BigCalendar } from "react-native-big-calendar";
-import { parseISO, formatISO, isWithinInterval, isSameDay } from "date-fns";
+import { parseISO, formatISO, isWithinInterval, isSameDay, format } from "date-fns";
 
 import UserAvatar from "@/assets/UserAvatar";
 import { Ionicons } from "@expo/vector-icons";
@@ -85,15 +85,14 @@ const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   };
 
   // Highlight dates with events
-  const markedDates = useMemo(() => {
-    const marks: Record<string, any> = {};
-    sanitizedSchedule.forEach((e) => {
-      const dateStr = parseISO(e.startTime).toISOString().split("T")[0];
-      marks[dateStr] = { marked: true, dotColor: "#FF6B6B" };
-    });
-    return marks;
-  }, [sanitizedSchedule]);
-
+ const markedDates = useMemo(() => {
+  const marks: Record<string, any> = {};
+  sanitizedSchedule.forEach((e) => {
+    const dateStr = format(parseISO(e.startTime), "yyyy-MM-dd"); // local date
+    marks[dateStr] = { marked: true, dotColor: "#FF6B6B" };
+  });
+  return marks;
+}, [sanitizedSchedule]);
   return (
      <SafeAreaView>
       {/* Header */}

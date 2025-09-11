@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
-import { Text } from 'react-native-paper';
-import { useRouter } from 'expo-router';
+import { getToken } from '@/shared/helpers/storeToken';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
-import { getToken } from '@/shared/helpers/storeToken';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Text } from 'react-native-paper';
 
 const API_URL = 'https://api.vddette.com';
 
@@ -31,6 +31,7 @@ type OutgoingInviteCardItemProps = {
   invite: Invite;
   disabled?: boolean;
   onViewPlayers: (requestId: string) => void;
+  onInviteUpdate?: (invite: Invite) => void;
 };
 
 const parsePlayTimeToMs = (playTime: any): number => {
@@ -47,6 +48,7 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
   invite,
   disabled = false,
   onViewPlayers,
+  onInviteUpdate,
 }) => {
   const router = useRouter();
 
@@ -75,20 +77,30 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
   }, [invite.requestId]);
 
   // compute displayed counts preferring Requests if present
-  const computeCountsFromRequests = (requests: any[], playersNeededFallback: number) => {
-    const acceptedRaw = (requests || []).filter((p) => (p.status ?? '').toUpperCase() === 'ACCEPTED').length;
+  const computeCountsFromRequests = (
+    requests: any[],
+    playersNeededFallback: number
+  ) => {
+    const acceptedRaw = (requests || []).filter(
+      (p) => (p.status ?? '').toUpperCase() === 'ACCEPTED'
+    ).length;
     const accepted = acceptedRaw + 1; // keep your +1 behaviour if you want organizer counted
     const total = (requests[0]?.playersNeeded ?? playersNeededFallback) + 1;
     return { accepted, total };
   };
 
-  const baseAccepted = typeof inviteData.accepted === 'number' ? inviteData.accepted : 0;
-  const baseTotal = typeof inviteData.playersNeeded === 'number' ? inviteData.playersNeeded : 0;
+  const baseAccepted =
+    typeof inviteData.accepted === 'number' ? inviteData.accepted : 0;
+  const baseTotal =
+    typeof inviteData.playersNeeded === 'number' ? inviteData.playersNeeded : 0;
 
   let displayedAccepted = baseAccepted;
   let displayedTotal = baseTotal;
   if (inviteData.Requests && inviteData.Requests.length > 0) {
-    const computed = computeCountsFromRequests(inviteData.Requests, inviteData.playersNeeded || baseTotal);
+    const computed = computeCountsFromRequests(
+      inviteData.Requests,
+      inviteData.playersNeeded || baseTotal
+    );
     displayedAccepted = computed.accepted;
     displayedTotal = computed.total;
   }
@@ -116,22 +128,32 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
     return { dateString, timeString };
   };
 
-  const { dateString, timeString } = formatDateParts(inviteData.dateTimeMs || Date.now());
+  const { dateString, timeString } = formatDateParts(
+    inviteData.dateTimeMs || Date.now()
+  );
 
   // fetch fresh invite and return structured result (do NOT rely on inviteData after this — use returned value)
   const fetchFreshInviteAndMerge = async () => {
     try {
       const token = await getToken();
-      const res = await axios.get(`${API_URL}/api/player-tracker/tracker/request`, {
-        params: { requestId: inviteData.requestId },
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `${API_URL}/api/player-tracker/tracker/request`,
+        {
+          params: { requestId: inviteData.requestId },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-      const payload = Array.isArray(res.data) ? res.data : res.data?.results ?? res.data;
-      const first = Array.isArray(payload) && payload.length > 0 ? payload[0] : null;
+      const payload = Array.isArray(res.data)
+        ? res.data
+        : res.data?.results ?? res.data;
+      const first =
+        Array.isArray(payload) && payload.length > 0 ? payload[0] : null;
 
       const accCount = Array.isArray(payload)
-        ? payload.filter((p: any) => (p.status ?? '').toUpperCase() === 'ACCEPTED').length + 1
+        ? payload.filter(
+            (p: any) => (p.status ?? '').toUpperCase() === 'ACCEPTED'
+          ).length + 1
         : inviteData.accepted;
 
       const newInvite: Invite = {
@@ -140,14 +162,23 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
         playersNeeded: first?.playersNeeded ?? inviteData.playersNeeded,
         eventName: first?.eventName ?? inviteData.eventName,
         placeToPlay: first?.placeToPlay ?? inviteData.placeToPlay,
-        dateTimeMs: first?.playTime ? parsePlayTimeToMs(first.playTime) : inviteData.dateTimeMs,
+        dateTimeMs: first?.playTime
+          ? parsePlayTimeToMs(first.playTime)
+          : inviteData.dateTimeMs,
         accepted: accCount,
       };
 
       // set local state (so UI updates)
       setInviteData(newInvite);
+      if (onInviteUpdate) {
+        onInviteUpdate(newInvite);
+      }
 
-      return { success: true, invite: newInvite, players: Array.isArray(payload) ? payload : [] };
+      return {
+        success: true,
+        invite: newInvite,
+        players: Array.isArray(payload) ? payload : [],
+      };
     } catch (err) {
       console.error('fetchFreshInviteAndMerge error', err);
       return { success: false, error: err, invite: null, players: [] };
@@ -183,7 +214,6 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
       if (success && freshInvite) {
         onViewPlayers(freshInvite.requestId);
       } else {
-        onViewPlayers(inviteData.requestId);
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to fetch players');
@@ -200,11 +230,21 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
       onPress={handlePressUpdate}
       activeOpacity={0.9}
     >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <View style={{ flex: 1 }}>
           <View style={styles.statusBadgeContainer}>
-            <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-              <Text style={styles.statusBadgeText}>{statusCount} {statusText}</Text>
+            <View
+              style={[styles.statusBadge, { backgroundColor: statusColor }]}
+            >
+              <Text style={styles.statusBadgeText}>
+                {statusCount} {statusText}
+              </Text>
             </View>
           </View>
 
@@ -213,9 +253,15 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
           </Text>
 
           <View style={styles.datePeopleRow}>
-            <Text style={styles.dateText}>{dateString} | {timeString}</Text>
+            <Text style={styles.dateText}>
+              {dateString} | {timeString}
+            </Text>
             <Text style={styles.separator}>|</Text>
-            <Text style={styles.peopleText} numberOfLines={1} ellipsizeMode="tail">
+            <Text
+              style={styles.peopleText}
+              numberOfLines={1}
+              ellipsizeMode='tail'
+            >
               {inviteData.placeToPlay}
             </Text>
           </View>
@@ -223,9 +269,12 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
 
         <Pressable
           onPress={handleViewPlayersPress}
-          style={({ pressed }) => [styles.acceptedBox, pressed && styles.pressedStyle]}
+          style={({ pressed }) => [
+            styles.acceptedBox,
+            pressed && styles.pressedStyle,
+          ]}
         >
-          <MaterialCommunityIcons name="account" size={14} color="#007BFF" />
+          <MaterialCommunityIcons name='account' size={14} color='#007BFF' />
           <Text style={styles.acceptedTextSmall}>
             {displayedAccepted} / {displayedTotal} Accepted
           </Text>
@@ -234,7 +283,7 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
 
       {loadingCard && (
         <View style={styles.cardLoaderOverlay}>
-          <ActivityIndicator size="large" color="#007BFF" />
+          <ActivityIndicator size='large' color='#007BFF' />
         </View>
       )}
     </TouchableOpacity>
@@ -302,7 +351,7 @@ const styles = StyleSheet.create({
   pressedStyle: {
     opacity: 0.6,
     transform: [{ scale: 0.97 }],
-  },  
+  },
   peopleText: {
     fontSize: 14,
     color: '#555',
