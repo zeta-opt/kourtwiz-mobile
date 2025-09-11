@@ -4,7 +4,7 @@ export default {
   expo: {
     name: 'kourtwiz-mobile',
     slug: 'kourtwiz-mobile',
-    version: '1.0.19',
+    version: '1.0.23',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'kourtwizmobile',
@@ -14,12 +14,12 @@ export default {
       url: 'https://u.expo.dev/0c917ae5-4e2b-4c2b-bef1-928702cf4737',
     },
 
-    runtimeVersion: "1.0.19",
+    runtimeVersion: "1.0.23",
 
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.kourtwiz.mobile',
-      buildNumber: '1.0.19',
+      buildNumber: '1.0.23',
       infoPlist: {
         NSContactsUsageDescription:
           'This app needs access to your contacts to let you invite or select players.',
