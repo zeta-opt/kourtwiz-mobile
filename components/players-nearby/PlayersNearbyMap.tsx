@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   Modal,
   StyleSheet,
@@ -9,7 +9,7 @@ import {
   Linking,
   Platform,
 } from "react-native";
-import MapView, { Region } from "react-native-maps";
+import MapView, { Marker, Region } from "react-native-maps";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import * as Location from "expo-location";
 import { usePlayersNearby } from "@/hooks/apis/players-nearby/usePlayersNearby";
@@ -27,10 +27,6 @@ const PlayersNearbyMap = () => {
     radius,
   });
 
-  const mapRef = useRef<MapView>(null);
-  const fullscreenMapRef = useRef<MapView>(null);
-
-  const [positions, setPositions] = useState<any>({});
   const [fullscreen, setFullscreen] = useState(false);
   const [selectedClub, setSelectedClub] = useState<any>(null);
 
@@ -44,13 +40,11 @@ const PlayersNearbyMap = () => {
     const loc = await Location.getCurrentPositionAsync({});
     setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
     setRadius(20);
-    
   };
 
   const onRegionChangeComplete = (region: Region) => {
     setCoords({ lat: region.latitude, lng: region.longitude });
-    setRadius(Math.round(region.latitudeDelta * 111));
-    updatePositions(region === undefined ? mapRef : fullscreenMapRef);
+    setRadius(Math.round(region.latitudeDelta * 111)); // approx km radius
   };
 
   // 🔹 Group data into clubs
@@ -76,21 +70,6 @@ const PlayersNearbyMap = () => {
       return acc;
     }, {})
   );
-
-  const updatePositions = async (ref: React.RefObject<MapView> | undefined) => {
-    if (!ref?.current || !clubs) return;
-    const newPositions: any = {};
-    for (const c of clubs) {
-      try {
-        const point = await ref.current.pointForCoordinate({
-          latitude: c.lat,
-          longitude: c.lng,
-        });
-        if (point) newPositions[c.clubId] = { x: point.x, y: point.y };
-      } catch {}
-    }
-    setPositions(newPositions);
-  };
 
   const handleMarkerPress = useCallback((club: any) => setSelectedClub(club), []);
 
@@ -124,7 +103,6 @@ const PlayersNearbyMap = () => {
 
       {coords && (
         <MapView
-          ref={mapRef}
           style={{ flex: 1 }}
           initialRegion={{
             latitude: coords.lat,
@@ -132,39 +110,28 @@ const PlayersNearbyMap = () => {
             latitudeDelta: 0.1,
             longitudeDelta: 0.1,
           }}
-          onRegionChangeComplete={(region) => {
-            updatePositions(mapRef);
-            onRegionChangeComplete(region);
-          }}
+          onRegionChangeComplete={onRegionChangeComplete}
           showsUserLocation
-        />
-      )}
-
-      {/* Club labels */}
-      {clubs.map((club) =>
-        positions[club.clubId] ? (
-          <View
-            key={`club-${club.clubId}-${club.lat}-${club.lng}`}
-            style={{
-              position: "absolute",
-              left: positions[club.clubId].x - 30,
-              top: positions[club.clubId].y - 50,
-              alignItems: "center",
-              zIndex: 10,
-            }}
-          >
-            <View style={styles.arrowBox}>
-              <Text
-                style={styles.markerText}
-                onPress={() => handleMarkerPress(club)}
-              >
-                {club.players.length}{" "}
-                {club.players.length === 1 ? "player" : "players"}
-              </Text>
-            </View>
-            <View style={styles.arrowDown} />
-          </View>
-        ) : null
+        >
+          {clubs.map((club: any) => (
+            <Marker
+              key={club.clubId}
+              coordinate={{ latitude: club.lat, longitude: club.lng }}
+              onPress={() => handleMarkerPress(club)}
+            >
+              {/* Custom Marker */}
+              <View style={styles.markerContainer}>
+                <View style={styles.arrowBox}>
+                  <Text style={styles.markerText}>
+                    {club.players.length}{" "}
+                    {club.players.length === 1 ? "player" : "players"}
+                  </Text>
+                </View>
+                <View style={styles.arrowDown} />
+              </View>
+            </Marker>
+          ))}
+        </MapView>
       )}
 
       {/* Overlay for selected club */}
@@ -182,7 +149,7 @@ const PlayersNearbyMap = () => {
         <Icon name="arrow-expand" size={24} color="#333" />
       </TouchableOpacity>
 
-      {/* Fullscreen map */}
+      {/* Fullscreen Map */}
       <Modal visible={fullscreen} animationType="slide">
         <View style={{ flex: 1 }}>
           <TouchableOpacity
@@ -194,7 +161,6 @@ const PlayersNearbyMap = () => {
 
           {coords && (
             <MapView
-              ref={fullscreenMapRef}
               style={{ flex: 1 }}
               initialRegion={{
                 latitude: coords.lat,
@@ -202,38 +168,26 @@ const PlayersNearbyMap = () => {
                 latitudeDelta: 0.1,
                 longitudeDelta: 0.1,
               }}
-              onRegionChangeComplete={(region) => {
-                updatePositions(fullscreenMapRef);
-                onRegionChangeComplete(region);
-              }}
               showsUserLocation
-            />
-          )}
-
-          {clubs.map((club) =>
-            positions[club.clubId] ? (
-              <View
-                key={`club-full-${club.clubId}`}
-                style={{
-                  position: "absolute",
-                  left: positions[club.clubId].x - 30,
-                  top: positions[club.clubId].y - 50,
-                  alignItems: "center",
-                  zIndex: 10,
-                }}
-              >
-                <View style={styles.arrowBox}>
-                  <Text
-                    style={styles.markerText}
-                    onPress={() => handleMarkerPress(club)}
-                  >
-                    {club.players.length}{" "}
-                    {club.players.length === 1 ? "player" : "players"}
-                  </Text>
-                </View>
-                <View style={styles.arrowDown} />
-              </View>
-            ) : null
+            >
+              {clubs.map((club: any) => (
+                <Marker
+                  key={`full-${club.clubId}`}
+                  coordinate={{ latitude: club.lat, longitude: club.lng }}
+                  onPress={() => handleMarkerPress(club)}
+                >
+                  <View style={styles.markerContainer}>
+                    <View style={styles.arrowBox}>
+                      <Text style={styles.markerText}>
+                        {club.players.length}{" "}
+                        {club.players.length === 1 ? "player" : "players"}
+                      </Text>
+                    </View>
+                    <View style={styles.arrowDown} />
+                  </View>
+                </Marker>
+              ))}
+            </MapView>
           )}
 
           {selectedClub && fullscreen && (
@@ -277,6 +231,7 @@ const OverlayContent = ({ club, close }: { club: any; close: () => void }) => (
 );
 
 const styles = StyleSheet.create({
+  markerContainer: { alignItems: "center" },
   expandButton: {
     position: "absolute",
     top: 10,
@@ -325,10 +280,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 6,
   },
-  bannerText: {
-    color: "#856404",
-    fontWeight: "600",
-  },
+  bannerText: { color: "#856404", fontWeight: "600" },
   overlay: {
     position: "absolute",
     bottom: 20,
@@ -366,10 +318,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
-  markerText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
+  markerText: { fontSize: 12, fontWeight: "600" },
   arrowDown: {
     width: 0,
     height: 0,
