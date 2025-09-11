@@ -221,8 +221,8 @@ export default function MyRequestsDetailedView() {
       )}
 
       {(myInvite?.status === 'CANCELLED' ||
-        myInvite?.status === 'DECLINED' ||
-        myInvite?.status === 'WITHDRAWN') && (
+        (myInvite?.status === 'DECLINED'
+         && (
         <View style={styles.bottomButtonContainer}>
           <Button
             icon="check"
@@ -234,7 +234,14 @@ export default function MyRequestsDetailedView() {
             Accept Again
           </Button>
         </View>
-      )}
+      )))}
+      {(myInvite?.status === 'WITHDRAWN' && (
+        <View>
+          
+          <Text style={styles.withdrawBtn}>🚫 Withdrawn</Text>
+        </View>
+      ))}
+   
 
       {/* Dialog */}
       <Portal>
@@ -267,6 +274,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 20,
     backgroundColor: '#F9F9F9',
+  },
+  withdrawBtn:{
+    textAlign: 'center',
+    fontSize: 16,
+    color: 'red',
+    fontWeight: '600',
+    marginBottom: 16,
   },
   header: {
     flexDirection: 'row',

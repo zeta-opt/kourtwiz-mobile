@@ -69,7 +69,7 @@ export default function NewMessages() {
   if (status === 'error') return <Text>Error loading messages</Text>;
 
   const sortedMessages = allMessages
-    ? [...allMessages].sort(
+    ? [...allMessages].filter(msg => msg.commentText && msg.commentText.trim().length > 0).sort(
         (a, b) =>
           new Date(b.timestamp as any).getTime() -
           new Date(a.timestamp as any).getTime()
