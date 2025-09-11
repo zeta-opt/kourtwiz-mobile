@@ -292,21 +292,35 @@ export default function OpenPlayDetailedView() {
               params: {
                 isEditMode: 'true',
                 sessionId: selectedPlay.id,
-                eventName: selectedPlay.eventName,
-                court: courtName,
+                eventName: selectedPlay.eventName, // Event name
+                placeToPlay: selectedPlay.allCourts?.Name || '', // Court name from allCourts
                 description: selectedPlay.description || '',
                 price: selectedPlay.priceForPlay?.toString() || '',
-                maxPlayers: selectedPlay.maxPlayers?.toString() || '',
-                skillLevel: selectedPlay.skillLevel?.toString() || '0',
-                startDate: startDate.toISOString(),
-                endTime: endDate.toISOString(),
+                maxPlayers: selectedPlay.maxPlayers?.toString() || '', // Max players
+                skillLevel: selectedPlay.skillLevel?.toString() || '0', // Skill level
+                startDate: new Date(
+                  selectedPlay.startTime[0],
+                  selectedPlay.startTime[1] - 1, // month is 0-based
+                  selectedPlay.startTime[2]
+                ).toISOString(), // Start date only
+                startTime: new Date(
+                  selectedPlay.startTime[0],
+                  selectedPlay.startTime[1] - 1,
+                  selectedPlay.startTime[2],
+                  selectedPlay.startTime[3],
+                  selectedPlay.startTime[4]
+                ).toISOString(), // Full start datetime
+                endTime: endDate.toISOString(), // Assuming you already calculate endDate
               },
             })
+
           }
         >
-           <Text style={styles.actionButtonText}>
-            Edit
-          </Text>
+          {selectedPlay.requestorId === userId && (
+            <Text style={styles.actionButtonText}>
+              Edit
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
