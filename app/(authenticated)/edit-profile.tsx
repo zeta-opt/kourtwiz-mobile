@@ -127,10 +127,13 @@ const EditProfile = () => {
 
         const profileData = await profileRes.json();
 
-        const dobArray = profileData.dateOfBirth;
-        const dobISO = Array.isArray(dobArray)
-          ? new Date(dobArray[0], dobArray[1] - 1, dobArray[2]).toISOString().split('T')[0]
-          : profileData.dateOfBirth;
+        let dobISO = '';
+        if (Array.isArray(profileData.dateOfBirth)) {
+          const [year, month, day] = profileData.dateOfBirth;
+          dobISO = new Date(year, month - 1, day).toISOString().split('T')[0];
+        } else if (typeof profileData.dateOfBirth === 'string' && profileData.dateOfBirth) {
+          dobISO = new Date(profileData.dateOfBirth).toISOString().split('T')[0];
+        }
 
         setUserData({
           name: profileData.name || '',
@@ -280,21 +283,28 @@ const EditProfile = () => {
 
       // Step 2: Construct payload
       const payload = {
+        id: userId,
         name: userData.name,
         email: userData.email,
-        profilePicture: userData.profilePicture, 
+        profilePicture: userData.profilePicture,
         phoneNumber: userData.phoneNumber,
-        dateOfBirth: formattedDOB,
+        dateOfBirth: userData.dateOfBirth,
         gender: userData.gender,
         address: userData.address,
         city: userData.city,
         state: userData.state,
         country: userData.country,
         zipCode: userData.zipCode,
+        skillLevel: userData.skillLevel,
+        isAppDownloaded: true,
+
         playerDetails: {
           personalRating: userData.skillLevel,
-          isAppDownloaded: true,
-        },
+          preferToPlayWith: [],
+          preferNotToPlayWith: [],
+          preferPlacesToPlay: [],
+          playedWithBefore: []
+        }
       };
 
       console.log(payload)
