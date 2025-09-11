@@ -255,16 +255,16 @@ export default function PlayCalendarPage() {
         const date = format(parseArrayToDate(dateArr), 'yyyy-MM-dd');
         let bgColor: string | null = null;
         if (event.type === 'eventAvailable' || event.type === 'eventCreated') {
-          bgColor = 'yellow';
+          bgColor = '#b18a17ff';
         } else if (event.type === 'incomingPlayerFinder') {
           if (event.status === 'ACCEPTED') bgColor = 'green';
           else if (event.status === 'DECLINED') bgColor = 'red';
-          else bgColor = 'yellow';
+          else bgColor = '#b18a17ff';
         } else if (event.type === 'initiatedPlayerFinder') {
           if (event.status === 'ACCEPTED') bgColor = 'green';
           else if (event.status === 'DECLINED') bgColor = 'red';
           else if (event.status === 'WITHDRAWN') bgColor = null;
-          else bgColor = 'yellow';
+          else bgColor = '#b18a17ff';
         }
         if (bgColor) {
           marks[date] = {
@@ -504,9 +504,7 @@ export default function PlayCalendarPage() {
         </View>
 
         <View style={styles.bottomNav}>
-          <TouchableOpacity onPress={() => setSelectedDate(today)}>
-            <Text style={styles.navText}>Today</Text>
-          </TouchableOpacity>
+    
          <TouchableOpacity
             onPress={() => {
               const encodedSchedule = encodeURIComponent(JSON.stringify(schedule));
@@ -518,13 +516,7 @@ export default function PlayCalendarPage() {
           >
             <Text style={styles.navText}>Set Availability</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              router.push('/(authenticated)/player-invitations?type=incoming')
-            }
-          >
-            <Text style={styles.navText}>Inbox</Text>
-          </TouchableOpacity>
+          
         </View>
 
         <Portal>
