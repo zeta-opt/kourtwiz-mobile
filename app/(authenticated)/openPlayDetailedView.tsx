@@ -279,6 +279,7 @@ export default function OpenPlayDetailedView() {
               : 'Register'}
           </Text>
         </TouchableOpacity>
+        {selectedPlay.requestorId === userId && (
         <TouchableOpacity
          style={[
             styles.actionButton,
@@ -316,13 +317,14 @@ export default function OpenPlayDetailedView() {
 
           }
         >
-          {selectedPlay.requestorId === userId && (
+          
             <Text style={styles.actionButtonText}>
               Edit
             </Text>
-          )}
         </TouchableOpacity>
+        )}
       </View>
+
     </View>
   );
 }
