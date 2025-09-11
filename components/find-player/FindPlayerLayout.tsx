@@ -108,11 +108,14 @@ const FindPlayerLayout = () => {
   const [placeToSave, setPlaceToSave] = useState<PlaceToSave | null>(null);
 
   // Add the hook for player finder
-  const { requestPlayerFinder, status: finderStatus } = useRequestPlayerFinder();
-  const { updateEvent, status: editStatus, error: editError } = useUpdatePlayerFinderEvent(() =>
-    dispatch(triggerInvitationsRefetch())
-  );
-  
+  const { requestPlayerFinder, status: finderStatus } =
+    useRequestPlayerFinder();
+  const {
+    updateEvent,
+    status: editStatus,
+    error: editError,
+  } = useUpdatePlayerFinderEvent(() => dispatch(triggerInvitationsRefetch()));
+
   const preferredContacts = useSelector(
     (state: RootState) => state.playerFinder.preferredContacts
   );
@@ -165,6 +168,22 @@ const FindPlayerLayout = () => {
     dispatch(loadContacts());
   }, [dispatch]);
 
+  const resetForm = () => {
+    setEventName('');
+    setSelectedDate(null);
+    setStartTime(null);
+    setEndTime(null);
+    setSkillLevel(user?.playerDetails?.personalRating ?? 3);
+    setPlayerCount(1);
+    setSubmitted(false);
+    setPlaceToSave(null);
+    setContactsModalVisible(false);
+
+    dispatch(setPlaceToPlay(''));
+    dispatch(setPreferredContacts([]));
+    dispatch(resetPlayerFinderData());
+  };
+
   const checkLocationPermission = async () => {
     const { status } = await Location.getForegroundPermissionsAsync();
     setLocationPermissionGranted(status === 'granted');
@@ -186,17 +205,17 @@ const FindPlayerLayout = () => {
     if (params.placeToPlay && typeof params.placeToPlay === 'string') {
       dispatch(setPlaceToPlay(params.placeToPlay));
     }
-  
+
     // Players needed
     if (params.playersNeeded && typeof params.playersNeeded === 'string') {
       setPlayerCount(Number(params.playersNeeded));
     }
-  
+
     // Skill level
     if (params.skillLevel && typeof params.skillLevel === 'string') {
       setSkillLevel(Number(params.skillLevel));
     }
-  
+
     const toNumberArray = (value: string | string[]): number[] => {
       if (!value) return [];
       if (Array.isArray(value)) {
@@ -204,7 +223,7 @@ const FindPlayerLayout = () => {
       }
       return [Number(value)];
     };
-    
+
     // Dates
     if (params.playTime) {
       const start = arrayToDate(toNumberArray(params.playTime));
@@ -213,13 +232,12 @@ const FindPlayerLayout = () => {
         setStartTime(start);
       }
     }
-    
+
     if (params.playEndTime) {
       const end = arrayToDate(toNumberArray(params.playEndTime));
       if (end) setEndTime(end);
     }
-
-  }, [isEditMode, params, dispatch]);    
+  }, [isEditMode, params, dispatch]);
 
   const handleClubDetailsClick = async () => {
     // First check if we already have permission
@@ -380,14 +398,18 @@ const FindPlayerLayout = () => {
       const success = await updateEvent(finderId, userId!, updatePayload);
 
       if (success) {
-        Alert.alert('Success!', 'Your player finder request has been updated.', [
-          {
-            text: 'OK',
-            onPress: () => {
-              router.replace('/(authenticated)/home');
+        Alert.alert(
+          'Success!',
+          'Your player finder request has been updated.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                router.replace('/(authenticated)/home');
+              },
             },
-          },
-        ]);
+          ]
+        );
       } else {
         setConflictDialogVisible(true);
       }
@@ -414,28 +436,32 @@ const FindPlayerLayout = () => {
         placeToSave: requestData.placeToSave,
         callbacks: {
           onSuccess: () => {
-            dispatch(resetPlayerFinderData());
+            resetForm();
             dispatch(triggerInvitationsRefetch());
             setSubmitted(true);
 
-            Alert.alert('Success!', 'Your player finder request has been submitted.', [
-              {
-                text: 'OK',
-                onPress: () => {
-                  setSelectedDate(null);
-                  setStartTime(null);
-                  setEndTime(null);
-                  setSkillLevel(user?.playerDetails?.personalRating ?? 3);
-                  setPlayerCount(1);
-                  setSubmitted(false);
-                  setPlaceToSave(null);
-                  dispatch(setPlaceToPlay(''));
-                  setTimeout(() => {
-                    router.replace('/(authenticated)/home');
-                  }, 100);
+            Alert.alert(
+              'Success!',
+              'Your player finder request has been submitted.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    setSelectedDate(null);
+                    setStartTime(null);
+                    setEndTime(null);
+                    setSkillLevel(user?.playerDetails?.personalRating ?? 3);
+                    setPlayerCount(1);
+                    setSubmitted(false);
+                    setPlaceToSave(null);
+                    dispatch(setPlaceToPlay(''));
+                    setTimeout(() => {
+                      router.replace('/(authenticated)/home');
+                    }, 100);
+                  },
                 },
-              },
-            ]);
+              ]
+            );
           },
           onError: () => {
             setConflictDialogVisible(true);
@@ -443,7 +469,7 @@ const FindPlayerLayout = () => {
         },
       });
     }
-  }; 
+  };
 
   const sliderWidth = useRef(0);
   const animatedValue = useRef(new Animated.Value(skillLevel)).current;
@@ -466,7 +492,10 @@ const FindPlayerLayout = () => {
       <View style={styles.mainHeader}>
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => {
+              resetForm();
+              router.back();
+            }}
             style={styles.backButton}
           >
             <Ionicons name='arrow-back' size={24} color='#cce5e3' />
@@ -486,37 +515,37 @@ const FindPlayerLayout = () => {
       </View>
 
       <ScrollView style={styles.formScrollView}>
-      {isEditMode !== true && (
-        <>
-          {/* Event Name */}
-          <Text style={styles.sectionTitle}>Event Name</Text>
-          <EventNameSearch
-            value={eventName}
-            onChange={setEventName}
-            requesterId={userId}
-            onSelect={(event) => {
-              setEventName(event.eventName);
-              setSkillLevel(event.skillRating);
-              setPlayerCount(event.playersNeeded);
-              dispatch(setPlaceToPlay(event.placeToPlay));
-              if (event.name?.length > 0) {
-                dispatch(
-                  setPreferredContacts([
-                    {
-                      contactName: event.name,
-                      contactPhoneNumber: event.phoneNumber,
-                    },
-                  ])
-                );
-              }
-            }}
-            error={false}
-          />
-        </>
+        {isEditMode !== true && (
+          <>
+            {/* Event Name */}
+            <Text style={styles.sectionTitle}>Event Name</Text>
+            <EventNameSearch
+              value={eventName}
+              onChange={setEventName}
+              requesterId={userId}
+              onSelect={(event) => {
+                setEventName(event.eventName);
+                setSkillLevel(event.skillRating);
+                setPlayerCount(event.playersNeeded);
+                dispatch(setPlaceToPlay(event.placeToPlay));
+                if (event.name?.length > 0) {
+                  dispatch(
+                    setPreferredContacts([
+                      {
+                        contactName: event.name,
+                        contactPhoneNumber: event.phoneNumber,
+                      },
+                    ])
+                  );
+                }
+              }}
+              error={false}
+            />
+          </>
         )}
 
         {/* Club Name Section */}
-        <Text style={[styles.sectionTitle, {marginTop:25}]}>Place</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 25 }]}>Place</Text>
         <View style={styles.dropdownRow}>
           <Button
             mode='outlined'
@@ -601,10 +630,10 @@ const FindPlayerLayout = () => {
           />
         </View>
 
-      {isEditMode !== true && (
-        <>
-          {/* Preferred Players */}
-          <PreferredPlayersSelector
+        {isEditMode !== true && (
+          <>
+            {/* Preferred Players */}
+            <PreferredPlayersSelector
               preferredContacts={preferredContacts}
               onShowPreferredPlayers={showPreferredPlayers}
               onAddContact={handleAddContact}
@@ -624,13 +653,13 @@ const FindPlayerLayout = () => {
               onSelectContacts={handleSelectContactsFromDevice}
               selectedContacts={preferredContacts}
             />
-        </>
-      )}
+          </>
+        )}
 
-      {/* Action Button */}
-      <View style={styles.actionButtonContainer}>
+        {/* Action Button */}
+        <View style={styles.actionButtonContainer}>
           <Button
-            mode="contained"
+            mode='contained'
             style={styles.findPlayerButton}
             onPress={handleSubmit}
             icon={'magnify'}
@@ -640,7 +669,7 @@ const FindPlayerLayout = () => {
               editStatus === 'loading' ||
               submitted
             }
-            buttonColor="#2C7E88"
+            buttonColor='#2C7E88'
           >
             {submitted
               ? 'Submitted'
