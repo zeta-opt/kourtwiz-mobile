@@ -137,7 +137,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
       <TouchableOpacity key={index} style={styles.row} activeOpacity={0.8} onPress={handlePress}>
         <View style={{ flex: 1 }}>
           <View style={styles.rowTop}>
-            <Text style={styles.title}>{eventName}</Text>
+            <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{eventName}</Text>
             {/* Chat icon next to event name */}
             {type === 'incoming' && (
               <>
@@ -305,6 +305,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#000',
+    flexShrink: 1,      // shrink instead of pushing others
+    maxWidth: '70%',
   },
   subtitle: {
     fontSize: 12,
