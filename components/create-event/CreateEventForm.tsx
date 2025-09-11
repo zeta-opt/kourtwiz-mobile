@@ -53,35 +53,40 @@ const CreateEventForm = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
   const params = useLocalSearchParams();
+  
   const { 
-    isEditMode,
-    sessionId,
-    eventName: initialEventName,
-    court: initialCourt,
-    description: initialDescription,
-    price: initialPrice,
-    maxPlayers: initialMaxPlayers,
-    skillLevel: initialSkillLevel,
-    startDate: initialStartDate,
-    endTime: initialEndTime,
-  } = useLocalSearchParams<{
-    isEditMode?: string;
-    sessionId?: string;
-    eventName?: string;
-    court?: string;
-    description?: string;
-    price?: string;
-    maxPlayers?: string;
-    skillLevel?: string;
-    startDate?: string;
-    endTime?: string;
-  }>(); 
-  const editMode = isEditMode === 'true';
+  isEditMode,
+  sessionId,
+  eventName: initialEventName,
+  placeToPlay: initialPlaceName,
+  description: initialDescription,
+  price: initialPrice,
+  maxPlayers: initialMaxPlayers,
+  skillLevel: initialSkillLevel,
+  startDate: initialStartDate,
+  startTime: initialStartTime,
+  endTime: initialEndTime,
+} = useLocalSearchParams<{
+  isEditMode?: string;
+  sessionId?: string;
+  eventName?: string;
+  placeToPlay?: string;
+  description?: string;
+  price?: string;
+  maxPlayers?: string;
+  skillLevel?: string;
+  startDate?: string;
+  startTime?: string;
+  endTime?: string;
+}>();
+const editMode = isEditMode === 'true';
+
+  console.log("here",initialEventName)
   const [newPlaceData, setNewPlaceData] = useState<any>(null);
 
   const [eventName, setEventName] = useState(initialEventName || '');
   const [place, setPlace] = useState('');
-  const [court, setCourt] = useState(initialCourt || '');
+  const [court, setCourt] = useState('');
   const [date, setDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(
     initialStartDate ? new Date(initialStartDate) : new Date()
@@ -148,6 +153,7 @@ const CreateEventForm = () => {
     repeat: false,
     repeatEndDate: false,
   });
+  
 
   // Clear form data on component mount
   useEffect(() => {
@@ -233,7 +239,21 @@ const CreateEventForm = () => {
   const showPreferredPlayers = () => {
     dispatch(openPreferredPlayersModal());
   };
-
+  useEffect(() => {
+  if (editMode) {
+    setEventName(initialEventName || '');
+    setSelectedDate(initialStartDate ? new Date(initialStartDate) : new Date());
+    setStartTime(initialStartTime ? new Date(initialStartTime) : null);
+    setEndTime(initialEndTime ? new Date(initialEndTime) : new Date());
+    setSkillLevel(Number(initialSkillLevel) || 0);
+    setPrice(initialPrice || '');
+    setMaxPlayers(initialMaxPlayers || '');
+    setDescription(initialDescription || '');
+    if (initialPlaceName) {
+      dispatch(setPlaceToPlay(initialPlaceName));
+    }
+  }
+}, [editMode]);
   const handleAddContact = async () => {
     const { status } = await Contacts.getPermissionsAsync();
     if (status === 'granted') {
@@ -599,6 +619,7 @@ const CreateEventForm = () => {
               <UserAvatar size={30} />
             </View>
           </View>
+          
           <ScrollView contentContainerStyle={styles.card}>
             <Text style={styles.label}>Event Name *</Text>
             <EventNameSearch
