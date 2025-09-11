@@ -250,11 +250,22 @@ const UserProfile = () => {
           </View>
         ) : (
           <>
-            <Text style={styles.sectionTitle}>ADDRESS</Text>
-            <InfoLoader
-              value={`${userData.address}, \n${userData.city}, \n${userData.state}, ${userData.country}, \n${userData.zipCode}`}
-            />
-
+            {userData.address && (
+              <>
+                <Text style={styles.sectionTitle}>ADDRESS</Text>
+                <InfoLoader
+                  value={[
+                    userData.address,
+                    userData.city,
+                    userData.state,
+                    userData.country,
+                    userData.zipCode,
+                  ]
+                    .filter((part) => part && part !== "null")
+                    .join(", ")}
+                />
+              </>
+            )}
             <Text style={styles.sectionTitle}>DOB</Text>
             <InfoLoader
               value={
