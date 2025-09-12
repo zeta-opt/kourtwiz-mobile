@@ -18,30 +18,44 @@ interface OpenPlaySessionData {
   repeatEndDate?: string;
   repeatOnDays?: string[];
 }
+
 type Status = 'idle' | 'loading' | 'success' | 'error';
+
 export const useCreateOpenPlaySession = () => {
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
 
   const createSession = async (sessionData: OpenPlaySessionData): Promise<void> => {
-  setStatus('loading');
+    setStatus('loading');
+    setError(null);
 
-  const BASE_URL = Constants.expoConfig?.extra?.apiUrl || '';
-  const token = await getToken();
-  if (!token) throw new Error('No token found');
+    try {
+      const BASE_URL = Constants.expoConfig?.extra?.apiUrl || '';
+      const token = await getToken();
+      if (!token) throw new Error('No token found');
 
-  await axios.post(`${BASE_URL}/api/play-type/sessions`, sessionData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      Accept: '*/*',
-    },
-  });
+      await axios.post(`${BASE_URL}/api/play-type/sessions`, sessionData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: '*/*',
+        },
+      });
 
-  setStatus('success');
-  setError(null);
-};
+      setStatus('success');
+    } catch (err: any) {
+      setStatus('error');
 
+      if (axios.isAxiosError(err)) {
+        const message = err.response?.data?.message;
+        setError(message || err.message || 'Failed to create session');
+        throw new Error(message || err.message || 'Failed to create session'); // rethrow so component can catch
+      } else {
+        setError(err.message || 'Failed to create session');
+        throw err;
+      }
+    }
+  };
 
   return {
     createSession,
