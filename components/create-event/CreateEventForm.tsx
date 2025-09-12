@@ -99,8 +99,13 @@ const editMode = isEditMode === 'true';
   const [price, setPrice] = useState(initialPrice || '');
   const [maxPlayers, setMaxPlayers] = useState(initialMaxPlayers || '');
   const [description, setDescription] = useState(initialDescription || '');
-  const { createSession } = useCreateOpenPlaySession();
-  const { updateSession } = useUpdateOpenPlaySession();
+  const {
+  createSession,
+  status,
+  error,
+} = useCreateOpenPlaySession();
+
+const { updateSession} = useUpdateOpenPlaySession();
 
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState(
@@ -576,6 +581,13 @@ const editMode = isEditMode === 'true';
       }
 
       await createSession(payload);
+      if (status === 'error') {
+    setErrorMessage(updateError || 'Something went wrong');
+
+      setErrorVisible(true);
+      return;
+    }
+
       setSuccessVisible(true);
 
       // Clear Redux state after successful submission
