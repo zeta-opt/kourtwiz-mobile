@@ -528,15 +528,8 @@ const FindPlayerLayout = () => {
                 setSkillLevel(event.skillRating);
                 setPlayerCount(event.playersNeeded);
                 dispatch(setPlaceToPlay(event.placeToPlay));
-                if (event.name?.length > 0) {
-                  dispatch(
-                    setPreferredContacts([
-                      {
-                        contactName: event.name,
-                        contactPhoneNumber: event.phoneNumber,
-                      },
-                    ])
-                  );
+                if (event.preferredContacts?.length > 0) {
+                  dispatch(setPreferredContacts(event.preferredContacts));
                 }
               }}
               error={false}
