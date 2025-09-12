@@ -197,25 +197,36 @@ export default function SentRequestDetailedView() {
       </View>
 
       {/* Edit Event Button */}
-      <View style={[styles.chatPreviewContainer, {marginBottom: 80}]}>
+      <View style={[styles.chatPreviewContainer, { marginBottom: 80 }]}>
         <Text style={styles.chatPreviewText}>Edit game details here...</Text>
         <TouchableOpacity
           style={styles.joinButton}
-          onPress={() =>
+          onPress={() => {
+            console.log("👉 Sending params:", {
+              isEditMode: "true",
+              finderId: invite.requestId,
+              requesterId: invite.requesterId,
+              placeToPlay: invite.placeToPlay,
+              playTime: invite.Requests[0]?.playTime,
+              playEndTime: invite.Requests[0]?.playEndTime,
+              playersNeeded: invite.playersNeeded,
+              skillLevel: invite.skillRating,
+            });
+
             router.push({
-              pathname: '/(authenticated)/find-player',
+              pathname: "/(authenticated)/find-player",
               params: {
-                isEditMode: 'true',
+                isEditMode: "true",
                 finderId: invite.requestId,
                 requesterId: invite.requesterId,
                 placeToPlay: invite.placeToPlay,
-                playTime: invite.playTime,
-                playEndTime: invite.playEndTime,
+                playTime: invite.Requests[0]?.playTime,
+                playEndTime: invite.Requests[0]?.playEndTime,
                 playersNeeded: invite.playersNeeded,
-                skillLevel: invite.skillLevel,
+                skillLevel: invite.skillRating,
               },
-            })
-          }
+            });
+          }}
         >
           <Text style={styles.joinButtonText}>Edit Event</Text>
         </TouchableOpacity>

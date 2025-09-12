@@ -86,6 +86,7 @@ const FindPlayerLayout = () => {
   // Explicitly derive editMode from params
   const isEditMode = params?.isEditMode === 'true';
   const finderId = params?.finderId as string | undefined;
+  console.log("params received in the layout",params)
 
   // Get user from Redux
   const { user } = useSelector((state: RootState) => state.auth);
