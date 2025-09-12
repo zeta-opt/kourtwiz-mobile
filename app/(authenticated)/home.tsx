@@ -413,7 +413,7 @@ const Dashboard = () => {
           console.log('Error response:', errorText);
           Alert.alert(
             'Error',
-            `Failed to ${selectedAction} invitation. You may have another event at the same time.`
+            errorText || 'Failed to process the invitation'
           );
         }
       } else if (selectedAction === 'cancel') {

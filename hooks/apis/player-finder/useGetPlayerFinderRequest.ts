@@ -1,6 +1,6 @@
 import { getToken } from '@/shared/helpers/storeToken';
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const API_URL = 'https://api.vddette.com';
 
@@ -40,44 +40,47 @@ export const useGetPlayerFinderRequest = (requestId: string | undefined) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // ✅ make fetchRequest reusable with useCallback
+  const fetchRequest = useCallback(async () => {
     if (!requestId) return;
 
-    const fetchRequest = async () => {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      try {
-        const token = await getToken();
-        console.log('Fetching player finder request with ID:', requestId);
-        console.log('Using token:', token);
+    try {
+      const token = await getToken();
+      console.log('Fetching player finder request with ID:', requestId);
+      console.log('Using token:', token);
 
-        const response = await axios.get(
-          `${API_URL}/api/player-tracker/tracker/request`,
-          {
-            params: { requestId },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      const response = await axios.get(
+        `${API_URL}/api/player-tracker/tracker/request`,
+        {
+          params: { requestId },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-        console.log('Full API response:', response.data);
-        setData(response.data);
-      } catch (err: any) {
-        console.error('Failed to fetch player finder request:', err);
-        setError(
-          err?.response?.data?.message ||
-            err.message ||
-            'Failed to fetch request details'
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRequest();
+      console.log('Full API response:', response.data);
+      setData(response.data);
+    } catch (err: any) {
+      console.error('Failed to fetch player finder request:', err);
+      setError(
+        err?.response?.data?.message ||
+          err.message ||
+          'Failed to fetch request details'
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [requestId]);
 
-  return { data, loading, error };
+  // run automatically when requestId changes
+  useEffect(() => {
+    fetchRequest();
+  }, [fetchRequest]);
+
+  // ✅ expose refetch like useCancelInvitation
+  return { data, loading, error, refetch: fetchRequest };
 };

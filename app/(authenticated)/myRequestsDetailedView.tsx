@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useGetPlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
+import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import UserAvatar from '@/assets/UserAvatar';
 import { Dialog, Portal, Button, TextInput } from 'react-native-paper';
@@ -30,8 +31,13 @@ function arrayToDate(arr: number[]): Date {
 
 export default function MyRequestsDetailedView() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
-  const { data, loading, error } = useGetPlayerFinderRequest(requestId);
+  const { data, loading, error,refetch  } = useGetPlayerFinderRequest(requestId);
   console.log('Request Data:', data);
+   const {
+      cancelInvitation,
+      status: cancelStatus,
+      error: cancelerror,
+    } = useCancelInvitation(refetch);
 
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
@@ -52,6 +58,7 @@ export default function MyRequestsDetailedView() {
 
   const invite = data[0];
   console.log('Invite Details:', invite);
+  console.log('My Invite:', myInvite);
   const playTime = arrayToDate(invite?.playTime);
   const dateString = playTime.toLocaleDateString('en-US');
   console.log('Play Time:', playTime);
@@ -70,39 +77,58 @@ export default function MyRequestsDetailedView() {
     setDialogVisible(true);
   };
 
-  const handleDialogSubmit = async () => {
-    if (!selectedAction || !invite) return;
+const handleDialogSubmit = async () => {
+  if (!selectedAction || !invite) return;
 
-    try {
-      setIsSubmitting(true);
+  try {
+    setIsSubmitting(true);
 
-      let url = '';
-      if (selectedAction === 'accept') {
-        url = `${invite.acceptUrl}&comments=${encodeURIComponent(comment)}`;
-      } else if (selectedAction === 'reject') {
-        url = `${invite.declineUrl}&comments=${encodeURIComponent(comment)}`;
-      } else if (selectedAction === 'cancel') {
-        url = `${invite.cancelUrl}&comments=${encodeURIComponent(comment)}`;
-      }
+    if (selectedAction === 'accept' || selectedAction === 'reject') {
+      const oldUrl =
+        selectedAction === 'accept' ? myInvite.acceptUrl : myInvite.declineUrl;
 
-      const res = await fetch(url);
-      if (res.status === 200) {
+      const newBase = 'https://api.vddette.com';
+      const urlObj = new URL(oldUrl);
+      const newUrl = `${newBase}${urlObj.pathname}${urlObj.search}&comments=${encodeURIComponent(comment)}`;
+
+      console.log('Submitting to URL:', newUrl);
+
+      const response = await fetch(newUrl);
+      if (response.status === 200) {
         Alert.alert('Success', `Invitation ${selectedAction}ed`);
-        router.replace('/(authenticated)/home');
+        refetch();
+        
       } else {
-        const msg = await res.text();
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
         Alert.alert(
           'Error',
-          `Failed to ${selectedAction} invitation. ${msg}`
+          errorText || 'Failed to process the invitation'
         );
       }
-    } catch (err) {
-      Alert.alert('Error', 'Something went wrong');
-    } finally {
-      setIsSubmitting(false);
-      setDialogVisible(false);
+    } else if (selectedAction === 'cancel') {
+      const ok = await cancelInvitation(
+        invite.requestId,
+        loggedInUserId,
+        comment || ''
+      );
+
+      if (ok) {
+        Alert.alert('Success', 'Invitation cancelled');
+          refetch();
+        
+      } else {
+        Alert.alert('Error', cancelerror || 'Failed to cancel invitation');
+      }
     }
-  };
+  } catch (err) {
+    Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
+  } finally {
+    setIsSubmitting(false);
+    setDialogVisible(false);
+  }
+};
+
 
   return (
     <View style={styles.container}>
@@ -220,21 +246,20 @@ export default function MyRequestsDetailedView() {
         </View>
       )}
 
-      {(myInvite?.status === 'CANCELLED' ||
-        (myInvite?.status === 'DECLINED'
-         && (
-        <View style={styles.bottomButtonContainer}>
-          <Button
-            icon="check"
-            mode="contained"
-            onPress={() => handleAction('accept')}
-            loading={isSubmitting && selectedAction === 'accept'}
-            style={styles.acceptBtn}
-          >
-            Accept Again
-          </Button>
-        </View>
-      )))}
+     {(myInvite?.status === 'CANCELLED' || myInvite?.status === 'DECLINED') && (
+  <View style={styles.bottomButtonContainer}>
+    <Button
+      icon="check"
+      mode="contained"
+      onPress={() => handleAction('accept')}
+      loading={isSubmitting && selectedAction === 'accept'}
+      style={styles.acceptBtn}
+    >
+      Accept Again
+    </Button>
+  </View>
+)}
+
       {(myInvite?.status === 'WITHDRAWN' && (
         <View>
           
