@@ -256,7 +256,7 @@ export default function OpenPlayDetailedView() {
       </ScrollView>
 
       {/* Action Button */}
-      <View style={[styles.fixedBottom, { flexDirection: 'row', justifyContent: 'space-between' }]}>
+      
         <TouchableOpacity
           disabled={loading}
           style={[
@@ -325,7 +325,7 @@ export default function OpenPlayDetailedView() {
         )}
       </View>
 
-    </View>
+    
   );
 }
 
@@ -353,7 +353,8 @@ const styles = StyleSheet.create({
   actionButton: {
     paddingVertical: 14, paddingHorizontal: 32, borderRadius: 10, backgroundColor: '#2F7C83',
     marginBottom:10,
-    width: '45%', alignItems: 'center',
+    width: '80%', alignItems: 'center', justifyContent: 'center',
+  alignSelf: 'center',
   },
   actionButtonText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
   withdrawButton: { backgroundColor: '#D32F2F' },

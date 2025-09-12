@@ -658,6 +658,7 @@ const editMode = isEditMode === 'true';
                     },
                   ]}
                   placeholder='Enter Place Name'
+                  placeholderTextColor="#5f5959ff"
                   value={displayPlaceName}
                   editable={false}
                   pointerEvents='none'
@@ -683,6 +684,7 @@ const editMode = isEditMode === 'true';
                 <TextInput
                   style={styles.input}
                   placeholder='Enter Court Name'
+                  placeholderTextColor="#5f5959ff"
                   value={court}
                   onChangeText={setCourt}
                   editable={!editMode}
@@ -708,10 +710,13 @@ const editMode = isEditMode === 'true';
                 <Text style={styles.label}>Repeat Event *</Text>
                 <View
                   style={[
-                    errors.repeat && {
-                      borderColor: 'red',
+                    {
+                      borderColor: 'black',
                       borderWidth: 1,
                       borderRadius: 5,
+                    },
+                    errors.repeat && {
+                      borderColor: 'red',
                     },
                   ]}
                 >
@@ -808,6 +813,7 @@ const editMode = isEditMode === 'true';
                 <TextInput
                   style={styles.input}
                   placeholder='Enter Price'
+                  placeholderTextColor="#5f5959ff"
                   value={price}
                   onChangeText={setPrice}
                   keyboardType='numeric'
@@ -823,6 +829,7 @@ const editMode = isEditMode === 'true';
                     errors.maxPlayers && { borderColor: 'red', borderWidth: 1 },
                   ]}
                   placeholder='Enter Max Players'
+                  placeholderTextColor="#5f5959ff"
                   value={maxPlayers}
                   onChangeText={setMaxPlayers}
                   keyboardType='numeric'
@@ -836,6 +843,7 @@ const editMode = isEditMode === 'true';
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder='Add event details...'
+                  placeholderTextColor="#5f5959ff"
                   value={description}
                   onChangeText={setDescription}
                   multiline
