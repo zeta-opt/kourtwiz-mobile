@@ -5,9 +5,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface Props {
   players: { name: string; status: string }[];
+  inviteeName: string | null;
 }
 
-const PlayerDetailsModal: React.FC<Props> = ({ players }) => {
+const PlayerDetailsModal: React.FC<Props> = ({ players,inviteeName  }) => {
   const getColor = (status: string) => {
     switch (status.toUpperCase()) {
       case 'ACCEPTED': return 'green';
@@ -29,6 +30,23 @@ const PlayerDetailsModal: React.FC<Props> = ({ players }) => {
   return (
     <View style={styles.modalContainer}>
       <Text style={styles.title}>Players</Text>
+      {inviteeName && (
+        <View style={styles.playerRow}>
+          <Text style={styles.playerName}>
+            {inviteeName} (Invitee)
+          </Text>
+          <View style={styles.statusContainer}>
+            <MaterialCommunityIcons
+              name={getIcon("ACCEPTED")}
+              size={20}
+              color={getColor("ACCEPTED")}
+            />
+            <Text style={[styles.statusText, { color: getColor("ACCEPTED") }]}>
+              ACCEPTED
+            </Text>
+          </View>
+        </View>
+      )}
       {players.map((player, index) => (
         <View key={index} style={styles.playerRow}>
           <Text style={styles.playerName}>{player.name}</Text>
@@ -76,6 +94,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 6,
+  },
+    inviteeContainer: {
+    marginBottom: 12,
+  },
+  inviteeText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#444',
   },
 });
 

@@ -106,6 +106,8 @@ const Dashboard = () => {
   }>({});
   const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
+  const [inviteeName, setInviteeName] = useState<string | null>(null);
+
 
   const now = new Date();
   const getInviteDate = (invite: any) => {
@@ -452,7 +454,11 @@ const Dashboard = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      console.log('player details',res.data);
       setSelectedPlayers(res.data);
+      if (res.data.length > 0) {
+      setInviteeName(res.data[0].inviteeName || 'N/A');
+    }
       setPlayerDetailsVisible(true);
       const total = res.data[0]?.playersNeeded + 1 || 1;
       const accepted =
@@ -685,7 +691,7 @@ const Dashboard = () => {
             >
               <ScrollView>
                 <ScrollView contentContainerStyle={styles.dialogContent}>
-                  <PlayerDetailsModal players={selectedPlayers} />
+                  <PlayerDetailsModal players={selectedPlayers} inviteeName={inviteeName} />
                 </ScrollView>
               </ScrollView>
             </Modal>
