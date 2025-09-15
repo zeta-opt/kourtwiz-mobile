@@ -18,28 +18,18 @@ import UserAvatar from '@/assets/UserAvatar';
 import { useCreateIWantToPlay } from '@/hooks/apis/iwanttoplay/useCreateIWantToPlay';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
 import { useSearchImport } from '@/hooks/apis/iwanttoplay/useSearchImport';
-
-type SendOption =
-  | 'broadcast'
-  | 'preferred'
-  | { type: 'group'; groupId: string; groupName: string; members: any[] }
-  | null;
 
 const IWantToPlayScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [location, setLocation] = useState('');
   const [message, setMessage] = useState('');
   const [locationError, setLocationError] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedSendTo, setSelectedSendTo] = useState<SendOption>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const { createIWantToPlay } = useCreateIWantToPlay();
-  const { getGroups, data: groupsData, status } = useGetGroupsByPhoneNumber();
 
-  // 👇 Hook to fetch location suggestions
+  // Hook to fetch location suggestions
   const {
     data: suggestionsData,
     status: suggestionsStatus,
@@ -74,13 +64,6 @@ const IWantToPlayScreen = () => {
     })();
   }, []);
 
-  // Fetch groups on mount
-  useEffect(() => {
-    if (user?.phoneNumber) {
-      getGroups({ phoneNumber: user.phoneNumber });
-    }
-  }, [user?.phoneNumber]);
-
   const isValidLocation = (text: string) => /^[a-zA-Z0-9]/.test(text);
 
   const onSendPress = async () => {
@@ -89,70 +72,30 @@ const IWantToPlayScreen = () => {
       return;
     }
 
+    const payload = {
+      userId: user?.userId,
+      skillLevel: user.playerDetails?.personalRating ?? 0,
+      currentLocation: location,
+      message,
+    };
+
+    console.log("📤 Sending Payload:", payload);
+
     try {
-      if (selectedSendTo === 'broadcast') {
-        // Broadcast to All
-        await createIWantToPlay({
-          userId: user?.userId,
-          currentLocation: location,
-          message,
-          preferredPlayers: null,
-        });
-        Alert.alert('Success', 'Broadcast sent to all players.');
-      } else if (selectedSendTo === 'preferred') {
-        // Preferred Players
-        const preferredPlayers = user?.playerDetails?.preferToPlayWith;
-        if (!preferredPlayers || preferredPlayers.length === 0) {
-          router.push('/preferred-players');
-          return;
-        }
-        await createIWantToPlay({
-          userId: user?.userId,
-          currentLocation: location,
-          message,
-          preferredPlayers,
-        });
-        Alert.alert('Success', 'Message sent to preferred players.');
-      } else if (selectedSendTo && selectedSendTo.type === 'group') {
-        // Group Selected
-        const groupMembers = selectedSendTo.members.map((m) => ({
-          userId: m.userId,
-          contactName: m.name,
-          contactPhoneNumber: m.phoneNumber,
-        }));
+      const response = await createIWantToPlay(payload);
 
-        await createIWantToPlay({
-          userId: user?.userId,
-          currentLocation: location,
-          message,
-          preferredPlayers: groupMembers,
-        });
+      console.log("✅ Broadcast Response:", response);
 
-        Alert.alert('Success', `Message sent to group: ${selectedSendTo.groupName}`);
-      } else {
-        Alert.alert('Select recipient', 'Please choose whom to send first.');
-        return;
-      }
+      Alert.alert('Success', 'Broadcast sent to all players.');
 
-      
       setMessage('');
       setLocation('');
-      setSelectedSendTo(null);
       setShowSuggestions(false);
       router.push('/(authenticated)/home');
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       Alert.alert('Error', 'Failed to send message.');
     }
-  };
-
-  // Dropdown display text
-  const getSelectedLabel = () => {
-    if (selectedSendTo === 'broadcast') return 'Broadcast to All';
-    if (selectedSendTo === 'preferred') return 'Preferred Players';
-    if (selectedSendTo && selectedSendTo.type === 'group')
-      return `Group: ${selectedSendTo.groupName}`;
-    return 'Select whom to send';
   };
 
   return (
@@ -204,32 +147,31 @@ const IWantToPlayScreen = () => {
               <Text style={{ color: 'red', margin: 4 }}>{locationError}</Text>
             )}
 
-{showSuggestions &&
-  suggestionsStatus === 'success' &&
-  suggestions.length > 0 && (
-    <View style={styles.suggestionsContainer}>
-      <ScrollView keyboardShouldPersistTaps="handled">
-        {suggestions.map((item: any, index: number) => {
-          return (
-            <TouchableOpacity
-              key={item.id || index}
-              style={styles.suggestionItem}
-              onPress={() => {
-                setLocation(item.Location || item.Name || '');
-                setShowSuggestions(false);
-                setLocationError('');
-              }}
-            >
-              <Text style={styles.suggestionText}>
-                {item.Name} – {item.Location}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </View>
-)}
-
+            {showSuggestions &&
+              suggestionsStatus === 'success' &&
+              suggestions.length > 0 && (
+                <View style={styles.suggestionsContainer}>
+                  <ScrollView keyboardShouldPersistTaps="handled">
+                    {suggestions.map((item: any, index: number) => {
+                      return (
+                        <TouchableOpacity
+                          key={item.id || index}
+                          style={styles.suggestionItem}
+                          onPress={() => {
+                            setLocation(item.Location || item.Name || '');
+                            setShowSuggestions(false);
+                            setLocationError('');
+                          }}
+                        >
+                          <Text style={styles.suggestionText}>
+                            {item.Name} – {item.Location}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+            )}
 
             {/* MESSAGE */}
             <Text style={[styles.label, { marginTop: 20 }]}>Enter Message</Text>
@@ -253,88 +195,16 @@ const IWantToPlayScreen = () => {
               <Text style={{ color: '#999' }}>{message.length} / 500</Text>
             </View>
 
-            {/* DROPDOWN */}
-            <Text style={[styles.label, { marginTop: 20 }]}>Send To</Text>
-            <View style={styles.dropdownWrapper}>
-              <TouchableOpacity
-                style={styles.dropdownInput}
-                activeOpacity={0.8}
-                onPress={() => setIsDropdownOpen((v) => !v)}
-              >
-                <Text style={{ color: selectedSendTo ? '#000' : '#999', fontSize: 14 }}>
-                  {getSelectedLabel()}
-                </Text>
-                <Ionicons
-                  name={isDropdownOpen ? 'chevron-up-outline' : 'chevron-down-outline'}
-                  size={18}
-                  color="#000"
-                />
-              </TouchableOpacity>
-
-              {isDropdownOpen && (
-                <View style={styles.dropdownList}>
-                  <ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled={true}>
-                    {/* Built-in options */}
-                    <TouchableOpacity
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setSelectedSendTo('broadcast');
-                        setIsDropdownOpen(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>Broadcast to All</Text>
-                    </TouchableOpacity>
-                    <View style={styles.dropdownDivider} />
-
-                    <TouchableOpacity
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setSelectedSendTo('preferred');
-                        setIsDropdownOpen(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>Preferred Players</Text>
-                    </TouchableOpacity>
-
-                    {/* Groups from API */}
-                    {status === 'success' &&
-                      groupsData?.map((groupObj: any) => {
-                        const group = groupObj.group;
-                        return (
-                          <View key={group.id}>
-                            <View style={styles.dropdownDivider} />
-                            <TouchableOpacity
-                              style={styles.dropdownItem}
-                              onPress={() => {
-                                setSelectedSendTo({
-                                  type: 'group',
-                                  groupId: group.id,
-                                  groupName: group.name,
-                                  members: group.members,
-                                });
-                                setIsDropdownOpen(false);
-                              }}
-                            >
-                              <Text style={styles.dropdownItemText}>{group.name}</Text>
-                            </TouchableOpacity>
-                          </View>
-                        );
-                      })}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
             {/* SEND BUTTON */}
-            {selectedSendTo && (
-              <TouchableOpacity
-                onPress={onSendPress}
-                style={styles.sendButton}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.sendButtonText}>Send</Text>
-              </TouchableOpacity>
-            )}
+          <View style={styles.sendButtonContainer}>
+            <TouchableOpacity
+              onPress={onSendPress}
+              style={styles.sendButton}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.sendButtonText}>Broadcast to All</Text>
+            </TouchableOpacity>
+          </View>
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -417,14 +287,18 @@ const styles = StyleSheet.create({
   dropdownItem: { paddingVertical: 12, paddingHorizontal: 12 },
   dropdownItemText: { color: '#000', fontSize: 14 },
   dropdownDivider: { height: 1, backgroundColor: '#eee' },
+  sendButtonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+  },
   sendButton: {
-    height: 45,
+    height: 50,
     borderRadius: 25,
     backgroundColor: primaryColor,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 16,
   },
   sendButtonText: { color: white, fontSize: 14, fontWeight: '600' },
 

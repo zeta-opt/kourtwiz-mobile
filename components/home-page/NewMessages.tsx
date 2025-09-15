@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { router } from 'expo-router';
 import { useGetAllComments } from '@/hooks/apis/player-finder/useGetAllComments';
-import { useJoinIWantToPlay } from '@/hooks/apis/iwanttoplay/useJoinIWantToPlay';
+import * as Location from 'expo-location';
 
 type Comment = {
   id: string;
@@ -59,160 +59,87 @@ const formatTime = (timestamp: number[] | string | null | undefined) => {
 
 export default function NewMessages() {
   const { user } = useSelector((state: RootState) => state.auth);
-  const { data: allMessages, status } = useGetAllComments({ userId: user?.userId ?? '' });
-  const joinMutation = useJoinIWantToPlay();
-
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
 
-  if (status === 'loading') return <ActivityIndicator size="large" color="#0000ff" />;
-  if (status === 'error') return <Text>Error loading messages</Text>;
+  // Fetch current location once
+  useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+
+        let loc = await Location.getCurrentPositionAsync({});
+        setLat(loc.coords.latitude);
+        setLng(loc.coords.longitude);
+      } catch (err) {
+        console.warn('Failed to get current location', err);
+      }
+    })();
+  }, []);
+
+  // For IWantToPlayEvent → useGetAllComments
+  const {
+    data: allMessages,
+    status: allStatus,
+  } = useGetAllComments({
+    userId: user?.userId ?? '',
+    lat: lat ?? 0,
+    lng: lng ?? 0,
+  });
+
+  if (allStatus === 'loading') return <ActivityIndicator size="large" color="#0000ff" />;
+  if (allStatus === 'error') return <Text>Error loading messages</Text>;
 
   const sortedMessages = allMessages
-    ? [...allMessages].filter(msg => msg.commentText && msg.commentText.trim().length > 0).sort(
-        (a, b) =>
-          new Date(b.timestamp as any).getTime() -
-          new Date(a.timestamp as any).getTime()
-      )
+    ? [...allMessages]
+        .filter((msg) => msg.commentText && msg.commentText.trim().length > 0)
+        .sort(
+          (a, b) =>
+            new Date(b.timestamp as any).getTime() - new Date(a.timestamp as any).getTime()
+        )
     : [];
 
   const previewMessages = sortedMessages.slice(0, 2);
 
+  // ✅ Handle press → fetch comments differently per type
   const handleMessagePress = (msg: Comment) => {
     if (!msg) {
-      alert("Chat details not available.");
+      alert('Chat details not available.');
       return;
     }
-  
+
     switch (msg.eventType) {
       case 'IWantToPlayEvent':
-        handleJoin(msg);
+        router.push({
+          pathname: '/(authenticated)/chat-summary',
+          params: {
+            directUserId: msg.userId,
+            directUserName: msg.userName,
+            requestId: msg.id,
+            initialMessage: msg.commentText,
+          },
+        });
         break;
-  
-      case 'CreateEvent':
-        if (msg.requestId) {
-          setModalVisible(false);
-          router.replace({
-            pathname: '/(authenticated)/chat-summary',
-            params: { sessionId: msg.requestId },
-          });
-        } else {
-          alert("Chat not available for this event.");
-        }
-        break;
-  
+
+      // case 'PlayerFinderEvent':
+      // case 'GroupEvent':
+      // case 'CreateEvent':
+      //   if (!msg.requestId) {
+      //     alert('Chat not available for this event.');
+      //     return;
+      //   }
+
+      //   // Use useGetPlayerFinderComment for these events
+      //   router.push({
+      //     pathname: '/(authenticated)/chat-summary',
+      //     params: { requestId: msg.requestId },
+      //   });
+      //   break;
+
       default:
-        if (msg.requestId) {
-          setModalVisible(false);
-          router.replace({
-            pathname: '/(authenticated)/chat-summary',
-            params: { requestId: msg.requestId },
-          });
-        } else {
-          alert("Chat not available for this event.");
-        }
-        break;
-    }
-  };
-  
-  const handleJoin = async (msg: Comment) => {
-    if (!msg) {
-      alert("Chat details not available.");
-      return;
-    }
-  
-    switch (msg.eventType) {
-      case 'GroupEvent':
-        if (msg.requestId) {
-          setModalVisible(false);
-          router.push({
-            pathname: '/(authenticated)/chat-summary',
-            params: { id: msg.requestId },
-          });
-        } else {
-          alert("Group chat not available.");
-        }
-        break;
-  
-      case 'PlayerFinderEvent':
-        if (msg.requestId) {
-          setModalVisible(false);
-          router.push({
-            pathname: '/(authenticated)/chat-summary',
-            params: { requestId: msg.requestId },
-          });
-        } else {
-          alert("PlayerFinder chat not available.");
-        }
-        break;
-  
-      case 'CreateEvent':
-        if (msg.requestId) {
-          setModalVisible(false);
-          router.push({
-            pathname: '/(authenticated)/chat-summary',
-            params: { sessionId: msg.requestId },
-          });
-        } else {
-          alert("Session chat not available.");
-        }
-        break;
-  
-        case 'IWantToPlayEvent':
-          if (!msg.requestId) {
-            alert("Session chat not available.");
-            break;
-          }
-        
-          if (msg.joined) {
-            // Already joined → just route
-            setModalVisible(false);
-            router.push({
-              pathname: '/(authenticated)/chat-summary',
-              params: {
-                directUserId: msg.userId,
-                directUserName: msg.userName,
-                requestId: msg.id,
-                initialMessage: msg.commentText,
-              },
-            });
-            break;
-          }
-        
-          // Not joined → join first, then route
-          try {
-            setJoiningSessionId(msg.requestId);
-            await joinMutation.joinSession({
-              sessionId: msg.requestId,
-              userId: user?.userId ?? '',
-              callbacks: {
-                onSuccess: () => {
-                  setJoiningSessionId(null);
-                  setModalVisible(false);
-                  router.push({
-                    pathname: '/(authenticated)/chat-summary',
-                    params: {
-                      directUserId: msg.userId,
-                      directUserName: msg.userName,
-                      requestId: msg.id,
-                      initialMessage: msg.commentText,
-                    },
-                  });
-                },
-                onError: (error) => {
-                  setJoiningSessionId(null);
-                  alert(`Failed to join session: ${error.message}`);
-                },
-              },
-            });
-          } catch (err) {
-            setJoiningSessionId(null);
-            alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-          }
-          break;        
-  
-      default:
-        alert("Unknown chat type, cannot open.");
+        alert('Unknown chat type, cannot open.');
         break;
     }
   };
@@ -248,14 +175,9 @@ export default function NewMessages() {
 
         <TouchableOpacity
           style={styles.joinButton}
-          onPress={() => handleJoin(msg)}
-          disabled={joiningSessionId === msg.requestId}
+          onPress={() => handleMessagePress(msg)}
         >
-          {joiningSessionId === msg.requestId ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.joinButtonText}>Reply</Text>
-          )}
+          <Text style={styles.joinButtonText}>Reply</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.separator}></View>

@@ -11,15 +11,15 @@ export const useCreateIWantToPlay = () => {
 
   const createIWantToPlay = async ({
     userId,
+    skillLevel,
     currentLocation,
     message,
-    preferredPlayers,
     callbacks,
   }: {
     userId: string;
+    skillLevel: number;
     currentLocation: string;
     message: string;
-    preferredPlayers: { contactName: string; contactPhoneNumber: string }[] | null;
     callbacks?: {
       onSuccess?: (data: any) => void;
       onError?: (error: Error) => void;
@@ -33,9 +33,9 @@ export const useCreateIWantToPlay = () => {
 
       const payload = {
         userId,
+        skillLevel,
         currentLocation: currentLocation.trim(),
         message: message.trim(),
-        preferredPlayers: preferredPlayers ?? [],
       };
 
       const response = await axios.post(`${BASE_URL}/api/iwanttoplay/create`, payload, {
