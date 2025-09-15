@@ -52,10 +52,11 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   const [loadingContacts, setLoadingContacts] = useState(false);
 
   // Normalizers
-  const normalizePhoneNumber = (phone = '') =>
-    String(phone || '')
-      .trim()
-      .replace(/[^\d]/g, ''); // keep only digits (no '+', spaces, etc.)
+ const normalizePhoneNumber = (phone = '') =>
+  String(phone || '')
+    .trim()
+    .replace(/[^\d+]/g, '')    // keep digits and '+'
+    .replace(/(?!^)\+/g, '');  // remove '+' if not at start
 
   const normalizeName = (n = '') =>
     String(n || '')
