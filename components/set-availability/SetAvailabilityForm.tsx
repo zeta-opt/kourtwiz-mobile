@@ -130,6 +130,11 @@ export default function SetAvailabilityForm({
   const handleEndTimeConfirm = (time: Date) => {
     const newDate = new Date(endDate);
     newDate.setHours(time.getHours(), time.getMinutes(), 0);
+    if (newDate <= startDate) {
+      Alert.alert('Invalid Time', 'End time cannot be before or equal to start time');
+      hideEndTimePicker();
+      return;
+    }
     setEndDate(newDate);
     hideEndTimePicker();
   };
@@ -145,9 +150,19 @@ export default function SetAvailabilityForm({
 
   const showEndDatePicker = () => setEndDatePickerVisible(true);
   const hideEndDatePicker = () => setEndDatePickerVisible(false);
+  const isBeforeDate = (a: Date, b: Date) => {
+    const d1 = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+    const d2 = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+    return d1 < d2;
+  };
   const handleEndDateConfirm = (date: Date) => {
     const updated = new Date(endDate);
     updated.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+    if (isBeforeDate(updated, startDate)) {
+    Alert.alert('Invalid Date', 'End date cannot be before start date');
+    hideEndDatePicker();
+    return;
+  }
     setEndDate(updated);
     hideEndDatePicker();
   };
