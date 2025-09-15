@@ -29,22 +29,28 @@ const PreferredTimeScreen = () => {
   });
 
   const { updateUserById, status: updateStatus } = useUpdateUserById();
-  const [selectedTime, setSelectedTime] = useState('');
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
 
   // ✅ sync local state when userData changes
   useEffect(() => {
     if (userData?.preferredTime) {
-      setSelectedTime(userData.preferredTime);
+      setSelectedTimes(userData.preferredTime);
     }
   }, [userData]);
 
-  const handleSavePreferredTime = async () => {
-    if (!selectedTime || !user?.userId) return;
+  const toggleTime = (time: string) => {
+    setSelectedTimes((prev) =>
+      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
+    );
+  };
+
+    const handleSavePreferredTime = async () => {
+    if (!user?.userId) return;
 
     try {
       const payload = {
         ...userData,
-        preferredTime: selectedTime,
+        preferredTime: selectedTimes,
       };
 
       await updateUserById(user.userId, payload);
@@ -56,11 +62,11 @@ const PreferredTimeScreen = () => {
   };
 
   const renderItem = ({ item }: { item: string }) => {
-    const isSelected = item === selectedTime;
+    const isSelected = selectedTimes.includes(item);
     return (
       <TouchableOpacity
         style={styles.optionItem}
-        onPress={() => setSelectedTime(item)}
+        onPress={() => toggleTime(item)}
         activeOpacity={0.7}
       >
         <Text style={styles.optionText}>{item}</Text>
@@ -90,7 +96,7 @@ const PreferredTimeScreen = () => {
 
       {/* Options list */}
       <View style={styles.optionsContainer}>
-        {status === 'loading' ? ( // ✅ fixed
+        {status === 'loading' ? (
           <View style={{ padding: 20, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator size="large" color="#2C7E88" />
           </View>
