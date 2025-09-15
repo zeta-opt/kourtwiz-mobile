@@ -1,21 +1,21 @@
+import UserAvatar from '@/assets/UserAvatar';
+import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
+import { useGetPlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
+import { RootState } from '@/store';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   ActivityIndicator,
-  TouchableOpacity,
-  ScrollView,
   Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useGetPlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
-import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import UserAvatar from '@/assets/UserAvatar';
-import { Dialog, Portal, Button, TextInput } from 'react-native-paper';
+import { Button, Dialog, Portal, TextInput } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
 
 function arrayToDate(arr: number[]): Date {
   if (!arr || arr.length < 5) return new Date();
@@ -79,6 +79,7 @@ export default function MyRequestsDetailedView() {
 
 const handleDialogSubmit = async () => {
   if (!selectedAction || !invite) return;
+   setDialogVisible(false);
 
   try {
     setIsSubmitting(true);

@@ -390,6 +390,7 @@ const Dashboard = () => {
   // updated for cancel
   const handleDialogSubmit = async () => {
     if (!selectedInvite || !selectedAction) return;
+    setDialogVisible(false);
     try {
       setLoadingId(selectedInvite.id);
       if (selectedAction === 'accept' || selectedAction === 'reject') {
