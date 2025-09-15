@@ -24,7 +24,6 @@ import VideoSubscriptionToggle from '@/components/profile/VideoSubscriptionToggl
 
 type PlayerDetails = {
   preferPlacesToPlay: { id: string }[];
-  isAppDownloaded: boolean;
   personalRating: number;
   duprRating?: number;
   playedWithBefore?: string[] | null;
@@ -48,6 +47,7 @@ type UserData = {
   userId: string;
   playerDetails: PlayerDetails;
   videoRecordingSubscribed?: boolean;
+  isAppDownloaded: boolean;
 };
 
 const UserProfile = () => {
@@ -67,9 +67,9 @@ const UserProfile = () => {
     userId: '',
     playerDetails: {
       preferPlacesToPlay: [],
-      isAppDownloaded: false,
       personalRating: 0,
     },
+    isAppDownloaded: false,
   });  
   
   const [modalVisible, setModalVisible] = useState(false);

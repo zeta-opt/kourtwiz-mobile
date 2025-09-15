@@ -8,6 +8,7 @@ import {
   View,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -36,6 +37,7 @@ const EditProfile = () => {
   const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
 
   const [userId, setUserId] = useState('');
+  const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState({
     name: '',
     email: '',
@@ -100,6 +102,34 @@ const EditProfile = () => {
     dispatch(setProfileImageAction(''));
   }; 
 
+  const fetchLocationByZip = async (zipCode: string) => {
+    if (!zipCode || zipCode.length < 5) return; // Basic validation for US ZIP
+  
+    try {
+      const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+      if (!response.ok) {
+        console.log("Invalid ZIP code or no data found.");
+        return;
+      }
+  
+      const data = await response.json();
+      // Zippopotam returns an array of places, pick the first one
+      const place = data.places?.[0];
+  
+      if (place) {
+        setUserData((prev) => ({
+          ...prev,
+          city: place["place name"] || prev.city,
+          state: place["state abbreviation"] || prev.state,
+          country: data["country abbreviation"] || prev.country,
+          zipCode: zipCode,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching location:", error);
+    }
+  };  
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -161,6 +191,8 @@ const EditProfile = () => {
       } catch (err) {
         console.error('Error loading user profile:', err);
         Alert.alert('Error', 'Failed to load user details.');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -343,6 +375,7 @@ const EditProfile = () => {
   };
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
       {/* Header */}
       <View style={styles.headerContainer}>
@@ -473,12 +506,20 @@ const EditProfile = () => {
 
         <Text style={styles.label}>Zip Code</Text>
         <TextInput
-        style={styles.input}
-        value={userData.zipCode}
-        onChangeText={(text) => setUserData({ ...userData, zipCode: text })}
-        placeholder="Enter Zip Code"
-        keyboardType="number-pad"
+          style={styles.input}
+          value={userData.zipCode}
+          onChangeText={(text) => {
+            setUserData({ ...userData, zipCode: text });
+            if (text.length === 5) {
+              fetchLocationByZip(text);
+            }
+          }}
+          placeholder="Enter 5-digit Zip Code"
+          keyboardType="number-pad"
         />
+        <Text style={{ fontSize: 12, color: "gray", marginTop: 4 }}>
+          Auto-fill will trigger after entering 5 digits
+        </Text>
 
         <Text style={styles.label}>Date Of Birth</Text>
         <View
@@ -566,7 +607,7 @@ const EditProfile = () => {
             )}
           </View>
 
-        <Text style={styles.label}>Minimum Skill Level</Text>
+        <Text style={styles.label}>Self-Assessed Skill Level</Text>
         <View style={styles.sliderContainer}>
           <Slider
             style={{ flex: 1 }}
@@ -588,6 +629,25 @@ const EditProfile = () => {
         <Text style={styles.saveButtonText}>Update Profile</Text>
       </TouchableOpacity>
     </ScrollView>
+    {/* Loader Overlay */}
+    {loading && (
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.3)",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 10,
+        }}
+      >
+        <ActivityIndicator size="large" color="#ffffff" />
+      </View>
+  )}
+  </View>
   );
 };
 

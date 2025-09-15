@@ -34,7 +34,7 @@ interface PreferredPlayersModalProps {
 
 const chips = [
   { key: 'selected', label: 'Selected Players' },
-  { key: 'registered', label: 'Players Nearby' },
+  // { key: 'registered', label: 'Players Nearby' },
   { key: 'contacts', label: 'Contacts' },
   { key: 'groups', label: 'Groups' },
 ];
@@ -72,8 +72,8 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   // expanded groups for dropdown checklist UI
   const [expandedGroupIds, setExpandedGroupIds] = useState<string[]>([]);
   const [activeChip, setActiveChip] = useState<
-    'selected' | 'registered' | 'contacts' | 'groups'
-  >('registered');
+    'selected' | 'contacts' | 'groups'
+  >('contacts');
 
   // Current user
   const user = useSelector((state: RootState) => state.auth?.user);
@@ -613,7 +613,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
             </View>
           ) : (
             <>
-              {activeChip === 'registered' &&
+              {/* {activeChip === 'registered' &&
                 filteredRegisteredPlayers.length > 0 && (
                   <View style={styles.section}>
                     <RNText style={styles.sectionTitle}>
@@ -623,7 +623,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
                       renderPlayer(player, index)
                     )}
                   </View>
-                )}
+                )} */}
               {/* Placeholder for other chips */}
               {activeChip === 'selected' &&
                 (tempSelectedPlayers.length > 0 ? (
