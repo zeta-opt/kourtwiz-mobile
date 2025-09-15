@@ -86,7 +86,7 @@ const FindPlayerLayout = () => {
   // Explicitly derive editMode from params
   const isEditMode = params?.isEditMode === 'true';
   const finderId = params?.finderId as string | undefined;
-  console.log("params received in the layout",params)
+  console.log('params received in the layout', params);
 
   // Get user from Redux
   const { user } = useSelector((state: RootState) => state.auth);
@@ -202,43 +202,105 @@ const FindPlayerLayout = () => {
   useEffect(() => {
     if (!isEditMode || !params) return;
 
-    // Place
-    if (params.placeToPlay && typeof params.placeToPlay === 'string') {
+    console.log('Edit mode params:', params);
+
+    // Place - Only dispatch if the value is different
+    if (
+      params.placeToPlay &&
+      typeof params.placeToPlay === 'string' &&
+      placeToPlay !== params.placeToPlay
+    ) {
       dispatch(setPlaceToPlay(params.placeToPlay));
     }
 
     // Players needed
     if (params.playersNeeded && typeof params.playersNeeded === 'string') {
-      setPlayerCount(Number(params.playersNeeded));
+      const newPlayerCount = Number(params.playersNeeded);
+      if (playerCount !== newPlayerCount) {
+        setPlayerCount(newPlayerCount);
+      }
     }
 
     // Skill level
     if (params.skillLevel && typeof params.skillLevel === 'string') {
-      setSkillLevel(Number(params.skillLevel));
-    }
-
-    const toNumberArray = (value: string | string[]): number[] => {
-      if (!value) return [];
-      if (Array.isArray(value)) {
-        return value.map((v) => Number(v));
-      }
-      return [Number(value)];
-    };
-
-    // Dates
-    if (params.playTime) {
-      const start = arrayToDate(toNumberArray(params.playTime));
-      if (start) {
-        setSelectedDate(start);
-        setStartTime(start);
+      const newSkillLevel = Number(params.skillLevel);
+      if (skillLevel !== newSkillLevel) {
+        setSkillLevel(newSkillLevel);
       }
     }
 
-    if (params.playEndTime) {
-      const end = arrayToDate(toNumberArray(params.playEndTime));
-      if (end) setEndTime(end);
+    // Handle date/time parsing - only update if not already set
+    if (params.playTime && !startTime) {
+      try {
+        let startDate: Date | null = null;
+
+        if (typeof params.playTime === 'string') {
+          if (params.playTime.includes(',')) {
+            const timeArray = params.playTime
+              .split(',')
+              .map((v) => Number(v.trim()));
+            console.log('Parsed playTime array:', timeArray);
+
+            if (timeArray.length >= 3) {
+              startDate = new Date(
+                timeArray[0],
+                timeArray[1] - 1,
+                timeArray[2],
+                timeArray[3] || 0,
+                timeArray[4] || 0,
+                timeArray[5] || 0
+              );
+            }
+          } else {
+            startDate = new Date(params.playTime);
+          }
+        }
+
+        if (startDate && !isNaN(startDate.getTime())) {
+          console.log('Setting start date:', startDate);
+          setSelectedDate(startDate);
+          setStartTime(startDate);
+        }
+      } catch (error) {
+        console.error('Error parsing playTime:', error);
+      }
     }
-  }, [isEditMode, params, dispatch]);
+
+    if (params.playEndTime && !endTime) {
+      try {
+        let endDate: Date | null = null;
+
+        if (typeof params.playEndTime === 'string') {
+          if (params.playEndTime.includes(',')) {
+            const timeArray = params.playEndTime
+              .split(',')
+              .map((v) => Number(v.trim()));
+            console.log('Parsed playEndTime array:', timeArray);
+
+            if (timeArray.length >= 3) {
+              endDate = new Date(
+                timeArray[0],
+                timeArray[1] - 1,
+                timeArray[2],
+                timeArray[3] || 0,
+                timeArray[4] || 0,
+                timeArray[5] || 0
+              );
+            }
+          } else {
+            endDate = new Date(params.playEndTime);
+          }
+        }
+
+        if (endDate && !isNaN(endDate.getTime())) {
+          console.log('Setting end date:', endDate);
+          setEndTime(endDate);
+        }
+      } catch (error) {
+        console.error('Error parsing playEndTime:', error);
+      }
+    }
+  }, [isEditMode, params?.finderId]); // Changed dependencies
 
   const handleClubDetailsClick = async () => {
     // First check if we already have permission
