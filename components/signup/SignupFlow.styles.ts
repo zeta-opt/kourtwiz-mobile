@@ -3,14 +3,14 @@ import { StyleSheet } from "react-native";
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#116AAD",
   },
   stepperWrapper: {
-    height: "12%", // Adjust if needed
+    height: "15%",
     backgroundColor: "#116AAD",
     paddingVertical: 5,
-    paddingHorizontal: 16,
-    paddingTop:25,
+    paddingHorizontal: 15,
+    paddingTop: 5,
     justifyContent: "center",
   },
   contentWrapper: {

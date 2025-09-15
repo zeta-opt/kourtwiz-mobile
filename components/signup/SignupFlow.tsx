@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState } from "react";
-import { View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import AddressStep from "./components/AddressStep";
 import DoneStep from "./components/DoneStep";
 import InfoStep from "./components/InfoStep";
@@ -9,6 +10,8 @@ import SecurityStep from "./components/SecurityStep";
 import Stepper from "./components/Stepper";
 import VerifyStep from "./components/VerifyStep";
 import styles from "./SignupFlow.styles";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 const SignupFlow = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -36,8 +39,15 @@ const SignupFlow = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <QueryClientProvider client={queryClient}>
+        {currentStep === 0 && (
+          <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, marginLeft: 8,}}>
+            <TouchableOpacity onPress={() => router.replace("/")}>
+              <Ionicons name="chevron-back" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={styles.stepperWrapper}>
           <Stepper
             steps={["Info", "Verify", "Security", "Address", "Picture", "Done"]}
@@ -47,7 +57,7 @@ const SignupFlow = () => {
         </View>
         <View style={styles.contentWrapper}>{renderStep()}</View>
       </QueryClientProvider>
-    </View>
+    </SafeAreaView>
   );
 };
 

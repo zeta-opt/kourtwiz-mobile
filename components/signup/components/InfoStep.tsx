@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Alert,
   Text,
   TextInput,
   TouchableOpacity,
@@ -100,6 +99,7 @@ const InfoStep = ({ onNext }: { onNext: () => void }) => {
                   setDob((prev) => ({ ...prev, month: itemValue }))
                 }
                 style={styles.picker}
+                itemStyle={{ fontSize: 16, height: 50 }}
               >
                 {[
                   "January", "February", "March", "April", "May", "June",
@@ -117,6 +117,7 @@ const InfoStep = ({ onNext }: { onNext: () => void }) => {
                   setDob((prev) => ({ ...prev, year: itemValue }))
                 }
                 style={styles.picker}
+                itemStyle={{ fontSize: 16, height: 50 }}
               >
                 {Array.from({ length: 100 }, (_, i) => 2025 - i).map((year) => (
                   <Picker.Item

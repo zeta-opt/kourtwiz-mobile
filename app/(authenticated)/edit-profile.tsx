@@ -13,7 +13,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Slider from '@react-native-community/slider';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Constants from 'expo-constants';
 import { getToken } from '@/shared/helpers/storeToken';
 import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
@@ -60,6 +59,7 @@ const EditProfile = () => {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const { updateUserById} = useUpdateUserById();
+  const [zipError, setZipError] = useState<string>("");
   
   const [emailVerified, setEmailVerified] = useState(true);
   const [phoneVerified, setPhoneVerified] = useState(true);
@@ -103,19 +103,21 @@ const EditProfile = () => {
   }; 
 
   const fetchLocationByZip = async (zipCode: string) => {
-    if (!zipCode || zipCode.length < 5) return; // Basic validation for US ZIP
-  
+    if (!zipCode || zipCode.length < 5) {
+      setZipError("ZIP code must be 5 digits");
+      return;
+    }
+
     try {
       const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
       if (!response.ok) {
-        console.log("Invalid ZIP code or no data found.");
+        setZipError("Invalid ZIP code or no data found");
         return;
       }
-  
+
       const data = await response.json();
-      // Zippopotam returns an array of places, pick the first one
       const place = data.places?.[0];
-  
+
       if (place) {
         setUserData((prev) => ({
           ...prev,
@@ -124,11 +126,15 @@ const EditProfile = () => {
           country: data["country abbreviation"] || prev.country,
           zipCode: zipCode,
         }));
+        setZipError("");
+      } else {
+        setZipError("No location found for this ZIP");
       }
     } catch (error) {
       console.error("Error fetching location:", error);
+      setZipError("Something went wrong. Try again.");
     }
-  };  
+  }; 
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -156,14 +162,22 @@ const EditProfile = () => {
         if (!profileRes.ok) throw new Error('Failed to fetch full profile');
 
         const profileData = await profileRes.json();
+        console.log(profileData)
 
-        let dobISO = '';
+        let dobUS = '';
         if (Array.isArray(profileData.dateOfBirth)) {
           const [year, month, day] = profileData.dateOfBirth;
-          dobISO = new Date(year, month - 1, day).toISOString().split('T')[0];
+          dobUS = new Date(year, month - 1, day).toLocaleDateString("en-US", {
+            month: "2-digit",
+            day: "2-digit",
+            year: "numeric"
+          });
         } else if (typeof profileData.dateOfBirth === 'string' && profileData.dateOfBirth) {
-          dobISO = new Date(profileData.dateOfBirth).toISOString().split('T')[0];
-        }
+          dobUS = new Date(profileData.dateOfBirth).toLocaleDateString("en-US", {
+            month: "2-digit",
+            day: "2-digit",
+            year: "numeric"
+          })}
 
         setUserData({
           name: profileData.name || '',
@@ -174,7 +188,7 @@ const EditProfile = () => {
           state: profileData.state || '',
           country: profileData.country || '',
           zipCode: profileData.zipCode || '',
-          dateOfBirth: dobISO || '',
+          dateOfBirth: dobUS || '',
           gender: profileData.gender || '',
           phoneNumber: profileData.phoneNumber || '',
           skillLevel: profileData.playerDetails?.personalRating ?? 0,
@@ -216,18 +230,6 @@ const EditProfile = () => {
       setPhoneEdited(false);
     }
   },[userData.email, userData.phoneNumber, originalData.email, originalData.phoneNumber]);
-
-  const handleDateChange = (
-    event: DateTimePickerEvent,
-    selectedDate?: Date
-  ) => {
-    setShowDatePicker(false);
-    if (event.type === 'set' && selectedDate) {
-      const iso = selectedDate.toISOString().split('T')[0];
-      //console.log('📅 Selected DOB:', iso);
-      setUserData((prev) => ({ ...prev, dateOfBirth: iso }));
-    }
-  };
 
   // Email OTP send function (with validation like VerifyStep)
   const handleSendEmailOtp = async () => {
@@ -310,9 +312,6 @@ const EditProfile = () => {
       const meData = await meRes.json();
       const userId = meData.userId;
 
-      const dobParts = userData.dateOfBirth.split('-');
-      const formattedDOB = [parseInt(dobParts[0]), parseInt(dobParts[1]), parseInt(dobParts[2])];
-
       // Step 2: Construct payload
       const payload = {
         id: userId,
@@ -320,7 +319,6 @@ const EditProfile = () => {
         email: userData.email,
         profilePicture: userData.profilePicture,
         phoneNumber: userData.phoneNumber,
-        dateOfBirth: userData.dateOfBirth,
         gender: userData.gender,
         address: userData.address,
         city: userData.city,
@@ -506,40 +504,39 @@ const EditProfile = () => {
 
         <Text style={styles.label}>Zip Code</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            zipError ? { borderColor: "red", borderWidth: 1 } : {},
+          ]}
           value={userData.zipCode}
           onChangeText={(text) => {
             setUserData({ ...userData, zipCode: text });
             if (text.length === 5) {
               fetchLocationByZip(text);
+            } else {
+              setZipError("");
             }
           }}
           placeholder="Enter 5-digit Zip Code"
           keyboardType="number-pad"
         />
-        <Text style={{ fontSize: 12, color: "gray", marginTop: 4 }}>
-          Auto-fill will trigger after entering 5 digits
-        </Text>
+
+        {zipError ? (
+          <Text style={{ fontSize: 12, color: "red", marginTop: 4 }}>
+            {zipError}
+          </Text>
+        ) : (
+          <Text style={{ fontSize: 12, color: "gray", marginTop: 4 }}>
+            Auto-fill will trigger after entering 5 digits
+          </Text>
+        )}
 
         <Text style={styles.label}>Date Of Birth</Text>
-        <View
-          style={[styles.dateInput,styles.readOnlyInput]}
-          // onPress={() => setShowDatePicker(true)}
-        >
+        <View style={[styles.dateInput,styles.readOnlyInput]}>
           <Text style={userData.dateOfBirth ? styles.dateText : styles.placeholderText}>
             {userData.dateOfBirth || 'Enter Date of birth'}
           </Text>
-          {/* <Ionicons name="calendar" size={20} color="#8C8C8C" /> */}
         </View>
-        {/* {showDatePicker && (
-          <DateTimePicker
-            value={userData.dateOfBirth ? new Date(userData.dateOfBirth) : new Date()}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleDateChange}
-            maximumDate={new Date()}
-          />
-        )} */}
 
         <Text style={styles.label}>Gender</Text>
         <View style={styles.genderContainer}>

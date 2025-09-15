@@ -270,10 +270,14 @@ const UserProfile = () => {
             <InfoLoader
               value={
                 Array.isArray(userData.dateOfBirth)
-                  ? `${String(userData.dateOfBirth[2]).padStart(2, "0")}/${String(
-                      userData.dateOfBirth[1]
+                  ? `${String(userData.dateOfBirth[1]).padStart(2, "0")}/${String(
+                      userData.dateOfBirth[2]
                     ).padStart(2, "0")}/${userData.dateOfBirth[0]}`
-                  : new Date(userData.dateOfBirth).toLocaleDateString("en-GB")
+                  : new Date(userData.dateOfBirth).toLocaleDateString("en-US", {
+                      month: "2-digit",
+                      day: "2-digit",
+                      year: "numeric",
+                    })
               }
             />
 
