@@ -14,6 +14,9 @@ export const validatePhoneOtp = (phone: string, otp: string) =>
     params: { recipient: phone, otp },
   });
 
+export const verifyPhone = (userId: string) =>
+axios.patch(`${BASE_URL}/users/${userId}/verify-phone`);
+
 export const sendEmailOtp = (email: string) =>
   axios.post(`${BASE_URL}/otp/send-email`, null, {
     params: { email },

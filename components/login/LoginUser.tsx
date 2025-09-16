@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Button, Text, TextInput } from 'react-native-paper';
 import { z } from 'zod';
+import { PhoneVerificationModal } from './PhoneVerificationModal';
 
 // 📄 Zod validation schema - now accepts email or phone number
 const loginSchema = z.object({
@@ -51,22 +52,30 @@ export default function LoginUser() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [loginResponse, setLoginResponse] = useState<any>(null);
 
   const handleSuccess = async (resData: any) => {
-    setLoginError(null); // Clear old error if any
-    console.log('✅ Login Success. Token:', resData.token);
-    await storeToken(resData.token);
-    console.log('✅ Token stored');
+  setLoginError(null); // Clear old error if any
+    console.log('✅ Login Success. Token:', resData);
+  await storeToken(resData.token);
 
-    try {
-      await fetchUser();
-      console.log('✅ User fetched successfully');
-      router.replace('/(authenticated)/home');
-    } catch (e) {
-      console.error('❌ Failed to fetch user after login', e);
-    }
-  };
+  setLoginResponse(resData);
 
+  if (resData.isFirstTimeLogin || !resData.isPhoneNumberVerified) {
+    console.log("⚠️ Showing phone verification popup");
+    setShowPhoneModal(true);
+    return; // ⛔ stop here until phone verified
+  }
+
+  try {
+    await fetchUser();
+    console.log('✅ User fetched successfully');
+    router.replace('/(authenticated)/home');
+  } catch (e) {
+    console.error('❌ Failed to fetch user after login', e);
+  }
+};
   const handleError = (error: Error) => {
     console.log('❌ Login failed', error);
 
@@ -169,7 +178,25 @@ export default function LoginUser() {
         visible={showForgotPassword}
         onDismiss={() => setShowForgotPassword(false)}
       />
+      {loginResponse && (
+      <PhoneVerificationModal
+        visible={showPhoneModal}
+        onDismiss={() => setShowPhoneModal(false)}
+        phoneNumber={loginResponse.phoneNumber}
+        userId={loginResponse.userId}
+        onSuccess={async () => {
+          try {
+            await fetchUser();
+            console.log("✅ User fetched successfully after verification");
+            router.replace("/(authenticated)/profile"); // 🚀 redirect to profile
+          } catch (e) {
+            console.error("❌ Failed to fetch user after phone verification", e);
+          }
+        }}
+      />
+)}
     </ImageBackground>
+    
   );
 }
 
