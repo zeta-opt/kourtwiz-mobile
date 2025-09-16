@@ -28,6 +28,7 @@ import {
   LayoutChangeEvent,
   ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -41,7 +42,6 @@ import {
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
-import PlayerCountDropdown from '../player-count/PlayerCountDropdown';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
 import ContactsModal from './contacts-modal/ContactsModal';
@@ -102,6 +102,7 @@ const FindPlayerLayout = () => {
     user?.playerDetails?.personalRating ?? 3
   );
   const [playerCount, setPlayerCount] = useState(1);
+  const [playerCountInput, setPlayerCountInput] = useState('1');
   const [conflictDialogVisible, setConflictDialogVisible] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -452,7 +453,7 @@ const FindPlayerLayout = () => {
         placeToPlay: finalPlaceToPlay,
         playTime: toLocalISOString(playTime),
         playEndTime: toLocalISOString(finalEndTime),
-        playersNeeded: playerCount,
+        playersNeeded: playerCount-1,
         skillLevel: String(skillLevel),
       };
 
@@ -485,7 +486,7 @@ const FindPlayerLayout = () => {
           placeToPlay: finalPlaceToPlay,
           playTime: toLocalISOString(playTime),
           playEndTime: toLocalISOString(finalEndTime),
-          playersNeeded: playerCount,
+          playersNeeded: playerCount-1,
           skillRating: skillLevel,
           preferredContacts,
         },
@@ -680,10 +681,24 @@ const FindPlayerLayout = () => {
           </View>
         </View>
         <View style={styles.formSection}>
-          <PlayerCountDropdown
-            playerCount={playerCount}
-            onPlayerCountChange={setPlayerCount}
-          />
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Max Players</Text>
+            <TextInput
+              style={styles.input}
+              value={playerCountInput}
+              onChangeText={(text) => {
+                setPlayerCountInput(text);
+                const numeric = Number(text);
+                if (!isNaN(numeric) && numeric > 0) {
+                  setPlayerCount(numeric);
+                } else if (text !== '') {
+                  Alert.alert('Invalid Input', 'Please enter a valid number');
+                }
+              }}
+              keyboardType="numeric"
+              placeholder="Enter maximum number of players"
+            />
+          </View>
         </View>
 
         {isEditMode !== true && (
