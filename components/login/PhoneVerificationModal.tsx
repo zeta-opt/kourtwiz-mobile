@@ -1,6 +1,6 @@
-import { Dialog, Portal, Button, TextInput, Text } from "react-native-paper";
-import { useState, useEffect } from "react";
-import { sendPhoneOtp, validatePhoneOtp, verifyPhone } from "../signup/api/api";
+import { useEffect, useState } from 'react';
+import { Button, Dialog, Portal, Text, TextInput } from 'react-native-paper';
+import { sendPhoneOtp, validatePhoneOtp, verifyPhone } from '../signup/api/api';
 
 type PhoneVerificationModalProps = {
   visible: boolean;
@@ -17,15 +17,15 @@ export function PhoneVerificationModal({
   userId,
   onSuccess,
 }: PhoneVerificationModalProps) {
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [timer, setTimer] = useState(0);
-
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (visible) {
+      handleSendOtp();
       setTimer(120); // 2 minutes
       interval = setInterval(() => {
         setTimer((prev) => {
@@ -42,12 +42,12 @@ export function PhoneVerificationModal({
 
   const handleSendOtp = async () => {
     try {
-      setError("");
+      setError('');
       setLoading(true);
       await sendPhoneOtp(phoneNumber);
       setTimer(120); // reset timer on resend
     } catch (e) {
-      setError("Failed to send OTP. Try again.");
+      setError('Failed to send OTP. Try again.');
     } finally {
       setLoading(false);
     }
@@ -55,14 +55,14 @@ export function PhoneVerificationModal({
 
   const handleVerifyOtp = async () => {
     try {
-      setError("");
+      setError('');
       setLoading(true);
       await validatePhoneOtp(phoneNumber, otp);
       await verifyPhone(userId);
       onSuccess();
       onDismiss();
     } catch (e) {
-      setError("Invalid OTP. Try again.");
+      setError('Invalid OTP. Try again.');
     } finally {
       setLoading(false);
     }
@@ -72,8 +72,8 @@ export function PhoneVerificationModal({
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
       .toString()
-      .padStart(2, "0");
-    const s = (seconds % 60).toString().padStart(2, "0");
+      .padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
 
@@ -84,16 +84,16 @@ export function PhoneVerificationModal({
         <Dialog.Content>
           <Text>Phone: {phoneNumber}</Text>
           <TextInput
-            label="OTP"
+            label='OTP'
             value={otp}
             onChangeText={setOtp}
-            keyboardType="number-pad"
+            keyboardType='number-pad'
             style={{ marginTop: 10 }}
           />
-          {error ? <Text style={{ color: "red" }}>{error}</Text> : null}
+          {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
 
           {timer > 0 ? (
-            <Text style={{ marginTop: 10, color: "gray" }}>
+            <Text style={{ marginTop: 10, color: 'gray' }}>
               Resend available in {formatTime(timer)}
             </Text>
           ) : (
