@@ -51,10 +51,24 @@ const IWantToPlayScreen = () => {
           setLocationError('Permission to access location was denied');
           return;
         }
-        let loc = await Location.getCurrentPositionAsync({});
-        const address = await Location.reverseGeocodeAsync(loc.coords);
-        if (address.length > 0) {
-          setLocation(`${address[0].city}, ${address[0].region}`);
+        const loc = await Location.getCurrentPositionAsync({});
+        const addresses = await Location.reverseGeocodeAsync(loc.coords);
+
+        if (addresses.length > 0) {
+          const addr = addresses[0];
+          // Combine street, postalCode, city, region, country if available
+          const fullAddress = [
+            addr.name,
+            addr.street,
+            addr.postalCode,
+            addr.city,
+            addr.region,
+            addr.country 
+          ]
+            .filter(Boolean)
+            .join(', ');
+
+          setLocation(fullAddress);
         } else {
           setLocation(`${loc.coords.latitude}, ${loc.coords.longitude}`);
         }
@@ -136,7 +150,7 @@ const IWantToPlayScreen = () => {
                 }}
                 onFocus={() => {
                   setLocation('');
-                  if (location) setShowSuggestions(true);
+                  if (!location) setShowSuggestions(true);
                 }}
                 style={[styles.input, { flex: 1 }]}
                 autoCorrect={false}

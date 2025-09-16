@@ -11,6 +11,7 @@ import {
   StatusBar,
   KeyboardAvoidingView,
 } from "react-native";
+import Toast from 'react-native-toast-message';
 import UserAvatar from "@/assets/UserAvatar";
 import { Ionicons } from "@expo/vector-icons";
 import { useCreateGroup } from "@/hooks/apis/groups/useCreateGroup";
@@ -85,7 +86,10 @@ export default function CreateGroup() {
         groupData: payload,
         callbacks: {
           onSuccess: () => {
-            alert("Group created successfully!");
+            Toast.show({
+              type: 'success',
+              text1: `${groupName} is created successfully!`,
+            });
             router.replace("/(authenticated)/groups");
           },
           onError: (err) => {

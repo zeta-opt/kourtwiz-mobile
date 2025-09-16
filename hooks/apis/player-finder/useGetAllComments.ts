@@ -10,12 +10,11 @@ type Comment = {
   eventName: string;
   placeToPlay: string;
   groupName: string;
-  joined: boolean;
   userId: string;
   userName: string;
   commentText: string;
   image?: string;
-  timestamp: string;
+  timestamp: string | number[];
   edited: boolean;
   editedAt?: string;
 };
@@ -38,6 +37,7 @@ export const useGetAllComments = ({
   const [data, setData] = useState<Comment[] | null>(null);
   const [status, setStatus] = useState<'loading' | 'error' | 'success'>('loading');
   const [refetchToggle, setRefetchToggle] = useState(false);
+
   const refetch = () => setRefetchToggle((prev) => !prev);
 
   useEffect(() => {
@@ -47,10 +47,10 @@ export const useGetAllComments = ({
         const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
         const token = await getToken();
 
-        const response = await axios.post(
-          `${BASE_URL}/api/player-finder/comments`,
-          { userId, lat, lng }, // required payload
+        const response = await axios.get(
+          `${BASE_URL}/api/player-finder/comments/user/${userId}`,
           {
+            params: {lat, lng},
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: 'application/json',

@@ -22,7 +22,6 @@ type Comment = {
   eventName: string;
   placeToPlay: string;
   groupName: string;
-  joined: boolean;
   userId: string;
   userName: string;
   commentText: string;
@@ -80,6 +79,11 @@ export default function NewMessages() {
   }, []);
 
   // For IWantToPlayEvent → useGetAllComments
+  console.log("Fetching comments with payload:", {
+    userId: user?.userId ?? '',
+    lat: lat ?? 0,
+    lng: lng ?? 0,
+  });
   const {
     data: allMessages,
     status: allStatus,
@@ -95,10 +99,19 @@ export default function NewMessages() {
   const sortedMessages = allMessages
     ? [...allMessages]
         .filter((msg) => msg.commentText && msg.commentText.trim().length > 0)
-        .sort(
-          (a, b) =>
-            new Date(b.timestamp as any).getTime() - new Date(a.timestamp as any).getTime()
-        )
+        .sort((a, b) => {
+          const dateA =
+            Array.isArray(a.timestamp)
+              ? convertDateArrayToDate(a.timestamp)
+              : new Date(a.timestamp as any);
+
+          const dateB =
+            Array.isArray(b.timestamp)
+              ? convertDateArrayToDate(b.timestamp)
+              : new Date(b.timestamp as any);
+
+          return dateB.getTime() - dateA.getTime();
+        })
     : [];
 
   const previewMessages = sortedMessages.slice(0, 2);
@@ -123,20 +136,28 @@ export default function NewMessages() {
         });
         break;
 
-      // case 'PlayerFinderEvent':
-      // case 'GroupEvent':
-      // case 'CreateEvent':
-      //   if (!msg.requestId) {
-      //     alert('Chat not available for this event.');
-      //     return;
-      //   }
+      case 'PlayerFinderEvent':
+      case 'GroupEvent':
+        if (!msg.requestId) {
+          alert('Chat not available for this event.');
+          return;
+        }
+        router.push({
+          pathname: '/(authenticated)/chat-summary',
+          params: { requestId: msg.requestId },
+        });
+        break;
 
-      //   // Use useGetPlayerFinderComment for these events
-      //   router.push({
-      //     pathname: '/(authenticated)/chat-summary',
-      //     params: { requestId: msg.requestId },
-      //   });
-      //   break;
+      case 'CreateEvent':
+        if (!msg.requestId) {
+          alert('Chat not available for this session.');
+          return;
+        }
+        router.push({
+          pathname: '/(authenticated)/chat-summary',
+          params: { sessionId: msg.requestId },
+        });
+        break;
 
       default:
         alert('Unknown chat type, cannot open.');
@@ -175,7 +196,10 @@ export default function NewMessages() {
 
         <TouchableOpacity
           style={styles.joinButton}
-          onPress={() => handleMessagePress(msg)}
+          onPress={() => {
+            if (isModal) setModalVisible(false);
+            handleMessagePress(msg);
+          }}
         >
           <Text style={styles.joinButtonText}>Reply</Text>
         </TouchableOpacity>
