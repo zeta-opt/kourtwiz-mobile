@@ -14,6 +14,7 @@ const PlayerDetailsModal: React.FC<Props> = ({ players,inviteeName  }) => {
       case 'ACCEPTED': return 'green';
       case 'PENDING': return 'orange';
       case 'DECLINED': return 'red';
+      case 'CANCELLED': return 'red';
       default: return 'gray';
     }
   };
@@ -23,6 +24,7 @@ const PlayerDetailsModal: React.FC<Props> = ({ players,inviteeName  }) => {
       case 'ACCEPTED': return 'check-circle';
       case 'PENDING': return 'clock';
       case 'DECLINED': return 'close-circle';
+      case 'CANCELLED': return 'close-circle';
       default: return 'minus-circle';
     }
   };
@@ -52,7 +54,9 @@ const PlayerDetailsModal: React.FC<Props> = ({ players,inviteeName  }) => {
           <Text style={styles.playerName}>{player.name}</Text>
           <View style={styles.statusContainer}>
             <MaterialCommunityIcons name={getIcon(player.status)} size={20} color={getColor(player.status)} />
-            <Text style={[styles.statusText, { color: getColor(player.status) }]}>{player.status}</Text>
+            <Text style={[styles.statusText, { color: getColor(player.status) }]}>
+              {player.status.toUpperCase() === "CANCELLED" ? "DECLINED" : player.status}
+            </Text>
           </View>
         </View>
       ))}

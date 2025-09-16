@@ -382,7 +382,7 @@ const CreateEventForm = () => {
       const payload: any = {};
 
       if (eventName?.trim()) payload.eventName = eventName.trim();
-      if (maxPlayers) payload.maxPlayers = Number(maxPlayers);
+      if (maxPlayers) payload.maxPlayers = Number(maxPlayers) - 1;
       if (newPlaceData || placeToPlay) {
         payload.allCourts = newPlaceData || { Name: placeToPlay };
       }
@@ -506,7 +506,7 @@ const CreateEventForm = () => {
         startTime: formatDateToLocalISOString(startDateTime),
         durationMinutes,
         skillLevel: Number(skillLevel.toFixed(2)),
-        maxPlayers: Number(maxPlayers),
+        maxPlayers: Number(maxPlayers) - 1,
         description: description || undefined,
         allCourts: newPlaceData || {
           Name: placeToPlay,

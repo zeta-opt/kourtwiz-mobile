@@ -21,7 +21,7 @@ const statusColorMap: Record<string, string> = {
   PENDING: 'orange',
   DECLINED: 'red',
   WITHDRAWN: 'gray',
-  CANCELLED: 'brown',
+  CANCELLED: 'red',
 };
 
 const statusIconMap: Record<string, string> = {
@@ -29,7 +29,7 @@ const statusIconMap: Record<string, string> = {
   PENDING: 'clock',
   DECLINED: 'times-circle',
   WITHDRAWN: 'minus-circle',
-  CANCELLED: 'ban',
+  CANCELLED: 'times-circle',
 };
 
 function arrayToDate(arr: number[] = []): Date {
@@ -166,7 +166,10 @@ export default function SentRequestDetailedView() {
                     color={statusColorMap[status]}
                     style={{ marginRight: 4 }}
                   />
-                  <Text style={{ color: statusColorMap[status] }}>{status}</Text>
+                  <Text style={{ color: statusColorMap[status] }}>
+                    {status === "CANCELLED" ? "DECLINED" : status}
+                  </Text>
+
                 </View>
               </View>
             );

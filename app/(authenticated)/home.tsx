@@ -484,11 +484,7 @@ const Dashboard = () => {
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.inviteWrapper}>
             <View style={styles.tabRow}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipGroup}
-              >
+              
                 <Text
                   style={[
                     styles.chip,
@@ -522,7 +518,7 @@ const Dashboard = () => {
                 >
                   Open Play ({playCount})
                 </Text>
-              </ScrollView>
+              
               {(activeTab === 'INCOMING' && allInvites.length > 0) ||
               (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ||
               (activeTab === 'OPENPLAY' && playCount > 0) ? (
@@ -719,9 +715,10 @@ const styles = StyleSheet.create({
   container: { padding: 20, flexGrow: 1 },
   tabRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    position: 'relative', 
   },
   chipGroup: {
     flexDirection: 'row',
@@ -730,6 +727,8 @@ const styles = StyleSheet.create({
     // overflow: 'hidden',
     gap: 8,
     paddingRight: 8,
+    alignItems: 'center',       // Add for vertical centering
+  justifyContent: 'center',
   },
   chip: {
     paddingHorizontal: 8,
@@ -740,6 +739,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     marginBottom: 1,
+    marginHorizontal: 8,
   },
   chipActive: {
     backgroundColor: '#E6F9FF',
