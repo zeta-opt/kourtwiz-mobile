@@ -53,35 +53,34 @@ const CreateEventForm = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
   const params = useLocalSearchParams();
-  
-  const { 
-  isEditMode,
-  sessionId,
-  eventName: initialEventName,
-  placeToPlay: initialPlaceName,
-  description: initialDescription,
-  price: initialPrice,
-  maxPlayers: initialMaxPlayers,
-  skillLevel: initialSkillLevel,
-  startDate: initialStartDate,
-  startTime: initialStartTime,
-  endTime: initialEndTime,
-} = useLocalSearchParams<{
-  isEditMode?: string;
-  sessionId?: string;
-  eventName?: string;
-  placeToPlay?: string;
-  description?: string;
-  price?: string;
-  maxPlayers?: string;
-  skillLevel?: string;
-  startDate?: string;
-  startTime?: string;
-  endTime?: string;
-}>();
-const editMode = isEditMode === 'true';
 
-  console.log("here",initialEventName)
+  const {
+    isEditMode,
+    sessionId,
+    eventName: initialEventName,
+    placeToPlay: initialPlaceName,
+    description: initialDescription,
+    price: initialPrice,
+    maxPlayers: initialMaxPlayers,
+    skillLevel: initialSkillLevel,
+    startDate: initialStartDate,
+    startTime: initialStartTime,
+    endTime: initialEndTime,
+  } = useLocalSearchParams<{
+    isEditMode?: string;
+    sessionId?: string;
+    eventName?: string;
+    placeToPlay?: string;
+    description?: string;
+    price?: string;
+    maxPlayers?: string;
+    skillLevel?: string;
+    startDate?: string;
+    startTime?: string;
+    endTime?: string;
+  }>();
+  const editMode = isEditMode === 'true';
+
   const [newPlaceData, setNewPlaceData] = useState<any>(null);
 
   const [eventName, setEventName] = useState(initialEventName || '');
@@ -99,13 +98,9 @@ const editMode = isEditMode === 'true';
   const [price, setPrice] = useState(initialPrice || '');
   const [maxPlayers, setMaxPlayers] = useState(initialMaxPlayers || '');
   const [description, setDescription] = useState(initialDescription || '');
-  const {
-  createSession,
-  status,
-  error,
-} = useCreateOpenPlaySession();
+  const { createSession, status, error } = useCreateOpenPlaySession();
 
-const { updateSession} = useUpdateOpenPlaySession();
+  const { updateSession } = useUpdateOpenPlaySession();
 
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState(
@@ -158,7 +153,6 @@ const { updateSession} = useUpdateOpenPlaySession();
     repeat: false,
     repeatEndDate: false,
   });
-  
 
   // Clear form data on component mount
   useEffect(() => {
@@ -245,20 +239,22 @@ const { updateSession} = useUpdateOpenPlaySession();
     dispatch(openPreferredPlayersModal());
   };
   useEffect(() => {
-  if (editMode) {
-    setEventName(initialEventName || '');
-    setSelectedDate(initialStartDate ? new Date(initialStartDate) : new Date());
-    setStartTime(initialStartTime ? new Date(initialStartTime) : null);
-    setEndTime(initialEndTime ? new Date(initialEndTime) : new Date());
-    setSkillLevel(Number(initialSkillLevel) || 0);
-    setPrice(initialPrice || '');
-    setMaxPlayers(initialMaxPlayers || '');
-    setDescription(initialDescription || '');
-    if (initialPlaceName) {
-      dispatch(setPlaceToPlay(initialPlaceName));
+    if (editMode) {
+      setEventName(initialEventName || '');
+      setSelectedDate(
+        initialStartDate ? new Date(initialStartDate) : new Date()
+      );
+      setStartTime(initialStartTime ? new Date(initialStartTime) : null);
+      setEndTime(initialEndTime ? new Date(initialEndTime) : new Date());
+      setSkillLevel(Number(initialSkillLevel) || 0);
+      setPrice(initialPrice || '');
+      setMaxPlayers(initialMaxPlayers || '');
+      setDescription(initialDescription || '');
+      if (initialPlaceName) {
+        dispatch(setPlaceToPlay(initialPlaceName));
+      }
     }
-  }
-}, [editMode]);
+  }, [editMode]);
   const handleAddContact = async () => {
     const { status } = await Contacts.getPermissionsAsync();
     if (status === 'granted') {
@@ -582,11 +578,11 @@ const { updateSession} = useUpdateOpenPlaySession();
 
       await createSession(payload);
       if (status === 'error') {
-    setErrorMessage(updateError || 'Something went wrong');
+        setErrorMessage(updateError || 'Something went wrong');
 
-      setErrorVisible(true);
-      return;
-    }
+        setErrorVisible(true);
+        return;
+      }
 
       setSuccessVisible(true);
 
@@ -631,7 +627,7 @@ const { updateSession} = useUpdateOpenPlaySession();
               <UserAvatar size={30} />
             </View>
           </View>
-          
+
           <ScrollView contentContainerStyle={styles.card}>
             <Text style={styles.label}>Event Name *</Text>
             <EventNameSearch
@@ -670,7 +666,7 @@ const { updateSession} = useUpdateOpenPlaySession();
                     },
                   ]}
                   placeholder='Enter Place Name'
-                  placeholderTextColor="#5f5959ff"
+                  placeholderTextColor='#5f5959ff'
                   value={displayPlaceName}
                   editable={false}
                   pointerEvents='none'
@@ -696,7 +692,7 @@ const { updateSession} = useUpdateOpenPlaySession();
                 <TextInput
                   style={styles.input}
                   placeholder='Enter Court Name'
-                  placeholderTextColor="#5f5959ff"
+                  placeholderTextColor='#5f5959ff'
                   value={court}
                   onChangeText={setCourt}
                   editable={!editMode}
@@ -791,7 +787,7 @@ const { updateSession} = useUpdateOpenPlaySession();
                 )}
               </>
             )}
-          
+
             <View style={styles.formSection}>
               <View style={styles.sliderSection}>
                 <Text style={styles.skillLevelTitle}>Skill Level *</Text>
@@ -818,14 +814,14 @@ const { updateSession} = useUpdateOpenPlaySession();
                 </View>
               </View>
             </View>
-            
+
             <View style={styles.row}>
               <View style={styles.halfInput}>
                 <Text style={styles.label}>Price (Optional)</Text>
                 <TextInput
                   style={styles.input}
                   placeholder='Enter Price'
-                  placeholderTextColor="#5f5959ff"
+                  placeholderTextColor='#5f5959ff'
                   value={price}
                   onChangeText={setPrice}
                   keyboardType='numeric'
@@ -841,7 +837,7 @@ const { updateSession} = useUpdateOpenPlaySession();
                     errors.maxPlayers && { borderColor: 'red', borderWidth: 1 },
                   ]}
                   placeholder='Enter Max Players'
-                  placeholderTextColor="#5f5959ff"
+                  placeholderTextColor='#5f5959ff'
                   value={maxPlayers}
                   onChangeText={setMaxPlayers}
                   keyboardType='numeric'
@@ -855,7 +851,7 @@ const { updateSession} = useUpdateOpenPlaySession();
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder='Add event details...'
-                  placeholderTextColor="#5f5959ff"
+                  placeholderTextColor='#5f5959ff'
                   value={description}
                   onChangeText={setDescription}
                   multiline
