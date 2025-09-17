@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import { usePostComment } from '@/hooks/apis/player-finder/usePostPlayerFinderComment';
+import * as ImagePicker from 'expo-image-picker';
+import React, { useState } from 'react';
 import {
-  View,
-  TextInput,
-  StyleSheet,
-  Alert,
-  Text,
   ActivityIndicator,
+  Alert,
   Image,
+  Keyboard,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { IconButton } from 'react-native-paper';
-import * as ImagePicker from 'expo-image-picker';
-import { usePostComment } from '@/hooks/apis/player-finder/usePostPlayerFinderComment';
 
 type Props = {
   requestId: string;
@@ -29,7 +31,6 @@ export const PostCommentPlayerFinder: React.FC<Props> = ({
     name: string;
     type: string;
   } | null>(null);
-
   const { submit, status, error } = usePostComment();
 
   const handlePost = async () => {
@@ -45,11 +46,11 @@ export const PostCommentPlayerFinder: React.FC<Props> = ({
         commentText: commentText.trim(),
         image: image || null,
       });
-
       // Reset only on success
       setCommentText('');
       setImage(null);
       onSuccess();
+      Keyboard.dismiss();
     } catch {
       Alert.alert('Error', 'Failed to post comment.');
     }
@@ -74,40 +75,51 @@ export const PostCommentPlayerFinder: React.FC<Props> = ({
 
   return (
     <View style={styles.container}>
-      {/* <Text style={styles.label}>Add a Comment:</Text> */}
-
       <View style={styles.row}>
         <TextInput
           value={commentText}
           onChangeText={setCommentText}
-          placeholder="Type your message here..."
-          placeholderTextColor="#000000"
+          placeholder='Type your message here...'
+          placeholderTextColor='#999'
           multiline
           style={styles.input}
+          maxLength={500}
+          returnKeyType='default'
+          blurOnSubmit={false}
+          textAlignVertical='center'
         />
-
         <IconButton
-          icon="camera"
-          iconColor="#007A7A"
+          icon='camera'
+          iconColor='#007A7A'
           size={24}
           onPress={handlePickImage}
+          style={styles.iconButton}
         />
-
         {status === 'loading' ? (
-          <ActivityIndicator size="small" color="#007A7A" />
+          <ActivityIndicator size='small' color='#007A7A' />
         ) : (
           <IconButton
-            icon="send"
-            iconColor="#007A7A"
+            icon='send'
+            iconColor='#007A7A'
             size={24}
             onPress={handlePost}
             disabled={!commentText.trim() && !image}
+            style={styles.iconButton}
           />
         )}
       </View>
 
       {image && (
-        <Image source={{ uri: image.uri }} style={styles.previewImage} />
+        <View style={styles.imagePreviewContainer}>
+          <Image source={{ uri: image.uri }} style={styles.previewImage} />
+          <IconButton
+            icon='close'
+            iconColor='#fff'
+            size={16}
+            onPress={() => setImage(null)}
+            style={styles.removeImageButton}
+          />
+        </View>
       )}
 
       {status === 'error' && (
@@ -119,12 +131,7 @@ export const PostCommentPlayerFinder: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 6,
+    paddingVertical: 4,
   },
   row: {
     flexDirection: 'row',
@@ -132,25 +139,44 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    borderColor: '#ccc',
+    borderColor: '#ddd',
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 8,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 10 : 8,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 8,
     minHeight: 40,
     maxHeight: 100,
     backgroundColor: 'white',
-    textAlignVertical: 'top',
-    
+    fontSize: 16,
+    color: '#000',
   },
-  previewImage: {
-    width: 100,
-    height: 100,
+  iconButton: {
+    margin: 0,
+  },
+  imagePreviewContainer: {
     marginTop: 8,
-    borderRadius: 6,
+    position: 'relative',
     alignSelf: 'flex-start',
   },
+  previewImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    margin: 0,
+  },
   errorText: {
-    color: 'red',
-    marginTop: 8,
+    color: '#ff3b30',
+    marginTop: 4,
+    fontSize: 12,
   },
 });
