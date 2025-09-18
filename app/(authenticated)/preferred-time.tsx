@@ -22,7 +22,7 @@ const PREFERRED_TIMES = ['Morning', 'Afternoon', 'Evening', 'Anytime'];
 const PreferredTimeScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
-  // ✅ fetch profile
+  // fetch profile
   const { data: userData, status } = useGetUserDetails({
     userId: user?.userId ?? '',
     enabled: !!user?.userId,
@@ -31,7 +31,7 @@ const PreferredTimeScreen = () => {
   const { updateUserById, status: updateStatus } = useUpdateUserById();
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
 
-  // ✅ sync local state when userData changes
+  // sync local state when userData changes
   useEffect(() => {
     if (userData?.preferredTime) {
       setSelectedTimes(userData.preferredTime);
@@ -39,10 +39,31 @@ const PreferredTimeScreen = () => {
   }, [userData]);
 
   const toggleTime = (time: string) => {
-    setSelectedTimes((prev) =>
-      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
-    );
+    setSelectedTimes((prev) => {
+      if (time === "Anytime") {
+        if (prev.includes("Anytime")) {
+          return [];
+        } else {
+          return [...PREFERRED_TIMES];
+        }
+      } else {
+        let updated = prev.includes(time)
+          ? prev.filter((t) => t !== time)
+          : [...prev, time];
+  
+        if (!["Morning", "Afternoon", "Evening"].every((t) => updated.includes(t))) {
+          updated = updated.filter((t) => t !== "Anytime");
+        }
+
+        if (["Morning", "Afternoon", "Evening"].every((t) => updated.includes(t))) {
+          updated = [...new Set([...updated, "Anytime"])];
+        }
+  
+        return updated;
+      }
+    });
   };
+  
 
     const handleSavePreferredTime = async () => {
     if (!user?.userId) return;

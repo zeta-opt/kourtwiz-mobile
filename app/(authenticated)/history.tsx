@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { format, isBefore, startOfDay } from 'date-fns';
+import { format, isBefore } from 'date-fns';
 
 const parseArrayToDate = (arr?: number[]) =>
   arr ? new Date(arr[0], arr[1] - 1, arr[2], arr[3] || 0, arr[4] || 0) : null;
@@ -27,7 +27,6 @@ const parseArrayToDate = (arr?: number[]) =>
 const HistoryPage = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { data: schedule, status, error } = useGetPlayerSchedule(user?.userId);
-  const today = startOfDay(new Date());
   const {
     submitGameFeedback,
     status: feedbackStatus,
@@ -108,21 +107,21 @@ const HistoryPage = () => {
     const allEvents = [...eventsAvailable, ...eventsCreated, ...incomingFinder, ...initiatedFinder];
   
     // Only past
-    const filtered = allEvents.filter((ev) => ev.start && isBefore(ev.start, today));
-  
-    // Group by date
-    const grouped = filtered.reduce((acc, ev) => {
-      const dateKey = format(ev.start!, 'yyyy-MM-dd');
-      if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(ev);
-      return acc;
-    }, {} as Record<string, any[]>);
-  
-    // Latest → oldest
-    return Object.entries(grouped)
-      .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
-      .map(([date, events]) => ({ date, events }));
-  }, [schedule, today]);  
+    const now = new Date();
+    const filtered = allEvents.filter((ev) => ev.start && isBefore(ev.start, now));
+    
+  // Group + sort stays the same
+  const grouped = filtered.reduce((acc, ev) => {
+    const dateKey = format(ev.start!, 'yyyy-MM-dd');
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(ev);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  return Object.entries(grouped)
+    .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+    .map(([date, events]) => ({ date, events }));
+  }, [schedule]);  
 
   if (status === 'loading')
     return <ActivityIndicator size="large" style={{ marginTop: 40 }} />;
