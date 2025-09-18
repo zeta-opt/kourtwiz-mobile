@@ -148,7 +148,12 @@ export default function OpenPlayDetailedView() {
               <View style={styles.iconCircle}>
                 <FontAwesome5 name="calendar-alt" size={20} color="#2CA6A4" solid  />
               </View>
-              <Text style={styles.infoText}>{startDate.toLocaleDateString()}</Text>
+              <Text style={styles.infoText}>{startDate.toLocaleDateString("en-US", {
+                month: "2-digit",
+                day: "2-digit",
+                year: "numeric",
+              })}
+            </Text>
             </View>
             <View style={styles.column}>
               <View style={styles.iconCircle}>

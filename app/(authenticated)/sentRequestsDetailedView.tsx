@@ -351,11 +351,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#E6F7F7',
     padding: 10,
     borderRadius: 30,
-    alignItems: 'flex-start',
+    alignItems: 'center',
     width: '40%',
   },
   infoText: {
-    marginTop: 4,
+    marginTop: 8,
     fontSize: 13,
     color: '#333',
   },
@@ -368,6 +368,7 @@ const styles = StyleSheet.create({
   locationText: {
     flexShrink: 1,
     flexWrap: 'wrap',
+    marginTop: 6,
     marginLeft: 8,
     fontSize: 15,
     color: '#444',

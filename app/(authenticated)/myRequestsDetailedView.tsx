@@ -60,7 +60,11 @@ export default function MyRequestsDetailedView() {
   console.log('Invite Details:', invite);
   console.log('My Invite:', myInvite);
   const playTime = arrayToDate(invite?.playTime);
-  const dateString = playTime.toLocaleDateString('en-US');
+  const dateString = playTime.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
   console.log('Play Time:', playTime);
   const timeString = playTime.toLocaleTimeString([], {
     hour: '2-digit',

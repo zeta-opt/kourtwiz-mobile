@@ -758,8 +758,8 @@ const CreateEventForm = () => {
                         ]}
                       >
                         {repeatEndDate
-                          ? repeatEndDate.toLocaleDateString('en-GB')
-                          : 'DD/MM/YYYY'}
+                          ? repeatEndDate.toLocaleDateString('en-US')
+                          : 'MM/DD/YYYY'}
                       </Text>
                       <Icon
                         source='calendar'
