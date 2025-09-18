@@ -17,12 +17,14 @@ import { IconButton } from 'react-native-paper';
 type Props = {
   requestId: string;
   userId: string;
+  receiverUserId?: string | null;
   onSuccess: () => void;
 };
 
 export const PostCommentPlayerFinder: React.FC<Props> = ({
   requestId,
   userId,
+  receiverUserId,
   onSuccess,
 }) => {
   const [commentText, setCommentText] = useState('');
@@ -40,12 +42,20 @@ export const PostCommentPlayerFinder: React.FC<Props> = ({
     }
 
     try {
-      await submit({
+      const payload: any = {
         requestId,
         userId,
         commentText: commentText.trim(),
         image: image || null,
-      });
+      };
+
+      // Only include receiverUserId if it exists (for individual messages)
+      if (receiverUserId) {
+        payload.receiverUserId = receiverUserId;
+      }
+
+      await submit(payload);
+
       // Reset only on success
       setCommentText('');
       setImage(null);

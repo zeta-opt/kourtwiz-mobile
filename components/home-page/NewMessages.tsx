@@ -12,24 +12,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { router } from 'expo-router';
-import { useGetAllComments } from '@/hooks/apis/player-finder/useGetAllComments';
+import { useGetAllComments, Comment } from '@/hooks/apis/player-finder/useGetAllComments';
 import * as Location from 'expo-location';
-
-type Comment = {
-  id: string;
-  requestId: string;
-  eventType: string;
-  eventName: string;
-  placeToPlay: string;
-  groupName: string;
-  userId: string;
-  userName: string;
-  commentText: string;
-  image?: string;
-  timestamp: string | number[];
-  edited: boolean;
-  editedAt?: string;
-};
 
 const convertDateArrayToDate = (arr: number[]) => {
   if (!Array.isArray(arr) || arr.length < 3) return new Date(NaN);
@@ -116,7 +100,7 @@ export default function NewMessages() {
 
   const previewMessages = sortedMessages.slice(0, 2);
 
-  // ✅ Handle press → fetch comments differently per type
+  // Handle press → fetch comments differently per type
   const handleMessagePress = (msg: Comment) => {
     if (!msg) {
       alert('Chat details not available.');
@@ -130,8 +114,9 @@ export default function NewMessages() {
           params: {
             directUserId: msg.userId,
             directUserName: msg.userName,
-            requestId: msg.id,
+            requestId: msg.requestId,
             initialMessage: msg.commentText,
+            isIndividualMessage: 'false',
           },
         });
         break;
@@ -159,8 +144,26 @@ export default function NewMessages() {
         });
         break;
 
-      default:
-        alert('Unknown chat type, cannot open.');
+      case 'Individual Message':
+        if (!msg.requestId || !msg.userId || !msg.userName) {
+          alert('Chat not available for this message.');
+          return;
+        }
+
+        const params = {
+          requestId: msg.requestId,
+          directUserId: msg.receiverId,
+          directUserName: msg.userName,
+          initialMessage: msg.commentText,
+          isIndividualMessage: 'true',
+        };
+
+        console.log("Navigating with Individual Message params:", params);
+
+        router.push({
+          pathname: '/(authenticated)/chat-summary',
+          params,
+        });
         break;
     }
   };

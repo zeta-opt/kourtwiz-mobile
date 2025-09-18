@@ -27,24 +27,26 @@ export default function ChatSummaryPage() {
     sessionId: sessId,
     directUserId,
     directUserName,
-    initialMessage,
+    isIndividualMessage,
   } = useLocalSearchParams<{
     requestId?: string;
     id?: string;
     sessionId?: string;
     directUserId?: string;
     directUserName?: string;
-    initialMessage?: string;
+    isIndividualMessage?: string;
   }>();
 
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId ?? '';
 
-  const isGroupChat = Boolean(grpId);
-  const isSessionChat = Boolean(sessId);
+  // Priority: Direct Chat > Group Chat > Session Chat > Player Finder
   const isDirectChat = Boolean(directUserId);
+  const isGroupChat = Boolean(grpId) && !isDirectChat;
+  const isSessionChat = Boolean(sessId) && !isDirectChat;
 
+  // Fetch data depending on chat type
   const {
     data: pfData,
     loading: pfLoading,
@@ -53,12 +55,8 @@ export default function ChatSummaryPage() {
     !isGroupChat && !isSessionChat ? reqId : undefined
   );
 
-  const {
-    getGroup,
-    status: groupStatus,
-    error: groupError,
-    data: groupData,
-  } = useGetGroupById();
+  const { getGroup, status: groupStatus, error: groupError, data: groupData } =
+    useGetGroupById();
 
   useEffect(() => {
     if (isGroupChat && grpId) {
@@ -72,13 +70,17 @@ export default function ChatSummaryPage() {
     error: sessionError,
   } = useGetPlaySessionById(isSessionChat ? (sessId as string) : undefined);
 
-  const loading = isGroupChat
+  const loading = isDirectChat
+    ? pfLoading
+    : isGroupChat
     ? groupStatus === 'loading'
     : isSessionChat
     ? sessionStatus === 'loading'
     : pfLoading;
 
-  const error = isGroupChat
+  const error = isDirectChat
+    ? pfError
+    : isGroupChat
     ? groupError
     : isSessionChat
     ? sessionError
@@ -94,12 +96,13 @@ export default function ChatSummaryPage() {
     ? pfData[0].placeToPlay
     : 'Request';
 
-  const commentId = isGroupChat
+  // Use combined requestId for direct chats
+  const commentId = isDirectChat
+    ? reqId
+    : isGroupChat
     ? grpId
     : isSessionChat
     ? sessId
-    : isDirectChat
-    ? reqId
     : pfData && pfData.length > 0
     ? pfData?.[0]?.requestId
     : undefined;
@@ -111,7 +114,7 @@ export default function ChatSummaryPage() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size='large' color='#3F7CFF' />
+        <ActivityIndicator size="large" color="#3F7CFF" />
       </View>
     );
   }
@@ -143,38 +146,23 @@ export default function ChatSummaryPage() {
             }
           }}
         >
-          <MaterialIcons name='arrow-back-ios' size={24} color='#fff' />
+          <MaterialIcons name="arrow-back-ios" size={24} color="#fff" />
         </TouchableOpacity>
 
-        {isGroupChat ? (
-          <TouchableOpacity onPress={() => router.push(`/group-info/${grpId}`)}>
-            <Text style={styles.headerTitle}>{title || 'Group'}</Text>
-          </TouchableOpacity>
-        ) : isDirectChat ? (
-          <Text style={styles.headerTitle}>{title || 'Chat'}</Text>
-        ) : (
-          <Text style={styles.headerTitle}>{title || 'Request'}</Text>
-        )}
+        <Text style={styles.headerTitle}>{title || 'Chat'}</Text>
 
-        <TouchableOpacity
-          onPress={() => router.push('/(authenticated)/profile')}
-        >
+        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
           <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
 
       {/* Chat Content */}
       <View style={styles.commentSection}>
-        {initialMessage && (
-          <View style={styles.originalMessageContainer}>
-            <Text style={styles.originalMessageText}>{initialMessage}</Text>
-          </View>
-        )}
 
         <ScrollView
           style={styles.chatBox}
-          keyboardShouldPersistTaps='handled'
-          keyboardDismissMode='on-drag'
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <GetCommentPlayerFinder
             requestId={commentId}
@@ -188,6 +176,7 @@ export default function ChatSummaryPage() {
             <PostCommentPlayerFinder
               requestId={commentId}
               userId={userId}
+              receiverUserId={isIndividualMessage === 'true' ? directUserId : null}
               onSuccess={() => refetchComments()}
             />
           </View>
@@ -198,14 +187,8 @@ export default function ChatSummaryPage() {
 }
 
 const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: '#E8F6F8',
-  },
-  commentSection: {
-    flex: 1,
-    backgroundColor: '#E8F6F8',
-  },
+  page: { flex: 1, backgroundColor: '#E8F6F8' },
+  commentSection: { flex: 1, backgroundColor: '#E8F6F8' },
   header: {
     backgroundColor: '#007A7A',
     paddingTop: Platform.OS === 'ios' ? 48 : 36,
@@ -217,11 +200,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#fff',
-  },
+  headerTitle: { fontSize: 20, fontWeight: '600', color: '#fff' },
   commentInputContainer: {
     borderTopWidth: 1,
     borderTopColor: '#ccc',
@@ -230,16 +209,8 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 6 : 4,
     backgroundColor: '#fff',
   },
-  chatBox: {
-    flex: 1,
-    padding: 8,
-    backgroundColor: '#E8F6F8',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  chatBox: { flex: 1, padding: 8, backgroundColor: '#E8F6F8' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   originalMessageContainer: {
     backgroundColor: '#f1f1f1',
     padding: 10,
@@ -250,12 +221,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     maxWidth: '80%',
   },
-  originalMessageText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  errorText: {
-    color: '#D8000C',
-    fontSize: 16,
-  },
+  originalMessageText: { fontSize: 14, color: '#333' },
+  errorText: { color: '#D8000C', fontSize: 16 },
 });

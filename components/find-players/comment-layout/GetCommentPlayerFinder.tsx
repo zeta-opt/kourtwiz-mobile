@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useGetComments } from '@/hooks/apis/player-finder/useGetPlayerFinderComments';
 import { useUpdateComment } from '@/hooks/apis/player-finder/useUpdatePlayerFinderComment';
@@ -71,121 +73,130 @@ export const GetCommentPlayerFinder: React.FC<Props> = ({
   if (!data || data.length === 0) return <Text style={styles.infoText}>No comments yet.</Text>;
 
   return (
-    <View>
-      {data.map((comment) => {
-        const isOwnMessage = comment.userId === user?.userId;
-        const hasText = !!comment.commentText?.trim();
-        const hasImage = !!comment.image;
-        const imageUri = hasImage ? `data:image/jpeg;base64,${comment.image}` : null;
+    <TouchableWithoutFeedback
+      onPress={() => {
+        Keyboard.dismiss();
+        if (menuVisibleId) setMenuVisibleId(null);
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        {data.map((comment) => {
+          const isOwnMessage = comment.userId === user?.userId;
+          const hasText = !!comment.commentText?.trim();
+          const hasImage = !!comment.image;
+          const imageUri = hasImage ? `data:image/jpeg;base64,${comment.image}` : null;
 
-        if (!hasText && !hasImage) return null;
+          if (!hasText && !hasImage) return null;
 
-        return (
-          <View
-            key={comment.id}
-            style={[
-              styles.commentWrapper,
-              isOwnMessage ? styles.alignRight : styles.alignLeft,
-            ]}
-          >
+          return (
             <View
+              key={comment.id}
               style={[
-                styles.commentBubble,
-                isOwnMessage ? styles.ownBubble : styles.otherBubble,
+                styles.commentWrapper,
+                isOwnMessage ? styles.alignRight : styles.alignLeft,
               ]}
             >
-              <View style={styles.headerRow}>
-                <Text style={styles.userName}>{comment.userName}</Text>
+              <View
+                style={[
+                  styles.commentBubble,
+                  isOwnMessage ? styles.ownBubble : styles.otherBubble,
+                ]}
+              >
+                <View style={styles.headerRow}>
+                  <Text style={styles.userName}>{comment.userName}</Text>
 
-                {isOwnMessage && (
-                  <View style={styles.menuContainer}>
-                    <IconButton
-                      icon="dots-vertical"
-                      size={18}
-                      onPress={() =>
-                        setMenuVisibleId(menuVisibleId === comment.id ? null : comment.id)
-                      }
+                  {isOwnMessage && (
+                    <View style={styles.menuContainer}>
+                      <IconButton
+                        icon="dots-vertical"
+                        size={18}
+                        onPress={() =>
+                          setMenuVisibleId(menuVisibleId === comment.id ? null : comment.id)
+                        }
+                      />
+
+                      {menuVisibleId === comment.id && (
+                        <TouchableWithoutFeedback onPress={() => {}}>
+                          <View style={styles.popupMenu}>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setEditingCommentId(comment.id);
+                                setNewText(comment.commentText);
+                                setMenuVisibleId(null);
+                              }}
+                            >
+                              <Text style={styles.popupItem}>✏ Edit</Text>
+                            </TouchableOpacity>
+
+                            <View style={styles.separator} />
+
+                            <TouchableOpacity
+                              onPress={() => {
+                                handleDelete(comment.id);
+                                setMenuVisibleId(null);
+                              }}
+                            >
+                              <Text style={[styles.popupItem, { color: 'red' }]}>🗑 Delete</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </TouchableWithoutFeedback>
+                      )}
+                    </View>
+                  )}
+                </View>
+
+                {editingCommentId === comment.id ? (
+                  <>
+                    <TextInput
+                      value={newText}
+                      onChangeText={setNewText}
+                      placeholder="Edit your comment"
+                      style={styles.input}
+                      multiline
                     />
-
-                    {menuVisibleId === comment.id && (
-                      <View style={styles.popupMenu}>
-                        <TouchableOpacity
-                          onPress={() => {
-                            setEditingCommentId(comment.id);
-                            setNewText(comment.commentText);
-                            setMenuVisibleId(null);
-                          }}
-                        >
-                          <Text style={styles.popupItem}>✏ Edit</Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.separator} />
-
-                        <TouchableOpacity
-                          onPress={() => {
-                            handleDelete(comment.id);
-                            setMenuVisibleId(null);
-                          }}
-                        >
-                          <Text style={[styles.popupItem, { color: 'red' }]}>🗑 Delete</Text>
-                        </TouchableOpacity>
-                      </View>
+                    <View style={styles.buttonRow}>
+                      <TouchableOpacity
+                        style={[styles.actionBtn, styles.updateBtn]}
+                        onPress={() => handleUpdate(comment.id)}
+                        disabled={updateStatus === 'loading'}
+                      >
+                        <Text style={styles.actionText}>Update</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.actionBtn, styles.cancelBtn]}
+                        onPress={() => setEditingCommentId(null)}
+                      >
+                        <Text style={styles.actionText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    {hasText && <Text style={styles.commentText}>{comment.commentText}</Text>}
+                    {imageUri && (
+                      <Pressable onPress={() => openModal(imageUri)}>
+                        <Image source={{ uri: imageUri }} style={styles.commentImage} />
+                      </Pressable>
                     )}
-                  </View>
+                  </>
                 )}
               </View>
-
-              {editingCommentId === comment.id ? (
-                <>
-                  <TextInput
-                    value={newText}
-                    onChangeText={setNewText}
-                    placeholder="Edit your comment"
-                    style={styles.input}
-                    multiline
-                  />
-                  <View style={styles.buttonRow}>
-                    <TouchableOpacity
-                      style={[styles.actionBtn, styles.updateBtn]}
-                      onPress={() => handleUpdate(comment.id)}
-                      disabled={updateStatus === 'loading'}
-                    >
-                      <Text style={styles.actionText}>Update</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.actionBtn, styles.cancelBtn]}
-                      onPress={() => setEditingCommentId(null)}
-                    >
-                      <Text style={styles.actionText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              ) : (
-                <>
-                  {hasText && <Text style={styles.commentText}>{comment.commentText}</Text>}
-                  {imageUri && (
-                    <Pressable onPress={() => openModal(imageUri)}>
-                      <Image source={{ uri: imageUri }} style={styles.commentImage} />
-                    </Pressable>
-                  )}
-                </>
-              )}
             </View>
-          </View>
-        );
-      })}
+          );
+        })}
 
-      <Modal visible={modalVisible} transparent={true} animationType="fade">
-        <View style={styles.modalBackground}>
-          <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-            <Text style={styles.closeText}>X</Text>
-          </TouchableOpacity>
-          {modalImageUri && (
-            <Image source={{ uri: modalImageUri }} style={styles.fullImage} resizeMode="contain" />
-          )}
-        </View>
-      </Modal>
-    </View>
+        <Modal visible={modalVisible} transparent={true} animationType="fade">
+          <View style={styles.modalBackground}>
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+              <Text style={styles.closeText}>X</Text>
+            </TouchableOpacity>
+            {modalImageUri && (
+              <Image source={{ uri: modalImageUri }} style={styles.fullImage} resizeMode="contain" />
+            )}
+          </View>
+        </Modal>
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 

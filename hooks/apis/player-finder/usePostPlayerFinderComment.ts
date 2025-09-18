@@ -7,6 +7,7 @@ import { getToken } from '@/shared/helpers/storeToken';
 type AddCommentPayload = {
   requestId: string;
   userId: string;
+  receiverUserId?: string | null;
   commentText?: string;
   image?: {
     uri: string;
@@ -25,6 +26,9 @@ export const usePostComment = (): UsePostCommentReturn => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
+  // Utility: extract base requestId (before underscores)
+  const getBaseRequestId = (requestId: string) => requestId.split('_')[0];
+
   const submit = async (payload: AddCommentPayload) => {
     setStatus('loading');
     setError(null);
@@ -37,9 +41,19 @@ export const usePostComment = (): UsePostCommentReturn => {
       if (!token) throw new Error('Missing token');
 
       const formData = new FormData();
-      formData.append('requestId', payload.requestId);
+
+      // Always send only the base requestId
+      const baseRequestId = getBaseRequestId(payload.requestId);
+      formData.append('requestId', baseRequestId);
       formData.append('userId', payload.userId);
-      formData.append('commentText', payload.commentText || '');
+
+      if (payload.receiverUserId) {
+        formData.append('receiverUserId', payload.receiverUserId);
+      }
+
+      if (payload.commentText) {
+        formData.append('commentText', payload.commentText);
+      }
 
       if (payload.image?.uri) {
         console.log('🖼️ Compressing image...');
@@ -50,25 +64,26 @@ export const usePostComment = (): UsePostCommentReturn => {
           { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
         );
 
-        const file = {
+        formData.append('image', {
           uri: manipulated.uri,
           name: payload.image.name || 'photo.jpg',
           type: 'image/jpeg',
-        };
-
-        formData.append('image', file as any); // For React Native
+        } as any);
       }
 
-      console.log('📤 Sending POST request with FormData...');
+      console.log('📤 Sending POST request with FormData...', {
+        requestId: baseRequestId,
+        userId: payload.userId,
+        receiverUserId: payload.receiverUserId,
+        commentText: payload.commentText,
+      });
 
-      await fetch(`${BASE_URL}/api/player-finder/comments`, {
-        method: 'POST',
+      await axios.post(`${BASE_URL}/api/player-finder/comments`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
-          'Content-Type': 'multipart/form-data', // React Native requires this
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData as any,
       });
 
       console.log('✅ Comment posted successfully!');

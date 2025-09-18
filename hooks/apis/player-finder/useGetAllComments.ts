@@ -3,7 +3,7 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { useState, useEffect } from 'react';
 
-type Comment = {
+export type Comment = {
   id: string;
   requestId: string;
   eventType: string;
@@ -12,6 +12,7 @@ type Comment = {
   groupName: string;
   userId: string;
   userName: string;
+  receiverId?: string | null;
   commentText: string;
   image?: string;
   timestamp: string | number[];

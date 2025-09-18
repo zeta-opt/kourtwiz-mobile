@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useWithdrawRequest } from '@/hooks/apis/player-finder/useWithdrawRequest';
@@ -140,7 +140,13 @@ export default function SentRequestDetailedView() {
           <View style={styles.locationIconWrapper}>
             <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" />
           </View>
-          <Text style={styles.locationText}>Event Place: {invite.placeToPlay}</Text>
+          <Text
+            style={styles.locationText}
+            numberOfLines={0}
+            ellipsizeMode="tail"
+          >
+            Event Place: {invite.placeToPlay}
+          </Text>
         </View>
       </View>
 
@@ -156,12 +162,35 @@ export default function SentRequestDetailedView() {
             const status = player.status?.toUpperCase() || 'PENDING';
             return (
               <View key={player.id} style={styles.row}>
-                <Text style={{ color: statusColorMap[status], fontWeight: '500' }}>
-                  {player.name}
-                </Text>
+                {/* Chat Icon + Player Name */}
+                <TouchableOpacity
+                style={{ marginRight: 20 }}
+                onPress={() => {
+                  const combinedRequestId = `${invite.requestId}_${userId}_${player.id}`;
+                  router.push({
+                    pathname: "/(authenticated)/chat-summary",
+                    params: {
+                      requestId: combinedRequestId,
+                      directUserId: player.id,
+                      directUserName: player.name,
+                      isIndividualMessage: 'true',
+                    },
+                  });
+                }}
+              >
+                <MaterialCommunityIcons name='message-text-outline' size={20} color='#007BFF'/>
+              </TouchableOpacity>
+
+                <View style={[styles.row, { flex: 1, alignItems: "center" }]}>
+                  <Text style={{ color: statusColorMap[status], fontWeight: '500', marginRight: 8 }}>
+                    {player.name}
+                  </Text>
+                </View>
+
+                {/* Status Section */}
                 <View style={styles.row}>
                   <FontAwesome5
-                    name={statusIconMap[status] || 'question'}
+                    name={statusIconMap[status] || "question"}
                     size={14}
                     color={statusColorMap[status]}
                     style={{ marginRight: 4 }}
@@ -169,7 +198,6 @@ export default function SentRequestDetailedView() {
                   <Text style={{ color: statusColorMap[status] }}>
                     {status === "CANCELLED" ? "DECLINED" : status}
                   </Text>
-
                 </View>
               </View>
             );
@@ -177,11 +205,10 @@ export default function SentRequestDetailedView() {
         </ScrollView>
       </View>
 
-      {/* Chat Preview + Join Button */}
-      <View style={styles.chatPreviewContainer}>
-        <Text style={styles.chatPreviewText}>Chat with players here...</Text>
+      {/* Join Button */}
+      <View style={[styles.chatPreviewContainer, {flexDirection:"row", alignItems: "center", justifyContent:"space-between" }]}>
+        <Text style={[styles.chatPreviewText, {marginBottom: 2}]}>Chat with all the players here...</Text>
         <TouchableOpacity
-          style={styles.joinButton}
           onPress={() =>
             router.push({
               pathname: '/(authenticated)/chat-summary',
@@ -189,7 +216,7 @@ export default function SentRequestDetailedView() {
             })
           }
         >
-          <Text style={styles.joinButtonText}>Join Chat</Text>
+          <MaterialCommunityIcons name='message-text-outline' size={20} color='#007BFF'/>
         </TouchableOpacity>
       </View>
 
@@ -324,7 +351,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E6F7F7',
     padding: 10,
     borderRadius: 30,
-    alignItems: 'center',
+    alignItems: 'flex-start',
     width: '40%',
   },
   infoText: {
@@ -334,11 +361,13 @@ const styles = StyleSheet.create({
   },
   locationRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginTop: 10,
     marginLeft: 28,
   },
   locationText: {
+    flexShrink: 1,
+    flexWrap: 'wrap',
     marginLeft: 8,
     fontSize: 15,
     color: '#444',

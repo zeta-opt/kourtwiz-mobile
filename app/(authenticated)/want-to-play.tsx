@@ -23,11 +23,40 @@ import { useSearchImport } from '@/hooks/apis/iwanttoplay/useSearchImport';
 const IWantToPlayScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [location, setLocation] = useState('');
-  const [message, setMessage] = useState('');
   const [locationError, setLocationError] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const { createIWantToPlay } = useCreateIWantToPlay();
+  function getNext30MinSlot(date: Date) {
+    const newDate = new Date(date);
+    const minutes = newDate.getMinutes();
+    const extraMinutes = minutes < 30 ? 30 - minutes : 60 - minutes;
+    newDate.setMinutes(minutes + extraMinutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+    return newDate;
+  }
+  const now = new Date();
+  const nextSlot = getNext30MinSlot(now);
+
+  const formattedDate = nextSlot.toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const formattedTime = nextSlot.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  const defaultMessage = `Hi This is ${user?.username || "Player"}, my skill level is ${
+    user?.playerDetails?.personalRating ?? "N/A"
+  } and I would like to play Doubles/Singles on ${formattedDate} at ${formattedTime}. Any suggestions? Thanks!`;
+
+  const [message, setMessage] = useState(defaultMessage);
 
   // Hook to fetch location suggestions
   const {
@@ -102,7 +131,7 @@ const IWantToPlayScreen = () => {
 
       Alert.alert('Success', 'Broadcast sent to all players.');
 
-      setMessage('');
+      setMessage(defaultMessage);
       setLocation('');
       setShowSuggestions(false);
       router.push('/(authenticated)/home');
@@ -149,8 +178,8 @@ const IWantToPlayScreen = () => {
                   setShowSuggestions(true);
                 }}
                 onFocus={() => {
-                  setLocation('');
-                  if (!location) setShowSuggestions(true);
+                  if (!location) setLocation('');
+                  setShowSuggestions(true);
                 }}
                 style={[styles.input, { flex: 1 }]}
                 autoCorrect={false}
