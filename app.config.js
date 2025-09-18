@@ -25,10 +25,12 @@ export default {
           'This app needs access to your contacts to let you invite or select players.',
         NSLocationWhenInUseUsageDescription:
           'This app needs your location to help you find nearby courts.',
+        UIBackgroundModes: ["remote-notification"],
       },
       config: {
         googleMapsApiKey: "AIzaSyC3JM_8P23tGrP6laoq7K8fIGI0DQxNSog", // ✅ iOS key goes here
       },
+      googleServicesFile: "./ios/GoogleService-Info.plist"
     },
 
     android: {
@@ -45,6 +47,7 @@ export default {
           apiKey: "AIzaSyDQvA6q1C1dt9JoOo-_6iG6mOGFozGfqwk", // ✅ Android key goes here
         },
       },
+      googleServicesFile: "./android/app/google-services.json"
     },
 
     web: {

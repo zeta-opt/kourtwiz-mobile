@@ -3,6 +3,7 @@ import { useFetchUser } from '@/hooks/apis/authentication/useFetchUser';
 import { useLoginUser } from '@/hooks/apis/authentication/useLoginUser';
 import { storeToken } from '@/shared/helpers/storeToken';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -23,12 +24,13 @@ const loginSchema = z.object({
   username: z.string().refine(
     (value) => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneRegex =
-        /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{4,6}$/;
+      // ✅ New regex: allows 10–15 digits with or without spaces/+, -, ()
+      const phoneRegex = /^[0-9]{10,15}$/;
 
-      return (
-        emailRegex.test(value) || phoneRegex.test(value.replace(/\s/g, ''))
-      );
+      // Remove non-digit characters before testing
+      const normalizedValue = value.replace(/\D/g, '');
+
+      return emailRegex.test(value) || phoneRegex.test(normalizedValue);
     },
     { message: 'Please enter a valid email address or phone number' }
   ),
@@ -36,7 +38,6 @@ const loginSchema = z.object({
     .string()
     .min(6, { message: 'Password must be at least 6 characters' }),
 });
-
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginUser() {
@@ -56,26 +57,26 @@ export default function LoginUser() {
   const [loginResponse, setLoginResponse] = useState<any>(null);
 
   const handleSuccess = async (resData: any) => {
-  setLoginError(null); // Clear old error if any
+    setLoginError(null); // Clear old error if any
     console.log('✅ Login Success. Token:', resData);
-  await storeToken(resData.token);
+    await storeToken(resData.token);
 
-  setLoginResponse(resData);
+    setLoginResponse(resData);
 
-  if (resData.isFirstTimeLogin || !resData.isPhoneNumberVerified) {
-    console.log("⚠️ Showing phone verification popup");
-    setShowPhoneModal(true);
-    return; // ⛔ stop here until phone verified
-  }
+    if (resData.isFirstTimeLogin || !resData.isPhoneNumberVerified) {
+      console.log('⚠️ Showing phone verification popup');
+      setShowPhoneModal(true);
+      return; // ⛔ stop here until phone verified
+    }
 
-  try {
-    await fetchUser();
-    console.log('✅ User fetched successfully');
-    router.replace('/(authenticated)/home');
-  } catch (e) {
-    console.error('❌ Failed to fetch user after login', e);
-  }
-};
+    try {
+      await fetchUser();
+      console.log('✅ User fetched successfully');
+      router.replace('/(authenticated)/home');
+    } catch (e) {
+      console.error('❌ Failed to fetch user after login', e);
+    }
+  };
   const handleError = (error: Error) => {
     console.log('❌ Login failed', error);
 
@@ -86,11 +87,44 @@ export default function LoginUser() {
     }
   };
 
+  const getDeviceToken = async (): Promise<string | null> => {
+    try {
+      if (Platform.OS === 'ios') {
+        return (await Notifications.getDevicePushTokenAsync()).data;
+      } else if (Platform.OS === 'android') {
+        return (await Notifications.getDevicePushTokenAsync()).data;
+      } else {
+        return (await Notifications.getExpoPushTokenAsync()).data;
+      }
+    } catch (err) {
+      console.warn('⚠️ Could not fetch device token:', err);
+      return null;
+    }
+  };
+
   const onSubmit = async (data: LoginFormData) => {
-    await login(data, {
-      onSuccess: handleSuccess,
-      onError: handleError,
-    });
+    try {
+      const deviceToken = await getDeviceToken();
+      console.log(deviceToken, 'Device Token');
+
+      const payload = {
+        ...data,
+        ...(deviceToken && {
+          deviceRegisterRequest: {
+            deviceToken,
+            platform: Platform.OS,
+          },
+        }),
+      };
+
+      await login(payload, {
+        onSuccess: handleSuccess,
+        onError: handleError,
+      });
+    } catch (err) {
+      console.error('❌ Unexpected error during login', err);
+      setLoginError('Something went wrong. Please try again.');
+    }
   };
 
   return (
@@ -179,24 +213,26 @@ export default function LoginUser() {
         onDismiss={() => setShowForgotPassword(false)}
       />
       {loginResponse && (
-      <PhoneVerificationModal
-        visible={showPhoneModal}
-        onDismiss={() => setShowPhoneModal(false)}
-        phoneNumber={loginResponse.phoneNumber}
-        userId={loginResponse.userId}
-        onSuccess={async () => {
-          try {
-            await fetchUser();
-            console.log("✅ User fetched successfully after verification");
-            router.replace("/(authenticated)/profile"); // 🚀 redirect to profile
-          } catch (e) {
-            console.error("❌ Failed to fetch user after phone verification", e);
-          }
-        }}
-      />
-)}
+        <PhoneVerificationModal
+          visible={showPhoneModal}
+          onDismiss={() => setShowPhoneModal(false)}
+          phoneNumber={loginResponse.phoneNumber}
+          userId={loginResponse.userId}
+          onSuccess={async () => {
+            try {
+              await fetchUser();
+              console.log('✅ User fetched successfully after verification');
+              router.replace('/(authenticated)/profile'); // 🚀 redirect to profile
+            } catch (e) {
+              console.error(
+                '❌ Failed to fetch user after phone verification',
+                e
+              );
+            }
+          }}
+        />
+      )}
     </ImageBackground>
-    
   );
 }
 
