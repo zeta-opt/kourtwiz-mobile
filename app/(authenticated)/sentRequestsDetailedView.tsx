@@ -72,12 +72,14 @@ export default function SentRequestDetailedView() {
   if (!invite) return <ActivityIndicator size="large" style={styles.loader} />;
   console.log(invite)
   const playTime = arrayToDate(invite?.Requests?.[0]?.playTime || []);
+  const playEndTime = arrayToDate(invite?.Requests?.[0]?.playEndTime || []);
   const dateString = playTime.toLocaleDateString("en-US", {
     month: "2-digit",
     day: "2-digit",
     year: "numeric",
   });
   const timeString = playTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const endtimeString = playEndTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const requestId = invite?.requestId || invite?.Requests?.[0]?.requestId;
   const organizerName = invite?.Requests?.[0]?.inviteeName ?? 'Unknown';
   const total = invite?.playersNeeded + 1 || 0;
@@ -125,7 +127,7 @@ export default function SentRequestDetailedView() {
             <View style={styles.infoCard}>
               <FontAwesome5 name="clock" size={20} color="#2CA6A4" />
             </View>
-            <Text style={styles.infoText}>{timeString}</Text>
+            <Text style={styles.infoText}>{timeString}-{endtimeString}</Text>
           </View>
           <View style={styles.column}>
             <View style={styles.infoCard}>
