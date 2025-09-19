@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#3F7CFF',
+    color: '#2C7E88',
      textDecorationLine: 'underline'
   },
   inviteScrollContainer: {

@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
 
   outlinedButton: {
     backgroundColor: '#fff',
-    borderColor: '#3F7CFF',
+    borderColor: '#2C7E88',
     borderWidth: 1,
     borderRadius: 5,
     paddingVertical: 8,
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
     
   filledButton: {
-    backgroundColor: '#3F7CFF',
+    backgroundColor: '#2C7E88',
     paddingVertical:8,
     paddingBlockStart:4,
     alignItems:'center',
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
 
   outlinedButtonText: {
-    color: '#3F7CFF',
+    color: '#2C7E88',
     fontWeight: '600',
     fontSize: 12,
   },
