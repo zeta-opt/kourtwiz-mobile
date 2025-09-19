@@ -29,6 +29,7 @@ interface InvitationCardProps {
   totalPlayers: number;
   acceptedPlayers: number;
   onViewPlayers: (requestId: string) => void;
+  disabled?: boolean;
 }
 
 const InvitationCard: React.FC<InvitationCardProps> = ({
@@ -40,6 +41,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
   totalPlayers,
   acceptedPlayers,
   onViewPlayers,
+  disabled = false,
 }) => {
   const router = useRouter();
 
@@ -66,6 +68,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
     <TouchableOpacity
       style={styles.row}
       activeOpacity={0.9}
+      disabled={disabled}
       onPress={() => {
         try {
           router.push({
@@ -115,10 +118,9 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
           >
             <MaterialCommunityIcons
               name='message-text-outline'
-              size={14}
+              size={16}
               color='#007BFF'
             />
-            <Text style={styles.chatText}>Join Chat</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -127,52 +129,60 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
         {invite.status === 'PENDING' ? (
           <>
             <TouchableOpacity
-              onPress={async () => { await onAccept(invite); }}
-              disabled={loading}
+              onPress={async () => {
+                await onAccept(invite);
+              }}
+              disabled={loading || disabled} // 🔑 also disable when disabled=true
             >
               <MaterialCommunityIcons
                 name='check-circle'
                 size={26}
-                color='green'
+                color={disabled ? '#ccc' : 'green'} // 🔑 grey out if disabled
               />
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={async () => { await onReject(invite); }}
-              disabled={loading}
+              onPress={async () => {
+                await onReject(invite);
+              }}
+              disabled={loading || disabled} // 🔑 also disable when disabled=true
             >
               <MaterialCommunityIcons
                 name='close-circle'
                 size={26}
-                color='red'
+                color={disabled ? '#ccc' : 'red'} // 🔑 grey out if disabled
               />
             </TouchableOpacity>
           </>
         ) : invite.status === 'ACCEPTED' ? (
           <TouchableOpacity
-            onPress={async () => { await onCancel(invite); }}
-            disabled={loading}
-            style={styles.cancelButton}
+            onPress={async () => {
+              await onCancel(invite);
+            }}
+            disabled={loading || disabled} // 🔑 added
+            style={[
+              styles.cancelButton,
+              disabled && { backgroundColor: '#aaa' },
+            ]} // 🔑 faded if disabled
           >
-            {/* <MaterialCommunityIcons
-              name="cancel"
-              size={26}
-              color="#FF8C00"
-            /> */}
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         ) : invite.status === 'WITHDRAWN' ? (
           <Text style={styles.cancelledText}>🚫 Withdrawn</Text>
-        ) : invite.status === 'DECLINED'|| invite.status === 'CANCELLED' ? (
+        ) : invite.status === 'DECLINED' || invite.status === 'CANCELLED' ? (
           <TouchableOpacity
-            onPress={async () => { await onAccept(invite); }}
-            disabled={loading}
-            style={styles.acceptButton}
+            onPress={async () => {
+              await onAccept(invite);
+            }}
+            disabled={loading || disabled} // 🔑 added
+            style={[
+              styles.acceptButton,
+              disabled && { backgroundColor: '#aaa' },
+            ]} // 🔑 faded if disabled
           >
             <Text style={styles.acceptButtonText}>Accept</Text>
           </TouchableOpacity>
         ) : null}
-
       </View>
 
       {loading && <ActivityIndicator style={styles.loading} size='small' />}
@@ -184,32 +194,31 @@ export default InvitationCard;
 
 const styles = StyleSheet.create({
   cancelButton: {
-  backgroundColor: 'red',
-  paddingHorizontal: 12,
-  paddingVertical: 6,
-  borderRadius: 6,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-cancelButtonText: {
-  color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 14,
-},
-acceptButton: {
-  backgroundColor: 'green',
-  paddingHorizontal: 12,
-  paddingVertical: 6,
-  borderRadius: 6,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-acceptButtonText: {
-  color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 14,
-},
-
+    backgroundColor: 'red',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  acceptButton: {
+    backgroundColor: 'green',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  acceptButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 
   row: {
     flexDirection: 'row',

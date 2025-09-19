@@ -61,7 +61,8 @@ export default function PlayCalendarPage() {
     selectedDate,
     userId
   );
-  const { data: schedule, refetch: fetchSchedule } = useGetPlayerSchedule(userId);
+  const { data: schedule, refetch: fetchSchedule } =
+    useGetPlayerSchedule(userId);
   const { data: initiatedData } = useGetInitiatedPlays(userId);
 
   const {
@@ -398,6 +399,13 @@ export default function PlayCalendarPage() {
       setDialogVisible(false);
     }
   };
+  const isPastDate = (dateArr: number[] | Date | null): boolean => {
+    if (!dateArr) return false;
+    const date = Array.isArray(dateArr)
+      ? parseArrayToDate(dateArr)
+      : new Date(dateArr);
+    return date < new Date(new Date().setHours(0, 0, 0, 0)); // before today
+  };
 
   const handleViewPlayers = async (requestId: string) => {
     try {
@@ -464,6 +472,7 @@ export default function PlayCalendarPage() {
                     totalPlayers={item.totalPlayers}
                     acceptedPlayers={item.accepted}
                     onViewPlayers={() => handleViewPlayers(item.requestId)}
+                    disabled={isPastDate(item.playTime)}
                   />
                 );
               } else if (item.type === 'outgoing') {
@@ -474,11 +483,18 @@ export default function PlayCalendarPage() {
                       key={item.requestId}
                       invite={item}
                       onViewPlayers={() => handleViewPlayers(item.requestId)}
+                      disabled={isPastDate(item.start)}
                     />
                   </TouchableOpacity>
                 );
               } else if (item.type === 'available') {
-                return <OpenPlayCard data={[item]} refetch={() => {}} />;
+                return (
+                  <OpenPlayCard
+                    data={[item]}
+                    refetch={() => {}}
+                    disabled={isPastDate(item.start)}
+                  />
+                );
               } else {
                 return (
                   <View style={styles.eventCard}>
@@ -504,10 +520,11 @@ export default function PlayCalendarPage() {
         </View>
 
         <View style={styles.bottomNav}>
-    
-         <TouchableOpacity
+          <TouchableOpacity
             onPress={() => {
-              const encodedSchedule = encodeURIComponent(JSON.stringify(schedule));
+              const encodedSchedule = encodeURIComponent(
+                JSON.stringify(schedule)
+              );
               router.push({
                 pathname: '/(authenticated)/set-availability',
                 params: { data: encodedSchedule },
@@ -516,7 +533,6 @@ export default function PlayCalendarPage() {
           >
             <Text style={styles.navText}>Set Availability</Text>
           </TouchableOpacity>
-          
         </View>
 
         <Portal>
@@ -546,6 +562,9 @@ export default function PlayCalendarPage() {
               <Button
                 onPress={handleDialogSubmit}
                 loading={cancelStatus === 'loading'}
+                disabled={isPastDate(
+                  selectedInvite?.startTime || selectedInvite?.playTime
+                )}
               >
                 Submit
               </Button>

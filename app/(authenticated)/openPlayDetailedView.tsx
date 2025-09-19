@@ -1,23 +1,27 @@
-import { useLocalSearchParams, router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-} from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import UserAvatar from '@/assets/UserAvatar';
+import VideoUpload from '@/components/open-play/VideoUpload';
 import { useGetPlaySessionById } from '@/hooks/apis/join-play/useGetPlaySessionById';
-import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
+import { RootState } from '@/store';
+import {
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+} from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Toast from 'react-native-toast-message';
-import UserAvatar from '@/assets/UserAvatar';
-import VideoUpload from '@/components/open-play/VideoUpload';
+import { useSelector } from 'react-redux';
 
 export default function OpenPlayDetailedView() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
@@ -43,10 +47,12 @@ export default function OpenPlayDetailedView() {
   }, [status, refetch]);
 
   if (status === 'loading') {
-    return <ActivityIndicator size="large" style={styles.loader} />;
+    return <ActivityIndicator size='large' style={styles.loader} />;
   }
   if (status === 'error') {
-    return <Text style={styles.errorText}>{error || 'Something went wrong'}</Text>;
+    return (
+      <Text style={styles.errorText}>{error || 'Something went wrong'}</Text>
+    );
   }
   if (!selectedPlay) {
     return <Text style={styles.errorText}>Play session not found</Text>;
@@ -60,7 +66,9 @@ export default function OpenPlayDetailedView() {
     selectedPlay.startTime?.[3] || 0,
     selectedPlay.startTime?.[4] || 0
   );
-  const endDate = new Date(startDate.getTime() + (selectedPlay.durationMinutes || 0) * 60000);
+  const endDate = new Date(
+    startDate.getTime() + (selectedPlay.durationMinutes || 0) * 60000
+  );
 
   // Players info
   const registeredPlayerIds = selectedPlay.registeredPlayers || [];
@@ -80,10 +88,18 @@ export default function OpenPlayDetailedView() {
     try {
       if (isWaitlisted) {
         await withdrawFromWaitlist({ sessionId, userId });
-        Toast.show({ type: 'success', text1: 'Withdrawn from waitlist', topOffset: 100 });
+        Toast.show({
+          type: 'success',
+          text1: 'Withdrawn from waitlist',
+          topOffset: 100,
+        });
       } else if (isRegistered) {
         await withdraw({ sessionId, userId });
-        Toast.show({ type: 'success', text1: 'Withdrawn from play', topOffset: 100 });
+        Toast.show({
+          type: 'success',
+          text1: 'Withdrawn from play',
+          topOffset: 100,
+        });
       } else {
         await joinPlaySession({
           userId,
@@ -122,14 +138,21 @@ export default function OpenPlayDetailedView() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F9F9F9' }}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/(authenticated)/home')}>
-            <Ionicons name="chevron-back" size={24} color="#000" />
+          <TouchableOpacity
+            onPress={() => router.push('/(authenticated)/home')}
+          >
+            <Ionicons name='chevron-back' size={24} color='#000' />
           </TouchableOpacity>
           <Text style={styles.title}>Open Play</Text>
-          <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+          <TouchableOpacity
+            onPress={() => router.push('/(authenticated)/profile')}
+          >
             <UserAvatar size={36} />
           </TouchableOpacity>
         </View>
@@ -146,27 +169,40 @@ export default function OpenPlayDetailedView() {
           <View style={styles.row}>
             <View style={styles.column}>
               <View style={styles.iconCircle}>
-                <FontAwesome5 name="calendar-alt" size={20} color="#2CA6A4" solid  />
+                <FontAwesome5
+                  name='calendar-alt'
+                  size={20}
+                  color='#2CA6A4'
+                  solid
+                />
               </View>
-              <Text style={styles.infoText}>{startDate.toLocaleDateString("en-US", {
-                month: "2-digit",
-                day: "2-digit",
-                year: "numeric",
-              })}
-            </Text>
-            </View>
-            <View style={styles.column}>
-              <View style={styles.iconCircle}>
-                <FontAwesome5 name="clock" size={20} color="#2CA6A4" solid  />
-              </View>
-              <Text style={styles.infoText2}>
-                {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
-                {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <Text style={styles.infoText}>
+                {startDate.toLocaleDateString('en-US', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  year: 'numeric',
+                })}
               </Text>
             </View>
             <View style={styles.column}>
               <View style={styles.iconCircle}>
-                <FontAwesome5 name="users" size={20} color="#2CA6A4" />
+                <FontAwesome5 name='clock' size={20} color='#2CA6A4' solid />
+              </View>
+              <Text style={styles.infoText2}>
+                {startDate.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}{' '}
+                -{' '}
+                {endDate.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </View>
+            <View style={styles.column}>
+              <View style={styles.iconCircle}>
+                <FontAwesome5 name='users' size={20} color='#2CA6A4' />
               </View>
               <Text style={styles.infoText}>
                 {acceptedCount}/{maxSlots} Accepted
@@ -177,13 +213,17 @@ export default function OpenPlayDetailedView() {
           <View style={styles.row}>
             <View style={styles.columnWide}>
               <View style={styles.iconCircle}>
-                <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" />
+                <FontAwesome5 name='map-marker-alt' size={16} color='#2CA6A4' />
               </View>
               <Text style={styles.infoText}>Event Place: {courtName}</Text>
             </View>
             <View style={styles.column}>
               <View style={styles.iconCircle}>
-                <MaterialCommunityIcons name="wallet" size={16} color="#2F7C83" />
+                <MaterialCommunityIcons
+                  name='wallet'
+                  size={16}
+                  color='#2F7C83'
+                />
               </View>
               <Text style={styles.infoText}>
                 ${selectedPlay.priceForPlay?.toFixed?.(2) ?? '0.00'}
@@ -206,91 +246,98 @@ export default function OpenPlayDetailedView() {
         {/* Player Lists */}
         <View style={styles.playerListSection}>
           <Text style={styles.playersListTitle}>Registered Players:</Text>
-            {(() => {
-              const registered = data?.registeredPlayersNames || [];
-              const playersWithRequestor = [
-                requestorName,   
-                ...registered,
-              ];
+          {(() => {
+            const registered = data?.registeredPlayersNames || [];
+            const playersWithRequestor = [requestorName, ...registered];
 
-              return playersWithRequestor.length > 0 ? (
-                playersWithRequestor.map((name: string, idx: number) => (
-                  <Text style={styles.playerName} key={idx}>
-                    • {name}
-                  </Text>
-                ))
-              ) : (
-                <Text style={styles.playerNameDimmed}>No players registered yet.</Text>
-              );
-            })()}
+            return playersWithRequestor.length > 0 ? (
+              playersWithRequestor.map((name: string, idx: number) => (
+                <Text style={styles.playerName} key={idx}>
+                  • {name}
+                </Text>
+              ))
+            ) : (
+              <Text style={styles.playerNameDimmed}>
+                No players registered yet.
+              </Text>
+            );
+          })()}
 
-
-          <Text style={[styles.playersListTitle, { marginTop: 12 }]}>Waitlisted Players:</Text>
-          {data?.waitlistedPlayersNames && data.waitlistedPlayersNames.length > 0 ? (
-            data.waitlistedPlayersNames.map((name:string, idx:number) => (
-              <Text style={styles.playerName} key={idx}>• {name}</Text>
+          <Text style={[styles.playersListTitle, { marginTop: 12 }]}>
+            Waitlisted Players:
+          </Text>
+          {data?.waitlistedPlayersNames &&
+          data.waitlistedPlayersNames.length > 0 ? (
+            data.waitlistedPlayersNames.map((name: string, idx: number) => (
+              <Text style={styles.playerName} key={idx}>
+                • {name}
+              </Text>
             ))
           ) : (
             <Text style={styles.playerNameDimmed}>No one on waitlist.</Text>
           )}
         </View>
         <View style={styles.chatPreviewContainer}>
-            <Text style={styles.chatPreviewText}>Chat with players here...</Text>
-            <TouchableOpacity
-              style={styles.joinButton}
-              onPress={() => {
-                if (isRegistered) {
-                  router.push({ pathname: '/(authenticated)/chat-summary', params: { sessionId } });
-                } else {
-                  Toast.show({
-                    type: 'info',
-                    text1: 'Register required',
-                    text2: 'Register for the event to chat with players',
-                    topOffset: 100,
-                  });
-                }
-              }}
-            >
-              <Text style={styles.joinButtonText}>
-                {isRegistered ? 'Join Chat' : 'Register to Chat'}
-              </Text>
-            </TouchableOpacity>
-
-          </View>
-        
+          <Text style={styles.chatPreviewText}>Chat with players here...</Text>
+          <TouchableOpacity
+            style={styles.joinButton}
+            onPress={() => {
+              if (isRegistered) {
+                router.push({
+                  pathname: '/(authenticated)/chat-summary',
+                  params: { sessionId },
+                });
+              } else {
+                Toast.show({
+                  type: 'info',
+                  text1: 'Register required',
+                  text2: 'Register for the event to chat with players',
+                  topOffset: 100,
+                });
+              }
+            }}
+          >
+            <Text style={styles.joinButtonText}>
+              {isRegistered ? 'Chat' : 'Register to Chat'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Action Button */}
-      
+
+      <TouchableOpacity
+        disabled={loading}
+        style={[
+          styles.actionButton,
+          isWaitlisted && styles.waitlistWithdrawButton,
+          isRegistered && styles.withdrawButton,
+          !isRegistered && isFull && !isWaitlisted && styles.joinWaitlistButton,
+        ]}
+        onPress={handleJoinPlay}
+      >
+        <Text style={styles.actionButtonText}>
+          {loading
+            ? 'Please wait...'
+            : isWaitlisted
+            ? 'Withdraw from Waitlist'
+            : isRegistered
+            ? 'Withdraw'
+            : isFull
+            ? 'Join Waitlist'
+            : 'Register'}
+        </Text>
+      </TouchableOpacity>
+      {selectedPlay.requestorId === userId && (
         <TouchableOpacity
-          disabled={loading}
           style={[
             styles.actionButton,
             isWaitlisted && styles.waitlistWithdrawButton,
             isRegistered && styles.withdrawButton,
-            !isRegistered && isFull && !isWaitlisted && styles.joinWaitlistButton,
-          ]}
-          onPress={handleJoinPlay}
-        >
-          <Text style={styles.actionButtonText}>
-            {loading
-              ? 'Please wait...'
-              : isWaitlisted
-              ? 'Withdraw from Waitlist'
-              : isRegistered
-              ? 'Withdraw'
-              : isFull
-              ? 'Join Waitlist'
-              : 'Register'}
-          </Text>
-        </TouchableOpacity>
-        {selectedPlay.requestorId === userId && (
-        <TouchableOpacity
-         style={[
-            styles.actionButton,
-            isWaitlisted && styles.waitlistWithdrawButton,
-            isRegistered && styles.withdrawButton,
-            !isRegistered && isFull && !isWaitlisted && styles.joinWaitlistButton,
+            !isRegistered &&
+              isFull &&
+              !isWaitlisted &&
+              styles.joinWaitlistButton,
           ]}
           onPress={() =>
             router.push({
@@ -319,47 +366,77 @@ export default function OpenPlayDetailedView() {
                 endTime: endDate.toISOString(), // Assuming you already calculate endDate
               },
             })
-
           }
         >
-          
-            <Text style={styles.actionButtonText}>
-              Edit
-            </Text>
+          <Text style={styles.actionButtonText}>Edit</Text>
         </TouchableOpacity>
-        )}
-      </View>
-
-    
+      )}
+    </View>
   );
 }
 
 // Styles
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9F9F9', paddingHorizontal: 16, paddingTop: 20 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F9F9F9',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
   title: { fontSize: 20, fontWeight: '600' },
   aboutSection: { marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: '#000', marginBottom: 4 },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
   inviteText: { fontSize: 16, color: '#444' },
   infoCard: {
-    backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12, shadowColor: '#000',
-    shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
-    elevation: 2, marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    marginBottom: 16,
   },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   column: { alignItems: 'center', flex: 1 },
   columnWide: { flex: 2, alignItems: 'center' },
   iconCircle: {
-    backgroundColor: '#E6F7F7', padding: 10, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+    backgroundColor: '#E6F7F7',
+    padding: 10,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
   infoText: { marginTop: 4, fontSize: 13, color: '#333' },
   infoText2: { marginTop: 4, fontSize: 11, color: '#333' },
   actionButton: {
-    paddingVertical: 14, paddingHorizontal: 32, borderRadius: 10, backgroundColor: '#2F7C83',
-    marginBottom:10,
-    width: '80%', alignItems: 'center', justifyContent: 'center',
-  alignSelf: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 10,
+    backgroundColor: '#2F7C83',
+    marginBottom: 10,
+    width: '80%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
   actionButtonText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
   withdrawButton: { backgroundColor: '#D32F2F' },
@@ -368,12 +445,26 @@ const styles = StyleSheet.create({
   loader: { flex: 1, justifyContent: 'center' },
   errorText: { textAlign: 'center', marginTop: 50, fontSize: 16, color: 'red' },
   fixedBottom: {
-    position: 'absolute', bottom: 20, left: 16, right: 16, backgroundColor: '#F9F9F9',
-    paddingVertical: 10, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 4,
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
+    backgroundColor: '#F9F9F9',
+    paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 4,
   },
   descriptionCard: { padding: 4, marginHorizontal: 4, marginBottom: 20 },
-  descriptionTitle: { fontSize: 16, fontWeight: '600', color: '#000', marginBottom: 8 },
+  descriptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+  },
   descriptionText: { fontSize: 14, color: '#555', lineHeight: 20 },
 
   // New styles for players list
@@ -417,7 +508,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 12,
   },
-    joinButton: {
+  joinButton: {
     backgroundColor: '#007A7A',
     paddingVertical: 10,
     borderRadius: 8,

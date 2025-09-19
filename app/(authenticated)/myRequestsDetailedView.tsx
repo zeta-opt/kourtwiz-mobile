@@ -19,25 +19,19 @@ import { useSelector } from 'react-redux';
 
 function arrayToDate(arr: number[]): Date {
   if (!arr || arr.length < 5) return new Date();
-   return new Date(
-    arr[0],         
-    arr[1] - 1,     
-    arr[2],         
-    arr[3],         
-    arr[4],         
-    arr[5] || 0     
-  );
+  return new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], arr[5] || 0);
 }
 
 export default function MyRequestsDetailedView() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
-  const { data, loading, error,refetch  } = useGetPlayerFinderRequest(requestId);
+  const { data, loading, error, refetch } =
+    useGetPlayerFinderRequest(requestId);
   console.log('Request Data:', data);
-   const {
-      cancelInvitation,
-      status: cancelStatus,
-      error: cancelerror,
-    } = useCancelInvitation(refetch);
+  const {
+    cancelInvitation,
+    status: cancelStatus,
+    error: cancelerror,
+  } = useCancelInvitation(refetch);
 
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
@@ -50,20 +44,22 @@ export default function MyRequestsDetailedView() {
     (state: RootState) => state.auth.user.userId
   );
 
-  if (loading) return <ActivityIndicator size="large" style={styles.loader} />;
+  if (loading) return <ActivityIndicator size='large' style={styles.loader} />;
   if (error || !data)
     return <Text style={styles.error}>Error loading data</Text>;
 
-  const myInvite = data?.find((invite: any) => invite.userId === loggedInUserId);
+  const myInvite = data?.find(
+    (invite: any) => invite.userId === loggedInUserId
+  );
 
   const invite = data[0];
   console.log('Invite Details:', invite);
   console.log('My Invite:', myInvite);
   const playTime = arrayToDate(invite?.playTime);
-  const dateString = playTime.toLocaleDateString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
+  const dateString = playTime.toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric',
   });
   console.log('Play Time:', playTime);
   const timeString = playTime.toLocaleTimeString([], {
@@ -81,66 +77,67 @@ export default function MyRequestsDetailedView() {
     setDialogVisible(true);
   };
 
-const handleDialogSubmit = async () => {
-  if (!selectedAction || !invite) return;
-   setDialogVisible(false);
-
-  try {
-    setIsSubmitting(true);
-
-    if (selectedAction === 'accept' || selectedAction === 'reject') {
-      const oldUrl =
-        selectedAction === 'accept' ? myInvite.acceptUrl : myInvite.declineUrl;
-
-      const newBase = 'https://api.vddette.com';
-      const urlObj = new URL(oldUrl);
-      const newUrl = `${newBase}${urlObj.pathname}${urlObj.search}&comments=${encodeURIComponent(comment)}`;
-
-      console.log('Submitting to URL:', newUrl);
-
-      const response = await fetch(newUrl);
-      if (response.status === 200) {
-        Alert.alert('Success', `Invitation ${selectedAction}ed`);
-        refetch();
-        
-      } else {
-        const errorText = await response.text();
-        console.log('Error response:', errorText);
-        Alert.alert(
-          'Error',
-          errorText || 'Failed to process the invitation'
-        );
-      }
-    } else if (selectedAction === 'cancel') {
-      const ok = await cancelInvitation(
-        invite.requestId,
-        loggedInUserId,
-        comment || ''
-      );
-
-      if (ok) {
-        Alert.alert('Success', 'Invitation cancelled');
-          refetch();
-        
-      } else {
-        Alert.alert('Error', cancelerror || 'Failed to cancel invitation');
-      }
-    }
-  } catch (err) {
-    Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
-  } finally {
-    setIsSubmitting(false);
+  const handleDialogSubmit = async () => {
+    if (!selectedAction || !invite) return;
     setDialogVisible(false);
-  }
-};
 
+    try {
+      setIsSubmitting(true);
+
+      if (selectedAction === 'accept' || selectedAction === 'reject') {
+        const oldUrl =
+          selectedAction === 'accept'
+            ? myInvite.acceptUrl
+            : myInvite.declineUrl;
+
+        const newBase = 'https://api.vddette.com';
+        const urlObj = new URL(oldUrl);
+        const newUrl = `${newBase}${urlObj.pathname}${
+          urlObj.search
+        }&comments=${encodeURIComponent(comment)}`;
+
+        console.log('Submitting to URL:', newUrl);
+
+        const response = await fetch(newUrl);
+        if (response.status === 200) {
+          Alert.alert('Success', `Invitation ${selectedAction}ed`);
+          refetch();
+        } else {
+          const errorText = await response.text();
+          console.log('Error response:', errorText);
+          Alert.alert('Error', errorText || 'Failed to process the invitation');
+        }
+      } else if (selectedAction === 'cancel') {
+        const ok = await cancelInvitation(
+          invite.requestId,
+          loggedInUserId,
+          comment || ''
+        );
+
+        if (ok) {
+          Alert.alert('Success', 'Invitation cancelled');
+          refetch();
+        } else {
+          Alert.alert('Error', cancelerror || 'Failed to cancel invitation');
+        }
+      }
+    } catch (err) {
+      Alert.alert(
+        'Error',
+        `Something went wrong while trying to ${selectedAction}`
+      );
+    } finally {
+      setIsSubmitting(false);
+      setDialogVisible(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#000" />
+          <Ionicons name='chevron-back' size={24} color='#000' />
         </TouchableOpacity>
         <Text style={styles.title}>Incoming Request</Text>
         <TouchableOpacity
@@ -153,32 +150,30 @@ const handleDialogSubmit = async () => {
       {/* Body */}
       <View style={{ flex: 1 }}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={styles.subheading}>
-            {requesterName} Invited To Play
-          </Text>
+          <Text style={styles.subheading}>{requesterName} Invited To Play</Text>
 
           <View style={styles.card}>
             <View style={styles.row}>
               <View style={styles.column}>
                 <View style={styles.infoCard}>
                   <FontAwesome5
-                    name="calendar-alt"
+                    name='calendar-alt'
                     size={20}
-                    color="#2CA6A4"
-                    solid 
+                    color='#2CA6A4'
+                    solid
                   />
                 </View>
                 <Text style={styles.infoText}>{dateString}</Text>
               </View>
               <View style={styles.column}>
                 <View style={styles.infoCard}>
-                  <FontAwesome5 name="clock" size={20} color="#2CA6A4" solid  />
+                  <FontAwesome5 name='clock' size={20} color='#2CA6A4' solid />
                 </View>
                 <Text style={styles.infoText}>{timeString}</Text>
               </View>
               <View style={styles.column}>
                 <View style={styles.infoCard}>
-                  <FontAwesome5 name="users" size={20} color="#2CA6A4" />
+                  <FontAwesome5 name='users' size={20} color='#2CA6A4' />
                 </View>
                 <Text style={styles.infoText}>
                   {accepted}/{total} Accepted
@@ -188,7 +183,7 @@ const handleDialogSubmit = async () => {
 
             <View style={styles.locationRow}>
               <View style={styles.locationIconWrapper}>
-                <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" />
+                <FontAwesome5 name='map-marker-alt' size={16} color='#2CA6A4' />
               </View>
               <Text style={styles.locationText}>Event Place: {location}</Text>
             </View>
@@ -207,7 +202,7 @@ const handleDialogSubmit = async () => {
                 })
               }
             >
-              <Text style={styles.joinButtonText}>Join Chat</Text>
+              <Text style={styles.joinButtonText}>Chat</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -217,8 +212,8 @@ const handleDialogSubmit = async () => {
       {myInvite?.status === 'PENDING' && (
         <View style={styles.bottomButtonContainer}>
           <Button
-            icon="check"
-            mode="contained"
+            icon='check'
+            mode='contained'
             onPress={() => handleAction('accept')}
             loading={isSubmitting && selectedAction === 'accept'}
             style={styles.acceptBtn}
@@ -226,8 +221,8 @@ const handleDialogSubmit = async () => {
             Accept
           </Button>
           <Button
-            icon="close"
-            mode="outlined"
+            icon='close'
+            mode='outlined'
             onPress={() => handleAction('reject')}
             loading={isSubmitting && selectedAction === 'reject'}
             style={styles.rejectBtn}
@@ -240,8 +235,8 @@ const handleDialogSubmit = async () => {
       {myInvite?.status === 'ACCEPTED' && (
         <View style={styles.bottomButtonContainer}>
           <Button
-            icon="cancel"
-            mode="outlined"
+            icon='cancel'
+            mode='outlined'
             onPress={() => handleAction('cancel')}
             loading={isSubmitting && selectedAction === 'cancel'}
             style={styles.rejectBtn}
@@ -251,27 +246,26 @@ const handleDialogSubmit = async () => {
         </View>
       )}
 
-     {(myInvite?.status === 'CANCELLED' || myInvite?.status === 'DECLINED') && (
-  <View style={styles.bottomButtonContainer}>
-    <Button
-      icon="check"
-      mode="contained"
-      onPress={() => handleAction('accept')}
-      loading={isSubmitting && selectedAction === 'accept'}
-      style={styles.acceptBtn}
-    >
-      Accept Again
-    </Button>
-  </View>
-)}
+      {(myInvite?.status === 'CANCELLED' ||
+        myInvite?.status === 'DECLINED') && (
+        <View style={styles.bottomButtonContainer}>
+          <Button
+            icon='check'
+            mode='contained'
+            onPress={() => handleAction('accept')}
+            loading={isSubmitting && selectedAction === 'accept'}
+            style={styles.acceptBtn}
+          >
+            Accept Again
+          </Button>
+        </View>
+      )}
 
-      {(myInvite?.status === 'WITHDRAWN' && (
+      {myInvite?.status === 'WITHDRAWN' && (
         <View>
-          
           <Text style={styles.withdrawBtn}>🚫 Withdrawn</Text>
         </View>
-      ))}
-   
+      )}
 
       {/* Dialog */}
       <Portal>
@@ -282,10 +276,10 @@ const handleDialogSubmit = async () => {
           <Dialog.Title>Add a message</Dialog.Title>
           <Dialog.Content>
             <TextInput
-              label="Comment (optional)"
+              label='Comment (optional)'
               value={comment}
               onChangeText={setComment}
-              mode="outlined"
+              mode='outlined'
             />
           </Dialog.Content>
           <Dialog.Actions>
@@ -305,7 +299,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     backgroundColor: '#F9F9F9',
   },
-  withdrawBtn:{
+  withdrawBtn: {
     textAlign: 'center',
     fontSize: 16,
     color: 'red',

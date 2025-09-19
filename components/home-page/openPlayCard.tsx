@@ -1,17 +1,12 @@
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
+import { useCancelOpenPlay } from '@/hooks/apis/join-play/useCancelOpenPlay';
 import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
-import { useCancelOpenPlay } from '@/hooks/apis/join-play/useCancelOpenPlay';
 import LoaderScreen from '@/shared/components/Loader/LoaderScreen';
 import { RootState } from '@/store';
-import {
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons,
-} from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -48,8 +43,9 @@ type OpenPlayCardProps = {
   cardStyle?: ViewStyle;
   data: any[];
   refetch: () => void;
-   refetchInitiated?: () => void;    // 🔑 add this for initiated plays
+  refetchInitiated?: () => void; // 🔑 add this for initiated plays
   onCancelSuccess?: (sessionId: string) => void;
+  disabled?: boolean;
 };
 
 const extractErrorMessage = (err: any): string => {
@@ -65,13 +61,14 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
   cardStyle,
   data,
   refetch,
-  refetchInitiated
+  refetchInitiated,
+  disabled = false,
 }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
 
-  const { data: initiatedData, status: initiatedStatus, } =
+  const { data: initiatedData, status: initiatedStatus } =
     useGetInitiatedPlays(userId);
 
   const { data: courtsData, status: courtsStatus } = useGetClubCourt({
@@ -452,9 +449,9 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
               ]}
             >
               <MaterialIcons
-                name="person"
+                name='person'
                 size={16}
-                color="#2F7C83"
+                color='#2F7C83'
                 style={{ marginRight: 4 }}
               />
               <Text style={styles.statusBadgeText}>
@@ -468,9 +465,9 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                 }}
               >
                 <MaterialCommunityIcons
-                  name="wallet"
+                  name='wallet'
                   size={16}
-                  color="#2F7C83"
+                  color='#2F7C83'
                   style={{ marginRight: 4 }}
                 />
                 <Text style={styles.priceText}>
@@ -495,14 +492,14 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                 }}
               >
                 <MaterialCommunityIcons
-                  name="message-text-outline"
+                  name='message-text-outline'
                   size={18}
-                  color="#007BFF"
+                  color='#007BFF'
                 />
               </TouchableOpacity>
             </View>
             <Button
-              mode="contained"
+              mode='contained'
               onPress={() =>
                 handleJoinPlay(
                   row.id,
@@ -521,7 +518,9 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                   row.isFull &&
                   !row.isWaitlisted &&
                   styles.joinWaitlistButton,
+                disabled && styles.disabledButton,
               ]}
+              disabled={disabled}
               loading={row.id === loadingId}
               contentStyle={[
                 styles.buttonContent,
@@ -558,6 +557,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     marginTop: 6,
+  },
+  disabledButton: {
+    backgroundColor: '#9CA3AF', // greyed out
   },
   initiatedBadge: {
     backgroundColor: '#FF9800',
@@ -603,8 +605,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#B00020',
   },
   buttonContent: { height: 36, paddingHorizontal: 12 },
-  buttonLabel: { fontSize: 12,
- fontWeight: 'bold', color: '#FFFFFF' },
+  buttonLabel: { fontSize: 12, fontWeight: 'bold', color: '#FFFFFF' },
   noDataText: {
     textAlign: 'center',
     color: '#000000',
@@ -612,14 +613,14 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   chatButton: {
-  backgroundColor: '#E0F7FA',
-  borderRadius: 20,
-  padding: 4,
-  marginLeft: 10,
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: 32,
-},
+    backgroundColor: '#E0F7FA',
+    borderRadius: 20,
+    padding: 4,
+    marginLeft: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+  },
 
   priceText: {
     fontSize: 12,
