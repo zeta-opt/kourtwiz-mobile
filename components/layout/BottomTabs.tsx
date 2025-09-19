@@ -27,7 +27,7 @@ export default function BottomTabs() {
         onPress={() => router.replace('/(authenticated)/home')}
         style={styles.tabItem}
       >
-        <MaterialIcons name='home' size={24} color='#3F7CFF' />
+        <MaterialIcons name='home' size={24} color='#2C7E88' />
         <Text style={styles.activeLabel}>Home</Text>
       </TouchableOpacity>
 
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   activeLabel: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#3F7CFF',
+    color: '#2C7E88',
     marginTop: 4,
   },
 });

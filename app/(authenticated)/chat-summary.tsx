@@ -114,7 +114,7 @@ export default function ChatSummaryPage() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#3F7CFF" />
+        <ActivityIndicator size="large" color="#2C7E88" />
       </View>
     );
   }
