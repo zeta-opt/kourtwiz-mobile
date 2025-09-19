@@ -23,7 +23,7 @@ const FindplayerCard = () => {
         {/* Right: Column */}
         <View style={styles.featuredRightColumn}>
           <Text style={styles.featuredSubtitle}>Connect and play near you</Text>
-          <Text style={styles.featuredTitle}>FIND PLAYERS{'\n'}& GAMES</Text>
+          <Text style={styles.featuredTitle}>Find Players & Games</Text>
 
           <View style={styles.featuredButtonColumn}>
             <TouchableOpacity
@@ -100,10 +100,10 @@ const styles = StyleSheet.create({
   },
 
   featuredTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 6,
+    marginBottom: 10,
   },
 
   featuredSubtitle: {

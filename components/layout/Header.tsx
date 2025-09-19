@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 20,
-    fontWeight: '400',
+    fontWeight: '500',
     color: '#333',
   },
   title: {

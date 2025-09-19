@@ -619,7 +619,7 @@ const Dashboard = () => {
           <FindplayerCard />
 
           <View style={styles.playCalendarHeaderRow}>
-            <Text style={styles.playCalendarHeader}>Play Events</Text>
+            <Text style={styles.playCalendarHeader}>Today Calendar</Text>
             <TouchableOpacity
               onPress={() => router.push('/(authenticated)/play-calendar')}
             >
@@ -694,7 +694,7 @@ const Dashboard = () => {
             </Modal>
           </Portal>
 
-          <Text style={styles.playersNearBy}>Players Nearby</Text>
+          <Text style={styles.playersNearBy}>Players Near By</Text>
           <Text style={styles.playersNearByDesc}>
             See users playing near by
           </Text>
@@ -756,11 +756,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   viewAllText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: '#3F7CFF',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+     textDecorationLine: 'underline'
   },
   inviteScrollContainer: {
     borderRadius: 16,
@@ -811,25 +810,23 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   playersNearBy: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     marginTop: 24,
   },
   playersNearByDesc: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '400',
     marginBottom: 20,
   },
   playCalendarHeader: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    marginBottom: 12,
   },
   calendarContainer: {
     borderRadius: 16,
     padding: 5,
     maxHeight: 240,
-    marginBottom: 20,
     overflow: 'hidden',
     shadowOpacity: 0.1,
     shadowRadius: 4,
