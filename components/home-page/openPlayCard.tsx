@@ -494,7 +494,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                 <MaterialCommunityIcons
                   name='message-text-outline'
                   size={18}
-                  color='#007BFF'
+                  color='#2C7E88'
                 />
               </TouchableOpacity>
             </View>

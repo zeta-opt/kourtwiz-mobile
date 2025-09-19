@@ -154,7 +154,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
                   }
                 }}
               >
-                <MaterialCommunityIcons name="message-text-outline" size={18} color="#007BFF" />
+                <MaterialCommunityIcons name="message-text-outline" size={18} color="#2C7E88" />
               </TouchableOpacity>
               <TouchableOpacity
                   style={styles.cancelButton}
@@ -178,7 +178,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
                     <MaterialCommunityIcons
                       name="message-text-outline"
                       size={18}
-                      color="#007BFF"
+                      color="#2C7E88"
                     />
                   </TouchableOpacity>
 
@@ -203,7 +203,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
                 <MaterialCommunityIcons
                   name="message-text-outline"
                   size={18}
-                  color="#007BFF"
+                  color="#2C7E88"
                 />
               </TouchableOpacity>
               <TouchableOpacity
@@ -224,7 +224,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
                   <MaterialCommunityIcons
                     name="message-text-outline"
                     size={18}
-                    color="#007BFF"
+                    color="#2C7E88"
                   />
                 </TouchableOpacity>
                 <TouchableOpacity

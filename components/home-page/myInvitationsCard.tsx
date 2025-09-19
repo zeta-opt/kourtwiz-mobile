@@ -91,7 +91,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
             <MaterialCommunityIcons
               name='account-group'
               size={14}
-              color='#007BFF'
+              color='#2C7E88'
             />
             <TouchableOpacity
               style={styles.acceptedBox}
@@ -119,7 +119,7 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
             <MaterialCommunityIcons
               name='message-text-outline'
               size={16}
-              color='#007BFF'
+              color='#2C7E88'
             />
           </TouchableOpacity>
         </View>

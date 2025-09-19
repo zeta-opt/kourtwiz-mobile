@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface EventStatusModalProps {
   visible: boolean;
@@ -20,7 +20,7 @@ const StatusModal: React.FC<EventStatusModalProps> = ({
   title,
   description,
   buttonText,
-  buttonColor = '#007BFF',
+  buttonColor = '#2C7E88',
 }) => {
   return (
     <Modal visible={visible} transparent animationType="fade">

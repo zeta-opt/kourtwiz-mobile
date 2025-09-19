@@ -1,20 +1,20 @@
+import { useWithdrawRequest } from '@/hooks/apis/player-finder/useWithdrawRequest';
+import { RootState } from '@/store';
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   ActivityIndicator,
   ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
+  View,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
-import { useWithdrawRequest } from '@/hooks/apis/player-finder/useWithdrawRequest';
+import { Button, Modal, Portal } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
-import { Modal, Portal, Button } from 'react-native-paper';
+import { useSelector } from 'react-redux';
 
 const statusColorMap: Record<string, string> = {
   ACCEPTED: 'green',
@@ -178,7 +178,7 @@ export default function SentRequestDetailedView() {
                   });
                 }}
               >
-                <MaterialCommunityIcons name='message-text-outline' size={20} color='#007BFF'/>
+                <MaterialCommunityIcons name='message-text-outline' size={20} color='#2C7E88'/>
               </TouchableOpacity>
 
                 <View style={[styles.row, { flex: 1, alignItems: "center" }]}>
@@ -216,7 +216,7 @@ export default function SentRequestDetailedView() {
             })
           }
         >
-          <MaterialCommunityIcons name='message-text-outline' size={20} color='#007BFF'/>
+          <MaterialCommunityIcons name='message-text-outline' size={20} color='#2C7E88'/>
         </TouchableOpacity>
       </View>
 

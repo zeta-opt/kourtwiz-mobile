@@ -274,7 +274,7 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
             pressed && styles.pressedStyle,
           ]}
         >
-          <MaterialCommunityIcons name='account' size={14} color='#007BFF' />
+          <MaterialCommunityIcons name='account' size={14} color='#2C7E88' />
           <Text style={styles.acceptedTextSmall}>
             {displayedAccepted} / {displayedTotal} Accepted
           </Text>
@@ -283,7 +283,7 @@ const OutgoingInviteCardItem: React.FC<OutgoingInviteCardItemProps> = ({
 
       {loadingCard && (
         <View style={styles.cardLoaderOverlay}>
-          <ActivityIndicator size='large' color='#007BFF' />
+          <ActivityIndicator size='large' color='#2C7E88' />
         </View>
       )}
     </TouchableOpacity>
