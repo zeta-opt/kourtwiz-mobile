@@ -125,10 +125,18 @@ const PlayersNearbyMap = () => {
               {/* Custom Marker */}
               <View style={styles.markerContainer}>
                 <View style={styles.arrowBox}>
-                  <Text style={styles.markerText}>
-                    {club.players.length}{' '}
-                    {club.players.length === 1 ? 'player' : 'players'}
-                  </Text>
+                  {Platform.OS === "android" && (
+                    <Text style={styles.markerTextAndroid}>
+                      {club.players.length + "\n"}
+                      {club.players.length === 1 ? "player" : "players"}
+                    </Text>
+                  )}
+                  {Platform.OS === "ios" && (
+                    <Text style={styles.markerText}>
+                      {club.players.length}{" "}
+                      {club.players.length === 1 ? "player" : "players"}
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.arrowDown} />
               </View>
@@ -185,10 +193,18 @@ const PlayersNearbyMap = () => {
                 >
                   <View style={styles.markerContainer}>
                     <View style={styles.arrowBox}>
-                      <Text style={styles.markerText}>
-                        {club.players.length}{' '}
-                        {club.players.length === 1 ? 'player' : 'players'}
-                      </Text>
+                      {Platform.OS === "android" && (
+                        <Text style={styles.markerTextAndroid}>
+                          {club.players.length + "\n"}
+                          {club.players.length === 1 ? "player" : "players"}
+                        </Text>
+                      )}
+                      {Platform.OS === "ios" && (
+                        <Text style={styles.markerText}>
+                          {club.players.length}{" "}
+                          {club.players.length === 1 ? "player" : "players"}
+                        </Text>
+                      )}
                     </View>
                     <View style={styles.arrowDown} />
                   </View>
@@ -332,6 +348,9 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   markerText: { fontSize: 12, fontWeight: '600' },
+  markerTextAndroid: { 
+    fontSize: 8, fontWeight: "500", textAlign: "center", includeFontPadding: false
+  },
   arrowDown: {
     width: 0,
     height: 0,
