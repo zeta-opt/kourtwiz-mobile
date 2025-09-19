@@ -278,9 +278,9 @@ export default function OpenPlayDetailedView() {
           )}
         </View>
         <View style={styles.chatPreviewContainer}>
-          <Text style={styles.chatPreviewText}>Chat with players here...</Text>
+          
           <TouchableOpacity
-            style={styles.joinButton}
+            style={styles.chatRow}
             onPress={() => {
               if (isRegistered) {
                 router.push({
@@ -297,9 +297,15 @@ export default function OpenPlayDetailedView() {
               }
             }}
           >
-            <Text style={styles.joinButtonText}>
-              {isRegistered ? 'Chat' : 'Register to Chat'}
-            </Text>
+            <Text style={styles.chatPreviewText}>Chat with players here...</Text>
+            {/* <Text style={styles.joinButtonText}>
+              Chat
+            </Text> */}
+             <MaterialCommunityIcons
+                name='message-text-outline'
+                size={16}
+                color='#007BFF'
+              />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -519,4 +525,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+  chatRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
 });

@@ -2,7 +2,7 @@ import UserAvatar from '@/assets/UserAvatar';
 import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
 import { useGetPlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
 import { RootState } from '@/store';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -56,6 +56,7 @@ export default function MyRequestsDetailedView() {
   console.log('Invite Details:', invite);
   console.log('My Invite:', myInvite);
   const playTime = arrayToDate(invite?.playTime);
+  const playEndTime = arrayToDate(invite?.playEndTime);
   const dateString = playTime.toLocaleDateString('en-US', {
     month: '2-digit',
     day: '2-digit',
@@ -63,6 +64,10 @@ export default function MyRequestsDetailedView() {
   });
   console.log('Play Time:', playTime);
   const timeString = playTime.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const endTimeString = playEndTime.toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -169,7 +174,7 @@ export default function MyRequestsDetailedView() {
                 <View style={styles.infoCard}>
                   <FontAwesome5 name='clock' size={20} color='#2CA6A4' solid />
                 </View>
-                <Text style={styles.infoText}>{timeString}</Text>
+                <Text style={styles.infoText}>{timeString} - {endTimeString}</Text>
               </View>
               <View style={styles.column}>
                 <View style={styles.infoCard}>
@@ -190,11 +195,9 @@ export default function MyRequestsDetailedView() {
           </View>
 
           <View style={styles.chatPreviewContainer}>
-            <Text style={styles.chatPreviewText}>
-              Chat with players here...
-            </Text>
+            
             <TouchableOpacity
-              style={styles.joinButton}
+              style={styles.chatRow}
               onPress={() =>
                 router.push({
                   pathname: '/(authenticated)/chat-summary',
@@ -202,7 +205,13 @@ export default function MyRequestsDetailedView() {
                 })
               }
             >
-              <Text style={styles.joinButtonText}>Chat</Text>
+              <Text style={styles.chatPreviewText}>Chat with players here...</Text>
+              {/* <Text style={styles.joinButtonText}>Chat</Text> */}
+              <MaterialCommunityIcons
+              name='message-text-outline'
+              size={16}
+              color='#007BFF'
+            />
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -227,7 +236,7 @@ export default function MyRequestsDetailedView() {
             loading={isSubmitting && selectedAction === 'reject'}
             style={styles.rejectBtn}
           >
-            Reject
+            Decline
           </Button>
         </View>
       )}
@@ -431,4 +440,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: '#007A7A',
   },
+  chatRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
+
 });
