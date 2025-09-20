@@ -235,6 +235,7 @@ export default function MyRequestsDetailedView() {
             onPress={() => handleAction('reject')}
             loading={isSubmitting && selectedAction === 'reject'}
             style={styles.rejectBtn}
+            textColor='#2C7E88'
           >
             Decline
           </Button>
@@ -249,6 +250,8 @@ export default function MyRequestsDetailedView() {
             onPress={() => handleAction('cancel')}
             loading={isSubmitting && selectedAction === 'cancel'}
             style={styles.rejectBtn}
+            textColor='#2C7E88'
+            
           >
             Cancel
           </Button>
@@ -339,10 +342,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
   },
   row: {
     flexDirection: 'row',
@@ -386,6 +389,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '40%',
     alignSelf: 'center',
+    // shadowColor: '#000',          
+    // shadowOpacity: 0.45,          
+    // shadowRadius: 14,              
+    // shadowOffset: { width: 0, height: 6 }, 
+    // elevation: 4,    
   },
   locationIconWrapper: {
     backgroundColor: '#E6F7F7',
@@ -422,23 +430,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   bottomButtonContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
     padding: 16,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderColor: '#eee',
+    gap: 12,
   },
   acceptBtn: {
-    flex: 1,
+    // flex: 1,
     marginRight: 8,
-    backgroundColor: '#007A7A',
+    backgroundColor: '#2C7E88',
   },
   rejectBtn: {
-    flex: 1,
-    borderColor: '#007A7A',
+    // flex: 1,
+    borderColor: '#2C7E88',
     borderWidth: 1,
-    color: '#007A7A',
+    color: '#2C7E88',
   },
   chatRow: {
   flexDirection: 'row',
