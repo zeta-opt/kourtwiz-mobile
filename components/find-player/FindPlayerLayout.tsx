@@ -16,7 +16,7 @@ import {
   openPreferredPlaceModal,
   openPreferredPlayersModal,
 } from '@/store/uiSlice';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import * as Contacts from 'expo-contacts';
 import * as Location from 'expo-location';
@@ -453,7 +453,7 @@ const FindPlayerLayout = () => {
         placeToPlay: finalPlaceToPlay,
         playTime: toLocalISOString(playTime),
         playEndTime: toLocalISOString(finalEndTime),
-        playersNeeded: playerCount-1,
+        playersNeeded: playerCount - 1,
         skillLevel: String(skillLevel),
       };
 
@@ -486,7 +486,7 @@ const FindPlayerLayout = () => {
           placeToPlay: finalPlaceToPlay,
           playTime: toLocalISOString(playTime),
           playEndTime: toLocalISOString(finalEndTime),
-          playersNeeded: playerCount-1,
+          playersNeeded: playerCount - 1,
           skillRating: skillLevel,
           preferredContacts,
         },
@@ -562,7 +562,8 @@ const FindPlayerLayout = () => {
             }}
             style={styles.backButton}
           >
-            <Ionicons name='arrow-back' size={24} color='#cce5e3' />
+            <MaterialIcons name='arrow-back-ios' size={24} color='#fff' />
+            {/* <Ionicons name='arrow-back' size={24} color='#cce5e3' /> */}
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
             <Text style={styles.MainTitle}>
@@ -695,8 +696,8 @@ const FindPlayerLayout = () => {
                   Alert.alert('Invalid Input', 'Please enter a valid number');
                 }
               }}
-              keyboardType="numeric"
-              placeholder="Enter maximum number of players"
+              keyboardType='numeric'
+              placeholder='Enter maximum number of players'
             />
           </View>
         </View>
@@ -802,15 +803,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   MainTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
     alignSelf: 'flex-start',
     color: '#fff',
   },
   subtitle: {
     color: 'rgba(255, 255, 255, 0.75)',
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 0,
   },
 
   backButton: {
@@ -821,7 +822,7 @@ const styles = StyleSheet.create({
   dropdownRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   dropdownButton: {
     flex: 1,
@@ -871,18 +872,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
   },
   formSection: {
-    marginBottom: 32,
+    marginBottom: 30,
   },
   sectionTitle: {
+    marginBottom: 8,
     fontSize: 16,
     fontWeight: '600',
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#000',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -892,7 +896,7 @@ const styles = StyleSheet.create({
 
   sliderSection: {
     paddingHorizontal: 0,
-    marginBottom: -48,
+    marginBottom: -24,
   },
 
   sliderWrapper: {
@@ -947,7 +951,7 @@ const styles = StyleSheet.create({
     borderColor: '#2C7E88',
   },
   selectedPlayersContainer: {
-    marginBottom: 16,
+    marginBottom: -16,
   },
   countSelector: {
     flexDirection: 'row',

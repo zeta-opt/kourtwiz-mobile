@@ -70,7 +70,9 @@ const PreferredPlayersSelector: React.FC<PreferredPlayersSelectorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 24,
+    marginTop: -40,
+
+    marginBottom: 12,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -84,7 +86,7 @@ const styles = StyleSheet.create({
   },
   playersBox: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#000',
     borderRadius: 6,
     height: 48,
     paddingHorizontal: 12,

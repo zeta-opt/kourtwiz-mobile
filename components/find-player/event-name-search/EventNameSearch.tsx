@@ -1,14 +1,14 @@
-import { getToken } from "@/shared/helpers/storeToken";
-import Constants from "expo-constants";
-import React, { useRef, useState } from "react";
+import { getToken } from '@/shared/helpers/storeToken';
+import Constants from 'expo-constants';
+import React, { useRef, useState } from 'react';
 import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Text,
   ScrollView,
   StyleSheet,
-} from "react-native";
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface EventNameSearchProps {
   value: string;
@@ -43,23 +43,25 @@ const EventNameSearch: React.FC<EventNameSearchProps> = ({
     }
 
     setIsSearching(true);
-    const BASE_URL = Constants.expoConfig?.extra?.apiUrl || "";
+    const BASE_URL = Constants.expoConfig?.extra?.apiUrl || '';
     const token = await getToken();
 
     if (!token) {
-      console.warn("⚠️ No token found, skipping search");
+      console.warn('⚠️ No token found, skipping search');
       setIsSearching(false);
       return;
     }
 
     try {
       const res = await fetch(
-        `${BASE_URL}/api/player-tracker/tracker/search?eventName=${encodeURIComponent(query)}&requesterId=${requesterId}`,
+        `${BASE_URL}/api/player-tracker/tracker/search?eventName=${encodeURIComponent(
+          query
+        )}&requesterId=${requesterId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
           },
         }
       );
@@ -72,35 +74,36 @@ const EventNameSearch: React.FC<EventNameSearchProps> = ({
 
       const data = await res.json();
       setSearchResults(data || []);
-      console.log("✅ Fetched events:", data);
+      console.log('✅ Fetched events:', data);
     } catch (err) {
-      console.error("❌ Error fetching events:", err);
+      console.error('❌ Error fetching events:', err);
     } finally {
       setIsSearching(false);
     }
   };
 
   const debouncedSearch = useRef(
-    debounce((text: string, requesterId: string) => fetchEventSuggestions(text, requesterId), 500)
+    debounce(
+      (text: string, requesterId: string) =>
+        fetchEventSuggestions(text, requesterId),
+      500
+    )
   ).current;
 
   return (
     <View style={{ zIndex: 1000 }}>
       <TextInput
-        style={[
-          styles.input,
-          error && { borderColor: "red", borderWidth: 1 },
-        ]}
-        placeholder="Enter Event Name"
+        style={[styles.input, error && { borderColor: 'red', borderWidth: 1 }]}
+        placeholder='Enter Event Name'
         value={value}
         onChangeText={(text) => {
           onChange(text);
-          debouncedSearch(text, requesterId || "");
+          debouncedSearch(text, requesterId || '');
         }}
       />
 
       {isSearching && (
-        <Text style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+        <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
           Searching...
         </Text>
       )}
@@ -134,7 +137,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#000',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -142,23 +145,23 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   dropdown: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     borderRadius: 6,
     marginTop: 4,
-    position: "absolute",
+    position: 'absolute',
     top: 35,
-    width: "100%",
+    width: '100%',
   },
   dropdownItem: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   subText: {
     fontSize: 12,
-    color: "#666",
+    color: '#666',
   },
 });
 

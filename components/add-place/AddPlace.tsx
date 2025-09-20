@@ -1,25 +1,17 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { RootState } from '@/store';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   Alert,
-  Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-  Button,
-  RadioButton,
-  SegmentedButtons,
-  Switch,
-  Text,
-  TextInput,
-} from 'react-native-paper';
+import DatePicker from 'react-native-date-picker';
+import { Button, Switch, Text, TextInput } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 
 const AddPlace = () => {
@@ -49,8 +41,9 @@ const AddPlace = () => {
   const [lightsAvailable, setLightsAvailable] = useState(false);
   const [restroom, setRestroom] = useState(false);
   const [parking, setParking] = useState(false);
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [isStartTimePickerVisible, setIsStartTimePickerVisible] =
+    useState(false);
+  const [isEndTimePickerVisible, setIsEndTimePickerVisible] = useState(false);
   const [showCourtDropdown, setShowCourtDropdown] = useState(false);
 
   const courtNumbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10+'];
@@ -63,19 +56,10 @@ const AddPlace = () => {
     });
   };
 
-  const handleStartTimeChange = (event: any, selectedDate?: Date) => {
-    setShowStartTimePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setStartTime(selectedDate);
-    }
-  };
-
-  const handleEndTimeChange = (event: any, selectedDate?: Date) => {
-    setShowEndTimePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setEndTime(selectedDate);
-    }
-  };
+  const showStartTimePicker = () => setIsStartTimePickerVisible(true);
+  const hideStartTimePicker = () => setIsStartTimePickerVisible(false);
+  const showEndTimePicker = () => setIsEndTimePickerVisible(true);
+  const hideEndTimePicker = () => setIsEndTimePickerVisible(false);
 
   const handleSubmit = () => {
     if (!placeName.trim()) {
@@ -169,7 +153,7 @@ const AddPlace = () => {
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
             <Text style={styles.MainTitle}>Add Place</Text>
-            <Text style={styles.subtitle}>Add a new place to play</Text>
+            <Text style={styles.subtitle}>Fill out form to add place</Text>
           </View>
           <UserAvatar size={30} />
         </View>
@@ -178,15 +162,17 @@ const AddPlace = () => {
       <ScrollView style={styles.formScrollView}>
         {/* Place Name */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Enter Name</Text>
+          <Text style={styles.sectionTitle}>Name</Text>
           <TextInput
             mode='outlined'
             value={placeName}
             onChangeText={setPlaceName}
-            placeholder='Enter place name'
-            style={styles.textInput}
-            outlineColor='#2C7E88'
+            placeholder='Enter name'
+            outlineColor='#000'
             activeOutlineColor='#2C7E88'
+            style={styles.textInput}
+            contentStyle={{ height: 40, fontSize: 16 }}
+            theme={{ roundness: 8 }}
           />
         </View>
 
@@ -197,10 +183,12 @@ const AddPlace = () => {
             mode='outlined'
             value={location}
             onChangeText={setLocation}
-            placeholder='Enter address or location'
+            placeholder='Enter Full Address'
             style={styles.textInput}
-            outlineColor='#2C7E88'
+            outlineColor='#000'
             activeOutlineColor='#2C7E88'
+            contentStyle={{ height: 40, fontSize: 16 }}
+            theme={{ roundness: 8 }}
           />
         </View>
 
@@ -213,31 +201,50 @@ const AddPlace = () => {
             onChangeText={setCourtType}
             placeholder='e.g., Indoor, Outdoor, Clay'
             style={styles.textInput}
-            outlineColor='#2C7E88'
+            outlineColor='#000'
             activeOutlineColor='#2C7E88'
+            contentStyle={{ height: 40, fontSize: 16 }}
+            theme={{ roundness: 8 }}
           />
         </View>
 
         {/* Net Type */}
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Net Type</Text>
-          <SegmentedButtons
-            value={netType}
-            onValueChange={(value) =>
-              setNetType(value as 'permanent' | 'temporary')
-            }
-            buttons={[
-              {
-                value: 'permanent',
-                label: 'Permanent',
-              },
-              {
-                value: 'temporary',
-                label: 'Temporary',
-              },
-            ]}
-            style={styles.segmentedButtons}
-          />
+          <View style={styles.netTypeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.netTypeButton,
+                netType === 'permanent' && styles.netTypeButtonActive,
+              ]}
+              onPress={() => setNetType('permanent')}
+            >
+              <Text
+                style={[
+                  styles.netTypeText,
+                  netType === 'permanent' && styles.netTypeTextActive,
+                ]}
+              >
+                Permanent
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.netTypeButton,
+                netType === 'temporary' && styles.netTypeButtonActive,
+              ]}
+              onPress={() => setNetType('temporary')}
+            >
+              <Text
+                style={[
+                  styles.netTypeText,
+                  netType === 'temporary' && styles.netTypeTextActive,
+                ]}
+              >
+                Temporary
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Number of Courts */}
@@ -274,7 +281,7 @@ const AddPlace = () => {
           <View style={styles.timeRow}>
             <TouchableOpacity
               style={styles.timeButton}
-              onPress={() => setShowStartTimePicker(true)}
+              onPress={showStartTimePicker}
             >
               <Text style={styles.timeLabel}>Start Time</Text>
               <Text style={styles.timeText}>{formatTime(startTime)}</Text>
@@ -282,58 +289,135 @@ const AddPlace = () => {
 
             <TouchableOpacity
               style={styles.timeButton}
-              onPress={() => setShowEndTimePicker(true)}
+              onPress={showEndTimePicker}
             >
               <Text style={styles.timeLabel}>End Time</Text>
               <Text style={styles.timeText}>{formatTime(endTime)}</Text>
             </TouchableOpacity>
           </View>
 
-          {showStartTimePicker && (
-            <DateTimePicker
-              value={startTime}
-              mode='time'
-              is24Hour={false}
-              display='default'
-              onChange={handleStartTimeChange}
-            />
-          )}
+          {/* Start Time Picker Modal */}
+          <DatePicker
+            modal
+            mode='time'
+            open={isStartTimePickerVisible}
+            date={startTime}
+            onConfirm={(date) => {
+              setStartTime(date);
+              if (!endTime || endTime <= date) {
+                const newEndTime = new Date(date);
+                newEndTime.setHours(date.getHours() + 1);
+                setEndTime(newEndTime);
+              }
+              hideStartTimePicker();
+            }}
+            onCancel={hideStartTimePicker}
+          />
 
-          {showEndTimePicker && (
-            <DateTimePicker
-              value={endTime}
-              mode='time'
-              is24Hour={false}
-              display='default'
-              onChange={handleEndTimeChange}
-            />
-          )}
+          {/* End Time Picker Modal */}
+          <DatePicker
+            modal
+            mode='time'
+            open={isEndTimePickerVisible}
+            date={endTime}
+            onConfirm={(date) => {
+              setEndTime(date);
+              hideEndTimePicker();
+            }}
+            onCancel={hideEndTimePicker}
+          />
         </View>
 
         {/* Membership Required */}
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Membership Required</Text>
-          <RadioButton.Group
-            onValueChange={(value) =>
-              setMembershipRequired(value as 'yes' | 'no' | 'required')
-            }
-            value={membershipRequired}
-          >
-            <View style={styles.radioRow}>
-              <View style={styles.radioItem}>
-                <RadioButton value='yes' color='#2C7E88' />
-                <Text>Yes</Text>
+          <View style={styles.membershipContainer}>
+            <TouchableOpacity
+              style={[
+                styles.membershipButton,
+                membershipRequired === 'yes' && styles.membershipButtonActive,
+              ]}
+              onPress={() => {
+                console.log('Setting membership to yes');
+                setMembershipRequired('yes');
+              }}
+            >
+              <View
+                style={[
+                  styles.radioCircle,
+                  membershipRequired === 'yes' && styles.radioCircleActive,
+                ]}
+              >
+                {membershipRequired === 'yes' && (
+                  <View style={styles.radioCircleFilledActive} />
+                )}
               </View>
-              <View style={styles.radioItem}>
-                <RadioButton value='no' color='#2C7E88' />
-                <Text>No</Text>
+              <Text
+                style={[
+                  styles.membershipText,
+                  membershipRequired === 'yes' && styles.membershipTextActive,
+                ]}
+              >
+                Yes
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.membershipButton,
+                membershipRequired === 'no' && styles.membershipButtonActive,
+              ]}
+              onPress={() => setMembershipRequired('no')}
+            >
+              <View
+                style={[
+                  styles.radioCircle,
+                  membershipRequired === 'no' && styles.radioCircleActive,
+                ]}
+              >
+                {membershipRequired === 'no' && (
+                  <View style={styles.radioCircleFilledActive} />
+                )}
               </View>
-              <View style={styles.radioItem}>
-                <RadioButton value='required' color='#2C7E88' />
-                <Text>Required</Text>
+              <Text
+                style={[
+                  styles.membershipText,
+                  membershipRequired === 'no' && styles.membershipTextActive,
+                ]}
+              >
+                No
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.membershipButton,
+                membershipRequired === 'required' &&
+                  styles.membershipButtonActive,
+              ]}
+              onPress={() => setMembershipRequired('required')}
+            >
+              <View
+                style={[
+                  styles.radioCircle,
+                  membershipRequired === 'required' && styles.radioCircleActive,
+                ]}
+              >
+                {membershipRequired === 'required' && (
+                  <View style={styles.radioCircleFilledActive} />
+                )}
               </View>
-            </View>
-          </RadioButton.Group>
+              <Text
+                style={[
+                  styles.membershipText,
+                  membershipRequired === 'required' &&
+                    styles.membershipTextActive,
+                ]}
+              >
+                Required
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Toggle Switches */}
@@ -424,7 +508,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   MainTitle: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: 'bold',
     alignSelf: 'flex-start',
     color: '#fff',
@@ -453,16 +537,47 @@ const styles = StyleSheet.create({
   },
   textInput: {
     backgroundColor: '#fff',
+    borderRadius: 16, // optional
+  },
+
+  inputContent: {
+    height: 30, // smaller inner height
+    fontSize: 16, // smaller text
+    paddingVertical: 0,
   },
   segmentedButtons: {
     marginTop: 8,
+  },
+  netTypeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  netTypeButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#000',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  netTypeButtonActive: {
+    backgroundColor: '#2C7E88',
+    borderColor: '#2C7E88',
+  },
+  netTypeText: {
+    fontSize: 16,
+    color: '#000',
+  },
+  netTypeTextActive: {
+    color: '#fff',
   },
   dropdownButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2C7E88',
+    borderColor: '#000',
     borderRadius: 8,
     padding: 12,
     backgroundColor: '#fff',
@@ -499,9 +614,9 @@ const styles = StyleSheet.create({
   timeButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#2C7E88',
+    borderColor: '#000',
     borderRadius: 8,
-    padding: 12,
+    padding: 8,
     alignItems: 'center',
   },
   timeLabel: {
@@ -511,6 +626,53 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 16,
+    color: '#2C7E88',
+    fontWeight: '500',
+  },
+  membershipContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 8,
+  },
+  membershipButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  membershipButtonActive: {
+    // Optional: add background color or other styling for active state
+  },
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  radioCircleActive: {
+    borderColor: '#2C7E88',
+  },
+  radioCircleFilled: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#000',
+  },
+  radioCircleFilledActive: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#2C7E88',
+  },
+  membershipText: {
+    fontSize: 16,
+    color: '#000',
+  },
+  membershipTextActive: {
     color: '#2C7E88',
     fontWeight: '500',
   },
@@ -543,7 +705,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   submitButton: {
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
 });
