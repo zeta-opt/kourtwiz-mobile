@@ -508,8 +508,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   MainTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
     alignSelf: 'flex-start',
     color: '#fff',
   },
