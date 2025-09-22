@@ -1,6 +1,6 @@
 import { RootState } from '@/store';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -10,6 +10,12 @@ export default function BottomTabs() {
   const { user } = useSelector((state: RootState) => state.auth);
   console.log(user);
   const hasRoles = user?.userClubRole?.length > 0;
+
+  const segments = useSegments();
+  const currentPath = '/' + segments.join('/');
+
+  // Helper to check if a route is active by prefix matching
+  const isActive = (route: string) => currentPath.startsWith(route);
 
   return (
     <View style={styles.container}>
@@ -27,53 +33,83 @@ export default function BottomTabs() {
         onPress={() => router.replace('/(authenticated)/home')}
         style={styles.tabItem}
       >
-        <MaterialIcons name='home' size={24} color='#2C7E88' />
-        <Text style={styles.activeLabel}>Home</Text>
+        <MaterialIcons
+          name="home"
+          size={24}
+          color={isActive('/(authenticated)/home') ? '#2C7E88' : '#000'}
+        />
+        <Text style={isActive('/(authenticated)/home') ? styles.activeLabel : styles.label}>
+          Home
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => router.replace('/groups')}
+        onPress={() => router.replace('/(authenticated)/groups')}
         style={styles.tabItem}
       >
-        <MaterialIcons name='groups' size={24} color='#000' />
-        <Text style={styles.label}>Groups</Text>
+        <MaterialIcons
+          name="groups"
+          size={24}
+          color={isActive('/(authenticated)/groups') ? '#2C7E88' : '#000'}
+        />
+        <Text style={isActive('/(authenticated)/groups') ? styles.activeLabel : styles.label}>
+          Groups
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => router.replace('/videos')}
+        onPress={() => router.replace('/(authenticated)/videos')}
         style={styles.tabItem}
       >
-        <MaterialIcons name='ondemand-video' size={24} color='#000' />
-        <Text style={styles.label}>Videos</Text>
+        <MaterialIcons
+          name="ondemand-video"
+          size={24}
+          color={isActive('/(authenticated)/videos') ? '#2C7E88' : '#000'}
+        />
+        <Text style={isActive('/(authenticated)/videos') ? styles.activeLabel : styles.label}>
+          Videos
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => router.replace('/feedback')}
+        onPress={() => router.replace('/(authenticated)/feedback')}
         style={styles.tabItem}
       >
-        <MaterialIcons name='feedback' size={24} color='#000' />
-        <Text style={styles.label}>Feedback</Text>
+        <MaterialIcons
+          name="feedback"
+          size={24}
+          color={isActive('/(authenticated)/feedback') ? '#2C7E88' : '#000'}
+        />
+        <Text style={isActive('/(authenticated)/feedback') ? styles.activeLabel : styles.label}>
+          Feedback
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => router.replace('/history')}
+        onPress={() => router.replace('/(authenticated)/history')}
         style={styles.tabItem}
       >
-        <MaterialIcons name='calendar-today' size={24} color='#000' />
-        <Text style={styles.label}>History</Text>
+        <MaterialIcons
+          name="calendar-today"
+          size={24}
+          color={isActive('/(authenticated)/history') ? '#2C7E88' : '#000'}
+        />
+        <Text style={isActive('/(authenticated)/history') ? styles.activeLabel : styles.label}>
+          History
+        </Text>
       </TouchableOpacity>
 
       {/* <TouchableOpacity
         onPress={() => router.replace('/(authenticated)/profile')}
       >
-        <MaterialIcons name='person' size={28} />
+        <MaterialIcons name="person" size={28} />
       </TouchableOpacity>
 
       {user?.userClubRole?.[0]?.roleName !== 'ClubAdmin' && (
         <TouchableOpacity
           onPress={() => router.replace('/(authenticated)/find-players')}
         >
-          <MaterialIcons name='group' size={28} />
+          <MaterialIcons name="group" size={28} />
         </TouchableOpacity>
       )} */}
     </View>
