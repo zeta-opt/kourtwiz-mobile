@@ -12,7 +12,8 @@ import {
   Alert,
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather} from '@expo/vector-icons';
+import { Ionicons} from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
@@ -188,6 +189,8 @@ const GroupInfoScreen: React.FC = () => {
       return;
     }
 
+    let newMembersAdded: string[] = [];
+
     for (const contact of contacts) {
       if (!contact.contactName || !contact.contactPhoneNumber) {
         console.warn("Skipping invalid contact:", contact);
@@ -204,10 +207,16 @@ const GroupInfoScreen: React.FC = () => {
           },
           callbacks: {
             onSuccess: () => {
-              console.log(`Added ${contact.contactName}`);
+              newMembersAdded.push(contact.contactName.split(' ')[0]);
             },
-            onError: (err) => {
-              console.error(`Failed to add ${contact.contactName}`, err?.message || err);
+            onError: () => {
+              const firstName = contact.contactName.split(' ')[0];
+              Toast.show({
+                type: 'error',
+                text1: `${firstName} is already present in the group.`,
+                position: 'top',
+                visibilityTime: 3000,
+              });
             },
           },
         });
@@ -217,6 +226,22 @@ const GroupInfoScreen: React.FC = () => {
     }
 
     getGroup({ groupId: currentGroupId });
+
+    if (newMembersAdded.length === 1) {
+      Toast.show({
+        type: 'success',
+        text1: `${newMembersAdded[0]} is added to the group.`,
+        position: 'top',
+        visibilityTime: 3000,
+      });
+    } else if (newMembersAdded.length > 1) {
+      Toast.show({
+        type: 'success',
+        text1: `Added new members to the group.`,
+        position: 'top',
+        visibilityTime: 3000,
+      });
+    }
   };
 
   const handleDeleteGroup = () => {
@@ -281,7 +306,7 @@ const GroupInfoScreen: React.FC = () => {
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {item.admin && <Text style={styles.adminText}>Admin</Text>}
-        <Feather name="chevron-right" size={20} color="#a0a0a0" style={{ marginLeft: 'auto' }} />
+        <Ionicons name="chevron-forward" size={20} color="#333" style={{ marginLeft: 'auto' }} />
       </View>
     </TouchableOpacity>
   );
@@ -304,7 +329,7 @@ const GroupInfoScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/groups')}>
-            <Feather name="arrow-left" size={24} color="#000" />
+            <Ionicons name="chevron-back-outline" size={24} color="#333" />
           </TouchableOpacity>
 
           <Text style={styles.title}>Group info</Text>
@@ -346,7 +371,7 @@ const GroupInfoScreen: React.FC = () => {
           {/* Show Add Players to admins (you can flip if desired) */}
           {isCurrentUserAdmin && (
             <TouchableOpacity onPress={() => setContactsModalVisible(true)}>
-              <Text style={[styles.sectionTitle, { color: '#257073' }]}>Add Players</Text>
+              <Text style={[styles.sectionTitle, { color: '#457B83' }]}>Add Players</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -487,7 +512,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   editText: {
-    color: '#257073',
+    color: '#457B83',
     fontSize: 16,
     fontWeight: '600',
   },  
@@ -540,9 +565,9 @@ const styles = StyleSheet.create({
   },
   adminText: {
     marginLeft: 12,
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#257073',
+    color: '#457B83',
   },
   actionContainer: {
     marginTop: 12,

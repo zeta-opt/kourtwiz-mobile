@@ -30,7 +30,7 @@ export default function EditModal({
   }, [visible, currentName]);
 
   const handleSave = async () => {
-    if (!groupId || !userId) return;
+    if (!groupId || !userId || editedGroupName.trim() === currentName.trim()) return;
 
     try {
       await updateGroupName({
@@ -46,6 +46,8 @@ export default function EditModal({
       console.error(err);
     }
   };
+
+  const isUnchanged = editedGroupName.trim() === currentName.trim();
 
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
@@ -65,7 +67,11 @@ export default function EditModal({
             placeholder="Enter new group name"
           />
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <TouchableOpacity
+            style={[styles.saveButton, isUnchanged && { opacity: 0.5 }]}
+            onPress={handleSave}
+            disabled={isUnchanged}
+          >
             <Text style={{ color: '#fff', fontWeight: 'bold' }}>Save</Text>
           </TouchableOpacity>
         </View>
@@ -108,7 +114,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   saveButton: {
-    backgroundColor: '#257073',
+    backgroundColor: '#457B83',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',

@@ -272,46 +272,62 @@ const HistoryPage = () => {
         {pastEvents.length === 0 ? (
           <Text style={styles.noData}>No past events found.</Text>
         ) : (
-          pastEvents.map(({ date, events }) => (
-            <View key={date}>
-              <Text style={styles.dateHeader}>{moment(date).format('MMMM DD, YYYY')}</Text>
-              {events.map((ev:any) => (
-                <View key={ev.uniqueKey ?? ev.id} style={styles.cardContainer}>
-                  <View
-                    style={[
-                      styles.cardInfo,
-                      {
-                        justifyContent: 'space-between',
-                        backgroundColor: '#F0F8FF',
-                        borderRadius: 6,
-                        padding: 6,
-                      },
-                    ]}
-                  >
-                    <View>
-                      <Text style={styles.titleText}>{ev.title}</Text>
-                      <View style={styles.cardInfo}>
-                        <MaterialCommunityIcons
-                          name="map-marker"
-                          size={16}
-                          color="#327D85"
-                          style={{ marginRight: 8 }}
-                        />
-                        <Text style={[styles.subText, { color: '#327D85' }]}>
-                          {ev.location || 'No location'}
-                        </Text>
+          pastEvents.map(({ date, events }) => {
+            let formattedDate = '';
+            const eventDate = moment(date);
+
+            if (eventDate.isSame(moment(), 'day')) {
+              formattedDate = 'Today';
+            } else if (eventDate.isSame(moment().subtract(1, 'day'), 'day')) {
+              formattedDate = 'Yesterday';
+            } else {
+              formattedDate = eventDate.format('MM/DD/YYYY');
+            }
+
+            return (
+              <View key={date}>
+                <Text style={styles.dateHeader}>{formattedDate}</Text>
+                {events.map((ev:any) => (
+                  <View key={ev.uniqueKey ?? ev.id} style={styles.cardContainer}>
+                    <View
+                      style={[
+                        styles.cardInfo,
+                        {
+                          justifyContent: 'space-between',
+                          backgroundColor: '#F0F8FF',
+                          borderRadius: 6,
+                          padding: 6,
+                        },
+                      ]}
+                    >
+                      <View>
+                        <Text style={styles.titleText}>{ev.title}</Text>
+                        <View style={styles.cardInfo}>
+                          <MaterialCommunityIcons
+                            name="map-marker"
+                            size={16}
+                            color="#327D85"
+                            style={{ marginRight: 8 }}
+                          />
+                          <Text style={[styles.subText, { color: '#327D85' }]}>
+                            {ev.location || 'No location'}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                    <View style={[styles.cardInfo, { flexDirection: 'row', alignItems: 'center' }]}>
-                      <Text style={[styles.subText, { color: getColor(ev.status) }]}>
-                        {getStatusLabel(ev.status)}
-                      </Text>
-                      <MaterialCommunityIcons
-                        name={getIcon(ev.status)}
-                        size={18}
-                        color={getColor(ev.status)}
-                        style={{ marginRight: 6, marginLeft: 6 }}
-                      />
+                      <View style={[styles.cardInfo, { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap' }]}>
+                        <Text 
+                          style={[styles.subText, { color: getColor(ev.status), flexShrink: 1 }]}
+                          numberOfLines={1} 
+                          ellipsizeMode="tail"
+                        >
+                          {getStatusLabel(ev.status)}
+                        </Text>
+                        <MaterialCommunityIcons
+                          name={getIcon(ev.status)}
+                          size={18}
+                          color={getColor(ev.status)}
+                          style={{ marginLeft: 6 }}
+                        />
                     </View>
                   </View>
                   <View style={styles.cardInfo}>
@@ -334,6 +350,17 @@ const HistoryPage = () => {
                       {moment(ev.start).format('hh:mm A')} - {moment(ev.end).format('hh:mm A')}
                     </Text>
                   </View>
+                  <View style={styles.cardInfo}>
+                    <MaterialCommunityIcons
+                      name="wallet"
+                      size={16}
+                      color="gray"
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text style={styles.subText}>
+                      {ev.priceForPlay != null ? `${ev.priceForPlay}$` : '0$'}
+                    </Text>
+                  </View>
                   <TouchableOpacity
                     style={styles.feedbackButton}
                     onPress={() => {
@@ -346,8 +373,9 @@ const HistoryPage = () => {
                 </View>
               ))}
             </View>
-          ))
-        )}
+          );
+        })
+      )}
       </ScrollView>
 
       {/* Enhanced Feedback Modal */}
