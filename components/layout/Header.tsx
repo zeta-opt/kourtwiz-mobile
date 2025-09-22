@@ -14,6 +14,7 @@ import {
   Text as RNText,
   SafeAreaView,
   StyleSheet,
+  Switch,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -33,6 +34,7 @@ const Header = () => {
   const router = useRouter();
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
+  const [isIn, setIsIn] = useState(true); // toggle state
 
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId || '';
@@ -108,8 +110,15 @@ const Header = () => {
           <Text style={styles.text2}>Ready To Play Today?</Text>
         </View>
 
-        <View style={styles.profileWrapper}>
-          <View style={styles.iconRow}>
+       <View style={styles.profileWrapper}>
+        <View style={styles.iconRow}>
+          <View style={styles.toggleWrapper}>
+            <Switch
+              value={isIn}
+              onValueChange={setIsIn}
+            />
+            <Text style={styles.toggleLabel}>{isIn ? "Out" : "In"}</Text>
+          </View>
             {/* Bell Icon with unread count */}
             <TouchableOpacity
               onPress={handleBellPress}
@@ -168,6 +177,16 @@ const styles = StyleSheet.create({
   },
   badgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 500 },
+    toggleWrapper: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginRight: 12,
+},
+toggleLabel: {
+  fontSize: 16,
+  marginRight: 4,
+  color: "black",
+},
 });
 
 export default Header;
