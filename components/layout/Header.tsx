@@ -1,11 +1,17 @@
 import UserAvatar from '@/assets/UserAvatar';
+import {
+  useGetUnreadCount,
+  useMarkAsRead,
+} from '@/hooks/apis/notifications/UseNotifications';
 import { RootState } from '@/store';
 import { logout } from '@/store/authSlice';
+import { resetNotificationsRefetch } from '@/store/refetchSlice';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Text as RNText,
   SafeAreaView,
   StyleSheet,
   TouchableOpacity,
@@ -29,37 +35,61 @@ const Header = () => {
   const [showMenu, setShowMenu] = useState(false);
 
   const { user } = useSelector((state: RootState) => state.auth);
-  // console.log(profileImage, 'helllo');
+  const userId = user?.userId || '';
+  const shouldRefetchNotifications = useSelector(
+    (state: RootState) => state.refetch.shouldRefetchNotifications
+  );
+
   const selectedClubname =
     user?.userClubRole?.find(
       (club: any) => club.clubId === user?.currentActiveClubId
     )?.clubName || 'Kourtwiz';
+
+  const greeting = getGreeting();
+
+  // --- Notifications hooks ---
+  const { count: unreadCount, refetch: refetchUnread } =
+    useGetUnreadCount(userId);
+  const { markAsRead, status: markStatus } = useMarkAsRead(userId);
+
+  const handleBellPress = async () => {
+    try {
+      // Mark all notifications as read
+      await markAsRead();
+      // Refetch unread count
+      refetchUnread();
+      // Navigate to notifications screen
+      router.push('/(authenticated)/notifications');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to mark notifications as read');
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
       'Confirm Logout',
       'Are you sure you want to log out?',
       [
-        {
-          text: 'Cancel',
-          onPress: () => {}, // Do nothing
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Logout',
+          style: 'destructive',
           onPress: () => {
             dispatch(logout());
             setShowMenu(false);
             router.replace('/');
           },
-          style: 'destructive',
         },
       ],
       { cancelable: true }
     );
   };
-
-  const greeting = getGreeting();
+  useEffect(() => {
+    if (shouldRefetchNotifications) {
+      refetchUnread();
+      dispatch(resetNotificationsRefetch());
+    }
+  }, [shouldRefetchNotifications, refetchUnread, dispatch]);
 
   return (
     <SafeAreaView>
@@ -69,7 +99,6 @@ const Header = () => {
         </TouchableWithoutFeedback>
       )}
 
-      {/* Removed backgroundColor: theme.colors.primary */}
       <View style={styles.header}>
         <View>
           <Text style={styles.text}>
@@ -81,60 +110,27 @@ const Header = () => {
 
         <View style={styles.profileWrapper}>
           <View style={styles.iconRow}>
-            {/* Messages Icon */}
-            {/* <TouchableOpacity onPress={() => Alert.alert('Messages')}>
-              <Ionicons
-                name='chatbox-outline'
-                size={24}
-                color='black'
-                style={{ marginRight: 12 }}
-              />
-            </TouchableOpacity> */}
-
-            {/* Bell Icon */}
-            <TouchableOpacity onPress={() => Alert.alert('Notifications')}>
-              <Ionicons
-                name='notifications-outline'
-                size={24}
-                color='black'
-                style={{ marginRight: 12 }}
-              />
+            {/* Bell Icon with unread count */}
+            <TouchableOpacity
+              onPress={handleBellPress}
+              style={{ marginRight: 12 }}
+            >
+              <Ionicons name='notifications-outline' size={24} color='black' />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <RNText style={styles.badgeText}>{unreadCount}</RNText>
+                </View>
+              )}
             </TouchableOpacity>
 
-            {/* Profile Picture / Avatar */}
+            {/* Profile Avatar */}
             <TouchableOpacity
               style={styles.profileButton}
-              // onPress={() => setShowMenu(true)}
               onPress={() => router.push('/(authenticated)/profile')}
             >
-              {/* {profileImage ? (
-                <Avatar.Image size={42} source={{ uri: profileImage }} />
-              ) : (
-                <Avatar.Text
-                  size={42}
-                  label={
-                    user?.username
-                      ?.split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .toUpperCase() || 'U'
-                  }
-                  style={styles.avatar}
-                  labelStyle={{ fontSize: 12 }}
-                />
-              )} */}
               <UserAvatar size={42} />
             </TouchableOpacity>
           </View>
-
-          {/* {showMenu && (
-            <View style={styles.menuContainer}>
-              <SwitchClub onCloseMenu={() => setShowMenu(false)} />
-              <Pressable onPress={handleLogout} style={styles.menuItem}>
-                <Text style={styles.menuText}>Logout</Text>
-              </Pressable>
-            </View>
-          )} */}
         </View>
       </View>
     </SafeAreaView>
@@ -142,12 +138,7 @@ const Header = () => {
 };
 
 const styles = StyleSheet.create({
-  text2: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#000',
-    marginTop: 4,
-  },
+  text2: { fontSize: 14, fontWeight: '400', color: '#000', marginTop: 4 },
   header: {
     marginTop: '10%',
     marginBottom: '2%',
@@ -159,61 +150,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     zIndex: 1,
   },
-  text: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#333',
-  },
-  title: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  avatar: {
-    backgroundColor: 'black',
-  },
-  profileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  profileWrapper: {
-    position: 'relative',
-    zIndex: 1000,
-  },
-  iconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuContainer: {
+  text: { fontSize: 20, fontWeight: '500', color: '#333' },
+  profileButton: { flexDirection: 'row', alignItems: 'center' },
+  profileWrapper: { position: 'relative', zIndex: 1000 },
+  iconRow: { flexDirection: 'row', alignItems: 'center' },
+  badge: {
     position: 'absolute',
-    top: 35,
-    right: 0,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-    minWidth: 160,
-    paddingVertical: 4,
-    zIndex: 9999,
-  },
-  menuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    right: -6,
+    top: -6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF3B30',
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 5,
   },
-  menuText: {
-    fontSize: 16,
-    color: '#000',
-    fontWeight: '500',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 500, // Below the menuContainer but above screen
-  },
+  badgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  overlay: { ...StyleSheet.absoluteFillObject, zIndex: 500 },
 });
 
 export default Header;

@@ -19,7 +19,10 @@ import { useGetPlayerInvitationSent } from '@/hooks/apis/player-finder/useGetPla
 import { useWithdrawRequest } from '@/hooks/apis/player-finder/useWithdrawRequest';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
-import { resetInvitationsRefetch } from '@/store/refetchSlice';
+import {
+  resetInvitationsRefetch,
+  triggerNotificationsRefetch,
+} from '@/store/refetchSlice';
 import { useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -107,7 +110,6 @@ const Dashboard = () => {
   const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
   const [inviteeName, setInviteeName] = useState<string | null>(null);
-
 
   const now = new Date();
   const getInviteDate = (invite: any) => {
@@ -316,8 +318,9 @@ const Dashboard = () => {
   useEffect(() => {
     if (isFocused) {
       refetchOpenPlay();
+      dispatch(triggerNotificationsRefetch()); // Add this line
     }
-  }, [isFocused]);
+  }, [isFocused, dispatch]);
   const getInviteTimestamp = (invite) => {
     if (invite.dateTimeMs) {
       return Number(invite.dateTimeMs);
@@ -414,10 +417,7 @@ const Dashboard = () => {
         } else {
           const errorText = await response.text();
           console.log('Error response:', errorText);
-          Alert.alert(
-            'Error',
-            errorText || 'Failed to process the invitation'
-          );
+          Alert.alert('Error', errorText || 'Failed to process the invitation');
         }
       } else if (selectedAction === 'cancel') {
         const ok = await cancelInvitation(
@@ -455,11 +455,11 @@ const Dashboard = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log('player details',res.data);
+      console.log('player details', res.data);
       setSelectedPlayers(res.data);
       if (res.data.length > 0) {
-      setInviteeName(res.data[0].inviteeName || 'N/A');
-    }
+        setInviteeName(res.data[0].inviteeName || 'N/A');
+      }
       setPlayerDetailsVisible(true);
       const total = res.data[0]?.playersNeeded + 1 || 1;
       const accepted =
@@ -484,41 +484,40 @@ const Dashboard = () => {
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.inviteWrapper}>
             <View style={styles.tabRow}>
-              
-                <Text
-                  style={[
-                    styles.chip,
-                    activeTab === 'INCOMING'
-                      ? styles.chipActive
-                      : styles.chipInactive,
-                  ]}
-                  onPress={() => setActiveTab('INCOMING')}
-                >
-                  Incoming ({incomingCount.length})
-                </Text>
-                <Text
-                  style={[
-                    styles.chip,
-                    activeTab === 'OUTGOING'
-                      ? styles.chipActive
-                      : styles.chipInactive,
-                  ]}
-                  onPress={() => setActiveTab('OUTGOING')}
-                >
-                  Sent ({pendingOutCount})
-                </Text>
-                <Text
-                  style={[
-                    styles.chip,
-                    activeTab === 'OPENPLAY'
-                      ? styles.chipActive
-                      : styles.chipInactive,
-                  ]}
-                  onPress={() => setActiveTab('OPENPLAY')}
-                >
-                  Open Play ({playCount})
-                </Text>
-              
+              <Text
+                style={[
+                  styles.chip,
+                  activeTab === 'INCOMING'
+                    ? styles.chipActive
+                    : styles.chipInactive,
+                ]}
+                onPress={() => setActiveTab('INCOMING')}
+              >
+                Incoming ({incomingCount.length})
+              </Text>
+              <Text
+                style={[
+                  styles.chip,
+                  activeTab === 'OUTGOING'
+                    ? styles.chipActive
+                    : styles.chipInactive,
+                ]}
+                onPress={() => setActiveTab('OUTGOING')}
+              >
+                Sent ({pendingOutCount})
+              </Text>
+              <Text
+                style={[
+                  styles.chip,
+                  activeTab === 'OPENPLAY'
+                    ? styles.chipActive
+                    : styles.chipInactive,
+                ]}
+                onPress={() => setActiveTab('OPENPLAY')}
+              >
+                Open Play ({playCount})
+              </Text>
+
               {(activeTab === 'INCOMING' && allInvites.length > 0) ||
               (activeTab === 'OUTGOING' && outgoingInvites.length > 0) ||
               (activeTab === 'OPENPLAY' && playCount > 0) ? (
@@ -688,7 +687,10 @@ const Dashboard = () => {
             >
               <ScrollView>
                 <ScrollView contentContainerStyle={styles.dialogContent}>
-                  <PlayerDetailsModal players={selectedPlayers} inviteeName={inviteeName} />
+                  <PlayerDetailsModal
+                    players={selectedPlayers}
+                    inviteeName={inviteeName}
+                  />
                 </ScrollView>
               </ScrollView>
             </Modal>
@@ -718,7 +720,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
-    position: 'relative', 
+    position: 'relative',
   },
   chipGroup: {
     flexDirection: 'row',
@@ -727,8 +729,8 @@ const styles = StyleSheet.create({
     // overflow: 'hidden',
     gap: 8,
     paddingRight: 8,
-    alignItems: 'center',       // Add for vertical centering
-  justifyContent: 'center',
+    alignItems: 'center', // Add for vertical centering
+    justifyContent: 'center',
   },
   chip: {
     paddingHorizontal: 8,
@@ -759,7 +761,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#2C7E88',
-     textDecorationLine: 'underline'
+    textDecorationLine: 'underline',
   },
   inviteScrollContainer: {
     borderRadius: 16,
