@@ -84,7 +84,7 @@ export default function PlayCalendarPage() {
   }>({});
   const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
-    const [inviteeName, setInviteeName] = useState<string | null>(null);
+  const [inviteeName, setInviteeName] = useState<string | null>(null);
 
   // fetch accepted/total counts for all invites
   useEffect(() => {
@@ -228,89 +228,100 @@ export default function PlayCalendarPage() {
     ...outgoingRequests,
     ...initiatedPlaysForSelectedDate,
   ];
-const markedDates = useMemo(() => {
-  const marks: Record<string, any> = {};
-  const today = new Date();
-  const todayStr = format(today, "yyyy-MM-dd");
+  const markedDates = useMemo(() => {
+    const marks: Record<string, any> = {};
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
 
-  if (schedule || initiatedData) {
-    const allEvents = [
-      ...(schedule?.eventsAvailable ?? []).map((e) => ({ ...e, type: "eventsAvailable" })),
-      ...(schedule?.incomingPlayerFinderRequests ?? []).map((e) => ({ ...e, type: "incomingPlayerFinder" })),
-      ...(schedule?.initiatedPlayerFinderRequests ?? []).map((e) => ({ ...e, type: "initiatedPlayerFinder" })),
-      ...(initiatedData ?? []).map((e) => ({ ...e, type: "initiatedPlay" })),
-    ];
+    if (schedule || initiatedData) {
+      const allEvents = [
+        ...(schedule?.eventsAvailable ?? []).map((e) => ({
+          ...e,
+          type: 'eventsAvailable',
+        })),
+        ...(schedule?.incomingPlayerFinderRequests ?? []).map((e) => ({
+          ...e,
+          type: 'incomingPlayerFinder',
+        })),
+        ...(schedule?.initiatedPlayerFinderRequests ?? []).map((e) => ({
+          ...e,
+          type: 'initiatedPlayerFinder',
+        })),
+        ...(initiatedData ?? []).map((e) => ({ ...e, type: 'initiatedPlay' })),
+      ];
 
-    // group events by date
-    const eventsByDate: Record<string, any[]> = {};
-    allEvents.forEach((event) => {
-      const dateArr = event.startTime ?? event.playTime;
-      if (!dateArr) return;
-      const date = format(parseArrayToDate(dateArr), "yyyy-MM-dd");
-      if (!eventsByDate[date]) eventsByDate[date] = [];
-      eventsByDate[date].push(event);
-    });
+      // group events by date
+      const eventsByDate: Record<string, any[]> = {};
+      allEvents.forEach((event) => {
+        const dateArr = event.startTime ?? event.playTime;
+        if (!dateArr) return;
+        const date = format(parseArrayToDate(dateArr), 'yyyy-MM-dd');
+        if (!eventsByDate[date]) eventsByDate[date] = [];
+        eventsByDate[date].push(event);
+      });
 
-    // decide color per date
-    Object.entries(eventsByDate).forEach(([date, events]) => {
-      // ✅ only colorize today or future
-      if (date < todayStr) return;
+      // decide color per date
+      Object.entries(eventsByDate).forEach(([date, events]) => {
+        // ✅ only colorize today or future
+        if (date < todayStr) return;
 
-      let bgColor: string | null = null;
+        let bgColor: string | null = null;
 
-      const isAccepted = (e: any) =>
-        e.status === "ACCEPTED" ||
-        (e.type === "eventsAvailable" &&
-          Array.isArray(e.registeredPlayers) &&
-          e.registeredPlayers.includes(userId)) ||
-        e.type === "initiatedPlayerFinder" ||
-        e.type === "initiatedPlay";
+        const isAccepted = (e: any) =>
+          e.status === 'ACCEPTED' ||
+          (e.type === 'eventsAvailable' &&
+            Array.isArray(e.registeredPlayers) &&
+            e.registeredPlayers.includes(userId)) ||
+          e.type === 'initiatedPlayerFinder' ||
+          e.type === 'initiatedPlay';
 
-      const allAccepted = events.length > 0 && events.every((e) => isAccepted(e));
-      const allDeclined = events.length > 0 && events.every((e) => e.status === "DECLINED");
+        const allAccepted =
+          events.length > 0 && events.every((e) => isAccepted(e));
+        const allDeclined =
+          events.length > 0 && events.every((e) => e.status === 'DECLINED');
 
-      if (allAccepted) {
-        bgColor = "green";
-      } else if (allDeclined) {
-        bgColor = "red";
-      } else {
-        bgColor = "#b18a17ff"; // gold
-      }
+        if (allAccepted) {
+          bgColor = 'green';
+        } else if (allDeclined) {
+          bgColor = 'red';
+        } else {
+          bgColor = '#b18a17ff'; // gold
+        }
 
-      if (bgColor) {
-        marks[date] = {
-          customStyles: {
-            container: {
-              backgroundColor: bgColor,
-              borderRadius: 4,
+        if (bgColor) {
+          marks[date] = {
+            customStyles: {
+              container: {
+                backgroundColor: bgColor,
+                borderRadius: 4,
+              },
+              text: {
+                color: 'white',
+                fontWeight: 'bold',
+              },
             },
-            text: {
-              color: "white",
-              fontWeight: "bold",
-            },
+          };
+        }
+      });
+    }
+
+    if (selectedDate) {
+      marks[selectedDate] = {
+        customStyles: {
+          container: {
+            backgroundColor: '#00adf5',
+            borderRadius: 4,
           },
-        };
-      }
-    });
-  }
-
-  if (selectedDate) {
-    marks[selectedDate] = {
-      customStyles: {
-        container: {
-          backgroundColor: "#00adf5",
-          borderRadius: 4,
+          text: {
+            color: 'white',
+            fontWeight: 'bold',
+          },
         },
-        text: {
-          color: "white",
-          fontWeight: "bold",
-        },
-      },
-    };
-  }
+      };
+    }
 
-  return marks;
-}, [schedule, initiatedData, selectedDate, userId]);
+    return marks;
+  }, [schedule, initiatedData, selectedDate, userId]);
 
   const showCommentDialog = (
     invite: any,
@@ -361,9 +372,11 @@ const markedDates = useMemo(() => {
       const encoded = encodeURIComponent(
         JSON.stringify(groupedOutgoingRequest)
       );
+      const disabled = isPastDate(event.start) ? 'true' : 'false';
+
       router.push({
         pathname: '/(authenticated)/sentRequestsDetailedView',
-        params: { data: encoded },
+        params: { data: encoded, disabled: String(disabled) },
       });
     }
   };
@@ -381,12 +394,10 @@ const markedDates = useMemo(() => {
 
         const newBase = 'https://api.vddette.com';
         const urlObj = new URL(oldUrl);
-        console.log('Parsed URL:', urlObj);
         const newUrl = `${newBase}${urlObj.pathname}${
           urlObj.search
         }&comments=${encodeURIComponent(comment)}`;
 
-        console.log('Submitting to URL:', newUrl);
         const response = await fetch(newUrl);
         if (response.status === 200) {
           Alert.alert('Success', `Invitation ${selectedAction}ed`);
@@ -438,11 +449,10 @@ const markedDates = useMemo(() => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log('player details',res.data);
       setSelectedPlayers(res.data);
       if (res.data.length > 0) {
-      setInviteeName(res.data[0].inviteeName || 'N/A');
-    }
+        setInviteeName(res.data[0].inviteeName || 'N/A');
+      }
       setPlayerDetailsVisible(true);
       const total = res.data[0]?.playersNeeded + 1 || 1;
       const accepted =
@@ -510,7 +520,7 @@ const markedDates = useMemo(() => {
                   />
                 );
               } else if (item.type === 'outgoing') {
-                console.log('Rendering outgoing invite:', item);
+                // console.log('Rendering outgoing invite:', item);
                 return (
                   <TouchableOpacity onPress={() => handlePress(item)}>
                     <OutgoingInviteCardItem
@@ -614,7 +624,10 @@ const markedDates = useMemo(() => {
           >
             <ScrollView>
               <ScrollView contentContainerStyle={styles.dialogContent}>
-                <PlayerDetailsModal players={selectedPlayers} inviteeName={inviteeName} />
+                <PlayerDetailsModal
+                  players={selectedPlayers}
+                  inviteeName={inviteeName}
+                />
               </ScrollView>
             </ScrollView>
           </Modal>

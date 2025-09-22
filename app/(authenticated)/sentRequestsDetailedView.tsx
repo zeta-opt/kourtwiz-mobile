@@ -1,6 +1,10 @@
 import { useWithdrawRequest } from '@/hooks/apis/player-finder/useWithdrawRequest';
 import { RootState } from '@/store';
-import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+} from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -48,7 +52,11 @@ function arrayToDate(arr: number[] = []): Date {
 }
 
 export default function SentRequestDetailedView() {
-  const { data } = useLocalSearchParams<{ data: string }>();
+  const { data, disabled } = useLocalSearchParams<{
+    data: string;
+    disabled: string;
+  }>();
+  const isDisabled = disabled === 'true';
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
 
@@ -69,21 +77,29 @@ export default function SentRequestDetailedView() {
     }
   }, [data]);
 
-  if (!invite) return <ActivityIndicator size="large" style={styles.loader} />;
-  console.log(invite)
+  if (!invite) return <ActivityIndicator size='large' style={styles.loader} />;
+  console.log(invite);
   const playTime = arrayToDate(invite?.Requests?.[0]?.playTime || []);
   const playEndTime = arrayToDate(invite?.Requests?.[0]?.playEndTime || []);
-  const dateString = playTime.toLocaleDateString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
+  const dateString = playTime.toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric',
   });
-  const timeString = playTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const endtimeString = playEndTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeString = playTime.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const endtimeString = playEndTime.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   const requestId = invite?.requestId || invite?.Requests?.[0]?.requestId;
   const organizerName = invite?.Requests?.[0]?.inviteeName ?? 'Unknown';
   const total = invite?.playersNeeded + 1 || 0;
-  const accepted = invite?.Requests?.filter((r: any) => r.status === 'ACCEPTED').length + 1 || 0;
+  const accepted =
+    invite?.Requests?.filter((r: any) => r.status === 'ACCEPTED').length + 1 ||
+    0;
 
   const handleWithdraw = async () => {
     try {
@@ -91,11 +107,11 @@ export default function SentRequestDetailedView() {
       console.log('Request ID:', requestId);
       console.log('User ID:', userId);
       console.log('Comment:', withdrawComment);
-      
+
       await withdrawRequest(requestId, userId, withdrawComment);
       Toast.show({ type: 'success', text1: 'Game Invite Withdrawn' });
       setCommentModalVisible(false);
-       router.replace('/(authenticated)/home');
+      router.replace('/(authenticated)/home');
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Failed to Withdraw Game Invite' });
     }
@@ -106,7 +122,7 @@ export default function SentRequestDetailedView() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#000" />
+          <Ionicons name='chevron-back' size={24} color='#000' />
         </TouchableOpacity>
         <Text style={styles.title}>Sent Request</Text>
         <View style={{ width: 36 }} />
@@ -119,33 +135,37 @@ export default function SentRequestDetailedView() {
         <View style={styles.row}>
           <View style={styles.column}>
             <View style={styles.infoCard}>
-              <FontAwesome5 name="calendar-alt" size={20} color="#2CA6A4" />
+              <FontAwesome5 name='calendar-alt' size={20} color='#2CA6A4' />
             </View>
             <Text style={styles.infoText}>{dateString}</Text>
           </View>
           <View style={styles.column}>
             <View style={styles.infoCard}>
-              <FontAwesome5 name="clock" size={20} color="#2CA6A4" />
+              <FontAwesome5 name='clock' size={20} color='#2CA6A4' />
             </View>
-            <Text style={styles.infoText}>{timeString}-{endtimeString}</Text>
+            <Text style={styles.infoText}>
+              {timeString}-{endtimeString}
+            </Text>
           </View>
           <View style={styles.column}>
             <View style={styles.infoCard}>
-              <FontAwesome5 name="users" size={20} color="#2CA6A4" />
+              <FontAwesome5 name='users' size={20} color='#2CA6A4' />
             </View>
-            <Text style={styles.infoText}>{accepted}/{total} Accepted</Text>
+            <Text style={styles.infoText}>
+              {accepted}/{total} Accepted
+            </Text>
           </View>
         </View>
 
         {/* Location */}
         <View style={styles.locationRow}>
           <View style={styles.locationIconWrapper}>
-            <FontAwesome5 name="map-marker-alt" size={16} color="#2CA6A4" />
+            <FontAwesome5 name='map-marker-alt' size={16} color='#2CA6A4' />
           </View>
           <Text
             style={styles.locationText}
             numberOfLines={0}
-            ellipsizeMode="tail"
+            ellipsizeMode='tail'
           >
             Event Place: {invite.placeToPlay}
           </Text>
@@ -166,25 +186,35 @@ export default function SentRequestDetailedView() {
               <View key={player.id} style={styles.row}>
                 {/* Chat Icon + Player Name */}
                 <TouchableOpacity
-                style={{ marginRight: 20 }}
-                onPress={() => {
-                  const combinedRequestId = `${invite.requestId}_${userId}_${player.id}`;
-                  router.push({
-                    pathname: "/(authenticated)/chat-summary",
-                    params: {
-                      requestId: combinedRequestId,
-                      directUserId: player.id,
-                      directUserName: player.name,
-                      isIndividualMessage: 'true',
-                    },
-                  });
-                }}
-              >
-                <MaterialCommunityIcons name='message-text-outline' size={20} color='#007BFF'/>
-              </TouchableOpacity>
+                  style={{ marginRight: 20 }}
+                  onPress={() => {
+                    const combinedRequestId = `${invite.requestId}_${userId}_${player.id}`;
+                    router.push({
+                      pathname: '/(authenticated)/chat-summary',
+                      params: {
+                        requestId: combinedRequestId,
+                        directUserId: player.id,
+                        directUserName: player.name,
+                        isIndividualMessage: 'true',
+                      },
+                    });
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name='message-text-outline'
+                    size={20}
+                    color='#007BFF'
+                  />
+                </TouchableOpacity>
 
-                <View style={[styles.row, { flex: 1, alignItems: "center" }]}>
-                  <Text style={{ color: statusColorMap[status], fontWeight: '500', marginRight: 8 }}>
+                <View style={[styles.row, { flex: 1, alignItems: 'center' }]}>
+                  <Text
+                    style={{
+                      color: statusColorMap[status],
+                      fontWeight: '500',
+                      marginRight: 8,
+                    }}
+                  >
                     {player.name}
                   </Text>
                 </View>
@@ -192,13 +222,13 @@ export default function SentRequestDetailedView() {
                 {/* Status Section */}
                 <View style={styles.row}>
                   <FontAwesome5
-                    name={statusIconMap[status] || "question"}
+                    name={statusIconMap[status] || 'question'}
                     size={14}
                     color={statusColorMap[status]}
                     style={{ marginRight: 4 }}
                   />
                   <Text style={{ color: statusColorMap[status] }}>
-                    {status === "CANCELLED" ? "DECLINED" : status}
+                    {status === 'CANCELLED' ? 'DECLINED' : status}
                   </Text>
                 </View>
               </View>
@@ -210,7 +240,11 @@ export default function SentRequestDetailedView() {
       {/* Join Button */}
       <View style={styles.chatPreviewContainer}>
         <TouchableOpacity
-          style={{flexDirection:"row", alignItems: "center", justifyContent:"space-between" }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
           onPress={() =>
             router.push({
               pathname: '/(authenticated)/chat-summary',
@@ -218,17 +252,27 @@ export default function SentRequestDetailedView() {
             })
           }
         >
-          <Text style={[styles.chatPreviewText, {marginBottom: 2}]}>Chat with all the players here...</Text>
-          <MaterialCommunityIcons name='message-text-outline' size={20} color='#007BFF'/>
+          <Text style={[styles.chatPreviewText, { marginBottom: 2 }]}>
+            Chat with all the players here...
+          </Text>
+          <MaterialCommunityIcons
+            name='message-text-outline'
+            size={20}
+            color='#007BFF'
+          />
         </TouchableOpacity>
       </View>
 
       {/* Withdraw Button */}
       <View style={styles.chatPreviewContainer}>
         <Text style={styles.chatPreviewText}>Cancel the game for all...</Text>
-        <TouchableOpacity 
-          style={styles.joinButton} 
-          onPress={() => {setCommentModalVisible(true)}}>
+        <TouchableOpacity
+          style={[styles.joinButton, isDisabled && styles.disabledButton]}
+          disabled={isDisabled}
+          onPress={() => {
+            setCommentModalVisible(true);
+          }}
+        >
           <Text style={styles.joinButtonText}>Cancel Request</Text>
         </TouchableOpacity>
       </View>
@@ -237,10 +281,11 @@ export default function SentRequestDetailedView() {
       <View style={[styles.chatPreviewContainer, { marginBottom: 80 }]}>
         <Text style={styles.chatPreviewText}>Edit game details here...</Text>
         <TouchableOpacity
-          style={styles.joinButton}
+          style={[styles.joinButton, isDisabled && styles.disabledButton]}
+          disabled={isDisabled}
           onPress={() => {
-            console.log("👉 Sending params:", {
-              isEditMode: "true",
+            console.log('👉 Sending params:', {
+              isEditMode: 'true',
               finderId: invite.requestId,
               requesterId: invite.requesterId,
               placeToPlay: invite.placeToPlay,
@@ -251,9 +296,9 @@ export default function SentRequestDetailedView() {
             });
 
             router.push({
-              pathname: "/(authenticated)/find-player",
+              pathname: '/(authenticated)/find-player',
               params: {
-                isEditMode: "true",
+                isEditMode: 'true',
                 finderId: invite.requestId,
                 requesterId: invite.requesterId,
                 placeToPlay: invite.placeToPlay,
@@ -278,7 +323,7 @@ export default function SentRequestDetailedView() {
         >
           <Text style={styles.modalTitle}>Withdraw Game Invite</Text>
           <TextInput
-            placeholder="Optional comment"
+            placeholder='Optional comment'
             multiline
             numberOfLines={4}
             value={withdrawComment}
@@ -287,17 +332,18 @@ export default function SentRequestDetailedView() {
           />
           <View style={styles.buttonRow}>
             <Button
-              mode="outlined"
+              mode='outlined'
               onPress={() => setCommentModalVisible(false)}
               style={{ flex: 1 }}
+              disabled={status === 'loading' || isDisabled}
             >
               Cancel
             </Button>
             <Button
-              mode="contained"
+              mode='contained'
               onPress={handleWithdraw}
               loading={status === 'loading'}
-              disabled={status === 'loading'}
+              disabled={status === 'loading' || isDisabled}
               style={{ flex: 1, marginLeft: 10 }}
             >
               Confirm
@@ -435,5 +481,5 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#ccc',
     borderColor: '#aaa',
-  },  
+  },
 });
