@@ -12,7 +12,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 export default function AuthenticatedLayout() {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const showHeader = pathname.includes('/home');
+
+  const showHeader = pathname.startsWith('/home');
+  const bottomTabRoutes = ['/home', '/groups', '/history', '/videos', '/feedback'];
+  const showBottomTabs = bottomTabRoutes.some(route => pathname.startsWith(route));
 
   return (
     <LinearGradient
@@ -21,10 +24,10 @@ export default function AuthenticatedLayout() {
     >
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-          {showHeader  && <Header />}
+          {showHeader && <Header />}
           <Stack screenOptions={{ headerShown: false }} />
           <SideDrawer />
-          {showHeader && <BottomTabs />}
+          {showBottomTabs && <BottomTabs />}
         </View>
       </SafeAreaView>
     </LinearGradient>

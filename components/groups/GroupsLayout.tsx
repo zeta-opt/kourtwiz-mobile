@@ -310,22 +310,24 @@ export default function GroupsScreen() {
       </View>
 
       {/* Search box */}
-      <View style={styles.searchContainer}>
-        <Ionicons
-          name="search-outline"
-          size={20}
-          color="#8E8E8E"
-          style={{ marginLeft: 12, marginRight: 6 }}
-        />
-        <TextInput
-          placeholder="Search Group Name"
-          placeholderTextColor="#8E8E8E"
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          clearButtonMode="while-editing"
-        />
-      </View>
+      {sortedData.length > 0 && (
+        <View style={styles.searchContainer}>
+          <Ionicons
+            name="search-outline"
+            size={20}
+            color="#8E8E8E"
+            style={{ marginLeft: 12, marginRight: 6 }}
+          />
+          <TextInput
+            placeholder="Search Group Name"
+            placeholderTextColor="#8E8E8E"
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            clearButtonMode="while-editing"
+          />
+        </View>
+      )}
 
       {/* Filters */}
       {/* <View style={styles.filters}>
@@ -403,10 +405,11 @@ export default function GroupsScreen() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => (
           <View style={styles.loaderContainer}>
-            <Ionicons name="people" size={50} color="#999" />
-            <Text style={styles.loaderText}>No groups yet</Text>
+            <View style={styles.iconBackground}>
+              <Ionicons name="people" size={60} color="#457B83" />
+            </View>
             <Text style={styles.errorText}>
-              Start by creating a new group and invite your friends!
+              Here, you didn&apos;t create any group yet, please create a group
             </Text>
           </View>
         )}
@@ -612,8 +615,9 @@ const styles = StyleSheet.create({
   },
   createButton: {
     marginTop: 10,
+    marginBottom: 10,
     alignItems: 'center',
-    backgroundColor: "#2E7165",
+    backgroundColor: "#457B83",
     paddingVertical: 16,
     paddingHorizontal: 12,
     borderRadius: 30,
@@ -634,11 +638,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#2E7165',
   },
+  iconBackground: {
+    backgroundColor: '#ebf6f5',
+    borderRadius: 50,
+    width: 100,
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
   errorText: {
     textAlign: 'center',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '500',
-    color: '#777',
-    marginVertical: 10,
+    color: '#7D7D7D',
+    marginVertical: 20,
+    marginHorizontal: 20,
   },
 });

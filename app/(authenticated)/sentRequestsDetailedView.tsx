@@ -180,7 +180,7 @@ export default function SentRequestDetailedView() {
                   });
                 }}
               >
-                <MaterialCommunityIcons name='message-text-outline' size={20} color='#2C7E88'/>
+                <MaterialCommunityIcons name='message-text-outline' size={20} color='#007BFF'/>
               </TouchableOpacity>
 
                 <View style={[styles.row, { flex: 1, alignItems: "center" }]}>
@@ -208,9 +208,9 @@ export default function SentRequestDetailedView() {
       </View>
 
       {/* Join Button */}
-      <View style={[styles.chatPreviewContainer, {flexDirection:"row", alignItems: "center", justifyContent:"space-between" }]}>
-        <Text style={[styles.chatPreviewText, {marginBottom: 2}]}>Chat with all the players here...</Text>
+      <View style={styles.chatPreviewContainer}>
         <TouchableOpacity
+          style={{flexDirection:"row", alignItems: "center", justifyContent:"space-between" }}
           onPress={() =>
             router.push({
               pathname: '/(authenticated)/chat-summary',
@@ -218,7 +218,8 @@ export default function SentRequestDetailedView() {
             })
           }
         >
-          <MaterialCommunityIcons name='message-text-outline' size={20} color='#2C7E88'/>
+          <Text style={[styles.chatPreviewText, {marginBottom: 2}]}>Chat with all the players here...</Text>
+          <MaterialCommunityIcons name='message-text-outline' size={20} color='#007BFF'/>
         </TouchableOpacity>
       </View>
 
@@ -226,7 +227,7 @@ export default function SentRequestDetailedView() {
       <View style={styles.chatPreviewContainer}>
         <Text style={styles.chatPreviewText}>Cancel the game for all...</Text>
         <TouchableOpacity 
-          style={[styles.joinButton,]} 
+          style={styles.joinButton} 
           onPress={() => {setCommentModalVisible(true)}}>
           <Text style={styles.joinButtonText}>Cancel Request</Text>
         </TouchableOpacity>

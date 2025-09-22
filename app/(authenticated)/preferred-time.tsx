@@ -152,6 +152,7 @@ export default PreferredTimeScreen;
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: '#fff',
   },
   header: {
@@ -216,10 +217,15 @@ const styles = StyleSheet.create({
     borderBottomColor: '#333',
   },
   footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: '#ddd',
+    backgroundColor: '#fff',
   },
   doneButton: {
     marginTop: 20,

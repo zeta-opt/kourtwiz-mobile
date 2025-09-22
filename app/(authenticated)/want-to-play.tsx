@@ -10,6 +10,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -143,114 +145,120 @@ const IWantToPlayScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setShowSuggestions(false); }} accessible={false}>
-        <View style={{ flex: 1 }}>
-          {/* HEADER */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.backButton}
-            >
-              <Ionicons name="arrow-back" size={24} color="#cce5e3" />
-            </TouchableOpacity>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.title}>I Want To Play</Text>
-              <Text style={styles.subtitle}>Send out message to players</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      >
+        <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setShowSuggestions(false); }} accessible={false}>
+          <View style={{ flex: 1 }}>
+            {/* HEADER */}
+            <View style={styles.header}>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                style={styles.backButton}
+              >
+                <Ionicons name="chevron-back-outline" size={24} color="#fff" />
+              </TouchableOpacity>
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.title}>I Want To Play</Text>
+                <Text style={styles.subtitle}>Send out message to players</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+                <UserAvatar size={30} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
-              <UserAvatar size={30} />
-            </TouchableOpacity>
-          </View>
 
-          {/* CARD */}
-          <View style={styles.card}>
-            {/* LOCATION */}
-            <Text style={styles.label}>Current Location</Text>
-            <View style={styles.inputRow}>
-              <TextInput
-                placeholder="Enter Location"
-                placeholderTextColor="#999"
-                value={location}
-                onChangeText={(text) => {
-                  setLocation(text);
-                  if (!isValidLocation(text)) setLocationError('invalid location entered');
-                  else setLocationError('');
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => {
-                  if (!location) setLocation('');
-                  setShowSuggestions(true);
-                }}
-                style={[styles.input, { flex: 1 }]}
-                autoCorrect={false}
-              />
-              <Ionicons name="location-outline" size={20} color="#000" style={{ marginLeft: 8 }} />
-            </View>
-            {locationError !== '' && (
-              <Text style={{ color: 'red', margin: 4 }}>{locationError}</Text>
-            )}
-
-            {showSuggestions &&
-              suggestionsStatus === 'success' &&
-              suggestions.length > 0 && (
-                <View style={styles.suggestionsContainer}>
-                  <ScrollView keyboardShouldPersistTaps="handled">
-                    {suggestions.map((item: any, index: number) => {
-                      return (
-                        <TouchableOpacity
-                          key={item.id || index}
-                          style={styles.suggestionItem}
-                          onPress={() => {
-                            setLocation(item.Location || item.Name || '');
-                            setShowSuggestions(false);
-                            setLocationError('');
-                          }}
-                        >
-                          <Text style={styles.suggestionText}>
-                            {item.Name} – {item.Location}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-            )}
-
-            {/* MESSAGE */}
-            <Text style={[styles.label, { marginTop: 20 }]}>Enter Message</Text>
-            <TextInput
-              placeholder="Enter Message"
-              placeholderTextColor="#999"
-              value={message}
-              onChangeText={(text) => {
-                if (text.length <= 500) setMessage(text);
-              }}
-              multiline
-              numberOfLines={4}
-              style={styles.messageInput}
-              textAlignVertical="top"
-              scrollEnabled
-            />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-              {message.length >= 500 && (
-                <Text style={{ color: 'red' }}>Message limit reached (500 characters)</Text>
+            {/* CARD */}
+            <View style={styles.card}>
+              {/* LOCATION */}
+              <Text style={styles.label}>Current Location</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  placeholder="Enter Location"
+                  placeholderTextColor="#999"
+                  value={location}
+                  onChangeText={(text) => {
+                    setLocation(text);
+                    if (!isValidLocation(text)) setLocationError('invalid location entered');
+                    else setLocationError('');
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => {
+                    if (!location) setLocation('');
+                    setShowSuggestions(true);
+                  }}
+                  style={[styles.input, { flex: 1 }]}
+                  autoCorrect={false}
+                />
+                <Ionicons name="location-outline" size={20} color="#000" style={{ marginLeft: 8 }} />
+              </View>
+              {locationError !== '' && (
+                <Text style={{ color: 'red', margin: 4 }}>{locationError}</Text>
               )}
-              <Text style={{ color: '#999' }}>{message.length} / 500</Text>
-            </View>
 
-            {/* SEND BUTTON */}
-          <View style={styles.sendButtonContainer}>
-            <TouchableOpacity
-              onPress={onSendPress}
-              style={styles.sendButton}
-              activeOpacity={0.9}
-            >
-              <Text style={styles.sendButtonText}>Broadcast to All</Text>
-            </TouchableOpacity>
+              {showSuggestions &&
+                suggestionsStatus === 'success' &&
+                suggestions.length > 0 && (
+                  <View style={styles.suggestionsContainer}>
+                    <ScrollView keyboardShouldPersistTaps="handled">
+                      {suggestions.map((item: any, index: number) => {
+                        return (
+                          <TouchableOpacity
+                            key={item.id || index}
+                            style={styles.suggestionItem}
+                            onPress={() => {
+                              setLocation(item.Location || item.Name || '');
+                              setShowSuggestions(false);
+                              setLocationError('');
+                            }}
+                          >
+                            <Text style={styles.suggestionText}>
+                              {item.Name} – {item.Location}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+              )}
+
+              {/* MESSAGE */}
+              <Text style={[styles.label, { marginTop: 20 }]}>Enter Message</Text>
+              <TextInput
+                placeholder="Enter Message"
+                placeholderTextColor="#999"
+                value={message}
+                onChangeText={(text) => {
+                  if (text.length <= 500) setMessage(text);
+                }}
+                multiline
+                numberOfLines={4}
+                style={styles.messageInput}
+                textAlignVertical="top"
+                scrollEnabled
+              />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                {message.length >= 500 && (
+                  <Text style={{ color: 'red' }}>Message limit reached (500 characters)</Text>
+                )}
+                <Text style={{ color: '#999' }}>{message.length} / 500</Text>
+              </View>
+
+              {/* SEND BUTTON */}
+            <View style={styles.sendButtonContainer}>
+              <TouchableOpacity
+                onPress={onSendPress}
+                style={styles.sendButton}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.sendButtonText}>Broadcast to All</Text>
+              </TouchableOpacity>
+            </View>
+            </View>
           </View>
-          </View>
-        </View>
-      </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -260,9 +268,9 @@ const white = '#fff';
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: primaryColor, paddingTop: 25 },
-  header: { flexDirection: 'row', paddingHorizontal: 15, paddingVertical: 15, alignItems: 'center' },
+  header: { flexDirection: 'row', paddingHorizontal: 15, paddingVertical: 35, alignItems: 'center' },
   backButton: { paddingRight: 10, paddingVertical: 5 },
-  headerTextContainer: { flex: 1 },
+  headerTextContainer: { flex: 1, marginLeft: 10 },
   title: { color: white, fontSize: 18, fontWeight: '600' },
   subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 4 },
   card: {

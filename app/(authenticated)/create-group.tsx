@@ -112,7 +112,7 @@ export default function CreateGroup() {
                 onPress={() => router.back()}
                 style={styles.backButton}
             >
-                <Ionicons name="arrow-back" size={24} color="#cce5e3" />
+              <Ionicons name="chevron-back-outline" size={24} color="#fff" />
             </TouchableOpacity>
             <View style={styles.headerTextContainer}>
             <Text style={styles.title}>Create Group</Text>
@@ -307,36 +307,34 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 20,
   },
   tag: {
-    borderColor: "#5E9CA3",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E6F0F2',
+    borderColor: '#5E9CA3',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginRight: 8,
-    marginBottom: 8,
   },
   tagText: {
-    color: "#5E9CA3",
-    fontWeight: "500",
-    fontSize: 13,
+    color: '#333',
+    fontSize: 14,
+    marginRight: 8,
   },
-  removeButton: {
-    backgroundColor: "#ddd",
+removeButton: {
+    backgroundColor: '#5E9CA3',
     borderRadius: 12,
-    padding: 4,
-    margin: 4,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },  
   saveButton: {
     height: 48,
