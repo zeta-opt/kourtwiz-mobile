@@ -110,15 +110,12 @@ const Header = () => {
           <Text style={styles.text2}>Ready To Play Today?</Text>
         </View>
 
-       <View style={styles.profileWrapper}>
-        <View style={styles.iconRow}>
-          <View style={styles.toggleWrapper}>
-            <Switch
-              value={isIn}
-              onValueChange={setIsIn}
-            />
-            <Text style={styles.toggleLabel}>{isIn ? "Out" : "In"}</Text>
-          </View>
+        <View style={styles.profileWrapper}>
+          <View style={styles.iconRow}>
+            <View style={styles.toggleWrapper}>
+              <Switch value={isIn} onValueChange={setIsIn} />
+              <Text style={styles.toggleLabel}>{isIn ? 'Out' : 'In'}</Text>
+            </View>
             {/* Bell Icon with unread count */}
             <TouchableOpacity
               onPress={handleBellPress}
@@ -177,16 +174,17 @@ const styles = StyleSheet.create({
   },
   badgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 500 },
-    toggleWrapper: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginRight: 12,
-},
-toggleLabel: {
-  fontSize: 16,
-  marginRight: 4,
-  color: "black",
-},
+  toggleWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 0,
+    transform: [{ scale: 0.8 }],
+  },
+  toggleLabel: {
+    fontSize: 16,
+    marginRight: 0,
+    color: 'black',
+  },
 });
 
 export default Header;
