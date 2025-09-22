@@ -23,6 +23,7 @@ import {
   resetInvitationsRefetch,
   triggerNotificationsRefetch,
 } from '@/store/refetchSlice';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -646,7 +647,21 @@ const Dashboard = () => {
                   onCancelInitiated={handleCancelInitiatedPlay}
                 />
               </ScrollView>
+              
             )}
+            <View style={styles.availabilityContainer}>
+            <MaterialCommunityIcons name="account-group" size={20} color="#111" style={{ marginRight: 8 }} />
+            <Text style={styles.availabilityText}>Let people know your availability</Text>
+            <TouchableOpacity
+              style={styles.availabilityButton}
+              onPress={() => {
+                // handle set availability, e.g. navigate to availability screen
+                router.push('/(authenticated)/set-availability');
+              }}
+            >
+              <Text style={styles.availabilityButtonText}>Set Availability</Text>
+            </TouchableOpacity>
+         </View>
           </View>
 
           <Portal>
@@ -846,7 +861,8 @@ const styles = StyleSheet.create({
   },
   calendarContainer: {
     borderRadius: 16,
-    padding: 5,
+    padding: 16,
+    gap: 16,
     maxHeight: 240,
     overflow: 'hidden',
     shadowOpacity: 0.1,
@@ -883,5 +899,34 @@ horizontalLine2: {
   marginHorizontal: -16,
 },
 
+availabilityContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#F3FCFE',
+  borderRadius: 10,
+  padding: 8,
+  // marginTop: 4,
+  marginBottom: 4,
+},
+availabilityText: {
+  flex: 1,
+  fontSize: 12,
+  color: '#222',
+  fontWeight: '500',
+},
+availabilityButton: {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 6,
+  paddingHorizontal: 16,
+  paddingVertical: 6,
+  marginLeft: 8,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+availabilityButtonText: {
+  color: '#2C7E88',
+  fontWeight: '600',
+  fontSize: 12,
+},
 
 });

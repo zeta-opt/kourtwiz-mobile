@@ -272,6 +272,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
           return false;
         })
         .map((invite, index) => renderInviteRow(invite, index))}
+
     </View>
   );
 };
@@ -280,20 +281,24 @@ export default PlayCalendarCard;
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    padding: 16,
-    gap: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    // borderRadius: 16,
+    // backgroundColor: '#fff',
+    // padding: 16,
+    // gap: 16,
+    // elevation: 2,
+    // shadowColor: '#000',
+    // shadowOpacity: 0.05,
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowRadius: 4,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingBottom: 8,
   },
   rowTop: {
     flexDirection: 'row',
@@ -360,6 +365,5 @@ withdrawButtonText: {
   fontWeight: '600',
   fontSize: 12,
 },
-
 
 });
