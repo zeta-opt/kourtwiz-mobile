@@ -22,18 +22,20 @@ const PreferredPlayersSelector: React.FC<PreferredPlayersSelectorProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <Text variant='titleMedium' style={styles.sectionTitle}>
-        Select Players From Groups And Contacts
-      </Text>
-
-      <View style={styles.playersBoxContainer}>
-        <TouchableOpacity
+      <TouchableOpacity
           style={styles.playersBox}
           onPress={onShowPreferredPlayers}
           activeOpacity={0.7}
         >
-          <Text style={styles.selectPlayerText}>Select Player</Text>
-        </TouchableOpacity>
+      <Text variant='titleMedium' style={styles.sectionTitle}>
+        Select Players From Groups And Contacts
+      </Text>
+      </TouchableOpacity>
+
+      <View style={styles.playersBoxContainer}>
+        
+          
+        
 
         {preferredContacts.length > 0 && (
           <ScrollView
@@ -79,19 +81,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 4,
-    color: '#333',
+    textDecorationLine: 'underline',
+    color: '#007AFF',
   },
   playersBoxContainer: {
     marginTop: 8,
   },
   playersBox: {
-    borderWidth: 1,
-    borderColor: '#000',
-    borderRadius: 6,
     height: 48,
     paddingHorizontal: 12,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+
   },
   selectPlayerText: {
     color: '#999',

@@ -857,6 +857,7 @@ const CreateEventForm = () => {
                   multiline
                   numberOfLines={3}
                 />
+                <View style={styles.preferredplayer}>
                 <PreferredPlayersSelector
                   preferredContacts={preferredContacts}
                   onShowPreferredPlayers={showPreferredPlayers}
@@ -877,6 +878,7 @@ const CreateEventForm = () => {
                   onSelectContacts={handleSelectContactsFromDevice}
                   selectedContacts={preferredContacts}
                 />
+                </View>
               </>
             )}
             <TouchableOpacity
@@ -1063,6 +1065,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexGrow: 1,
   },
+  
   containerModal: {
     paddingTop: 20,
     paddingHorizontal: 20,
@@ -1138,6 +1141,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 24,
+  },
+  preferredplayer :{
+    marginTop:45,
+    marginBottom:0,
   },
   row: {
     flexDirection: 'row',
