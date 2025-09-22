@@ -68,12 +68,14 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
     <TouchableOpacity
       style={styles.row}
       activeOpacity={0.9}
-      disabled={disabled}
       onPress={() => {
         try {
           router.push({
             pathname: '/(authenticated)/myRequestsDetailedView',
-            params: { requestId: invite.requestId },
+            params: {
+              requestId: invite.requestId,
+              disabled: String(disabled),
+            },
           });
         } catch (err) {
           console.error('Navigation error:', err);

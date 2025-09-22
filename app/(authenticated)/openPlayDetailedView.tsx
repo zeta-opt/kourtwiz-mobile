@@ -24,7 +24,11 @@ import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
 
 export default function OpenPlayDetailedView() {
-  const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
+  const { sessionId, disabled } = useLocalSearchParams<{
+    sessionId: string;
+    disabled: string;
+  }>();
+  const isDisabled = disabled === 'true';
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
 
@@ -144,9 +148,7 @@ export default function OpenPlayDetailedView() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.push('/(authenticated)/home')}
-          >
+          <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name='chevron-back' size={24} color='#000' />
           </TouchableOpacity>
           <Text style={styles.title}>Open Play</Text>
@@ -278,7 +280,6 @@ export default function OpenPlayDetailedView() {
           )}
         </View>
         <View style={styles.chatPreviewContainer}>
-          
           <TouchableOpacity
             style={styles.chatRow}
             onPress={() => {
@@ -297,15 +298,17 @@ export default function OpenPlayDetailedView() {
               }
             }}
           >
-            <Text style={styles.chatPreviewText}>Chat with players here...</Text>
+            <Text style={styles.chatPreviewText}>
+              Chat with players here...
+            </Text>
             {/* <Text style={styles.joinButtonText}>
               Chat
             </Text> */}
-             <MaterialCommunityIcons
-                name='message-text-outline'
-                size={16}
-                color='#007BFF'
-              />
+            <MaterialCommunityIcons
+              name='message-text-outline'
+              size={16}
+              color='#007BFF'
+            />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -313,12 +316,13 @@ export default function OpenPlayDetailedView() {
       {/* Action Button */}
 
       <TouchableOpacity
-        disabled={loading}
+        disabled={loading || isDisabled}
         style={[
           styles.actionButton,
           isWaitlisted && styles.waitlistWithdrawButton,
           isRegistered && styles.withdrawButton,
           !isRegistered && isFull && !isWaitlisted && styles.joinWaitlistButton,
+          isDisabled && styles.disabledButton,
         ]}
         onPress={handleJoinPlay}
       >
@@ -336,6 +340,7 @@ export default function OpenPlayDetailedView() {
       </TouchableOpacity>
       {selectedPlay.requestorId === userId && (
         <TouchableOpacity
+          disabled={isDisabled}
           style={[
             styles.actionButton,
             isWaitlisted && styles.waitlistWithdrawButton,
@@ -344,6 +349,7 @@ export default function OpenPlayDetailedView() {
               isFull &&
               !isWaitlisted &&
               styles.joinWaitlistButton,
+            isDisabled && styles.disabledButton,
           ]}
           onPress={() =>
             router.push({
@@ -526,8 +532,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   chatRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-},
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+    borderColor: '#ccc',
+    opacity: 0.7,
+  },
+  disabledButtonText: {
+    color: '#666',
+  },
 });

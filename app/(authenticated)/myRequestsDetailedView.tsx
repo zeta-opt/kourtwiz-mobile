@@ -2,7 +2,11 @@ import UserAvatar from '@/assets/UserAvatar';
 import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
 import { useGetPlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
 import { RootState } from '@/store';
-import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+} from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -23,21 +27,37 @@ function arrayToDate(arr: number[]): Date {
 }
 
 export default function MyRequestsDetailedView() {
-  const { requestId } = useLocalSearchParams<{ requestId: string }>();
-  const { data, loading, error, refetch } = useGetPlayerFinderRequest(requestId);
-  const { cancelInvitation, status: cancelStatus, error: cancelerror } = useCancelInvitation(refetch);
+  const { requestId, disabled } = useLocalSearchParams<{
+    requestId: string;
+    disabled: string;
+  }>();
+  const isDisabled = disabled === 'true';
+  const { data, loading, error, refetch } =
+    useGetPlayerFinderRequest(requestId);
+  const {
+    cancelInvitation,
+    status: cancelStatus,
+    error: cancelerror,
+  } = useCancelInvitation(refetch);
 
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
-  const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | 'cancel' | null>(null);
+  const [selectedAction, setSelectedAction] = useState<
+    'accept' | 'reject' | 'cancel' | null
+  >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loggedInUserId = useSelector((state: RootState) => state.auth.user.userId);
+  const loggedInUserId = useSelector(
+    (state: RootState) => state.auth.user.userId
+  );
 
   if (loading) return <ActivityIndicator size='large' style={styles.loader} />;
-  if (error || !data) return <Text style={styles.error}>Error loading data</Text>;
+  if (error || !data)
+    return <Text style={styles.error}>Error loading data</Text>;
 
-  const myInvite = data?.find((invite: any) => invite.userId === loggedInUserId);
+  const myInvite = data?.find(
+    (invite: any) => invite.userId === loggedInUserId
+  );
   const invite = data[0];
 
   const playTime = arrayToDate(invite?.playTime);
@@ -74,10 +94,15 @@ export default function MyRequestsDetailedView() {
       setIsSubmitting(true);
 
       if (selectedAction === 'accept' || selectedAction === 'reject') {
-        const oldUrl = selectedAction === 'accept' ? myInvite.acceptUrl : myInvite.declineUrl;
+        const oldUrl =
+          selectedAction === 'accept'
+            ? myInvite.acceptUrl
+            : myInvite.declineUrl;
         const newBase = 'https://api.vddette.com';
         const urlObj = new URL(oldUrl);
-        const newUrl = `${newBase}${urlObj.pathname}${urlObj.search}&comments=${encodeURIComponent(comment)}`;
+        const newUrl = `${newBase}${urlObj.pathname}${
+          urlObj.search
+        }&comments=${encodeURIComponent(comment)}`;
         const response = await fetch(newUrl);
         if (response.status === 200) {
           Alert.alert('Success', `Invitation ${selectedAction}ed`);
@@ -87,7 +112,11 @@ export default function MyRequestsDetailedView() {
           Alert.alert('Error', errorText || 'Failed to process the invitation');
         }
       } else if (selectedAction === 'cancel') {
-        const ok = await cancelInvitation(invite.requestId, loggedInUserId, comment || '');
+        const ok = await cancelInvitation(
+          invite.requestId,
+          loggedInUserId,
+          comment || ''
+        );
         if (ok) {
           Alert.alert('Success', 'Invitation cancelled');
           refetch();
@@ -96,7 +125,10 @@ export default function MyRequestsDetailedView() {
         }
       }
     } catch (err) {
-      Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
+      Alert.alert(
+        'Error',
+        `Something went wrong while trying to ${selectedAction}`
+      );
     } finally {
       setIsSubmitting(false);
       setDialogVisible(false);
@@ -111,7 +143,9 @@ export default function MyRequestsDetailedView() {
           <Ionicons name='chevron-back' size={24} color='#000' />
         </TouchableOpacity>
         <Text style={styles.title}>Incoming Request</Text>
-        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+        <TouchableOpacity
+          onPress={() => router.push('/(authenticated)/profile')}
+        >
           <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
@@ -125,7 +159,12 @@ export default function MyRequestsDetailedView() {
             <View style={styles.row}>
               <View style={styles.column}>
                 <View style={styles.infoCard}>
-                  <FontAwesome5 name='calendar-alt' size={20} color='#2CA6A4' solid />
+                  <FontAwesome5
+                    name='calendar-alt'
+                    size={20}
+                    color='#2CA6A4'
+                    solid
+                  />
                 </View>
                 <Text style={styles.infoText}>{dateString}</Text>
               </View>
@@ -133,7 +172,9 @@ export default function MyRequestsDetailedView() {
                 <View style={styles.infoCard}>
                   <FontAwesome5 name='clock' size={20} color='#2CA6A4' solid />
                 </View>
-                <Text style={styles.infoText}>{timeString} - {endTimeString}</Text>
+                <Text style={styles.infoText}>
+                  {timeString} - {endTimeString}
+                </Text>
               </View>
               <View style={styles.column}>
                 <View style={styles.infoCard}>
@@ -153,31 +194,38 @@ export default function MyRequestsDetailedView() {
           </View>
 
           {/* Players Box (NEW) */}
-          <ScrollView style={[styles.playersScroll,styles.playersBox]}
-              contentContainerStyle={{ paddingVertical: 2, paddingBottom: 16 }}
-              showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={[styles.playersScroll, styles.playersBox]}
+            contentContainerStyle={{ paddingVertical: 2, paddingBottom: 16 }}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.playersBoxTitle}>Players</Text>
             <View style={styles.playerRow}>
-              <Text style={styles.playerName}>{invite.inviteeName}(invitee)</Text>
-              <Text style={[styles.status, styles.statusAccepted]}>ACCEPTED</Text>
+              <Text style={styles.playerName}>
+                {invite.inviteeName}(invitee)
+              </Text>
+              <Text style={[styles.status, styles.statusAccepted]}>
+                ACCEPTED
+              </Text>
             </View>
-           
+
             {data.map((player, idx) => (
               <View key={player.userId || idx} style={styles.playerRow}>
                 <Text style={styles.playerName}>{player.name}</Text>
-                <Text style={[
-                  styles.status,
-                  player.status === 'ACCEPTED'
-                    ? styles.statusAccepted
-                    : player.status === 'PENDING'
-                    ? styles.statusPending
-                    : styles.statusOther
-                ]}>
+                <Text
+                  style={[
+                    styles.status,
+                    player.status === 'ACCEPTED'
+                      ? styles.statusAccepted
+                      : player.status === 'PENDING'
+                      ? styles.statusPending
+                      : styles.statusOther,
+                  ]}
+                >
                   {player.status === 'CANCELLED' ? 'DECLINED' : player.status}
                 </Text>
               </View>
             ))}
-            
           </ScrollView>
 
           {/* Chat Preview */}
@@ -191,8 +239,14 @@ export default function MyRequestsDetailedView() {
                 })
               }
             >
-              <Text style={styles.chatPreviewText}>Chat with players here...</Text>
-              <MaterialCommunityIcons name='message-text-outline' size={16} color='#007BFF' />
+              <Text style={styles.chatPreviewText}>
+                Chat with players here...
+              </Text>
+              <MaterialCommunityIcons
+                name='message-text-outline'
+                size={16}
+                color='#007BFF'
+              />
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -207,6 +261,8 @@ export default function MyRequestsDetailedView() {
             onPress={() => handleAction('accept')}
             loading={isSubmitting && selectedAction === 'accept'}
             style={styles.acceptBtn}
+            disabled={isDisabled}
+            labelStyle={isDisabled ? styles.disabledButtonText : undefined}
           >
             Accept
           </Button>
@@ -217,6 +273,8 @@ export default function MyRequestsDetailedView() {
             loading={isSubmitting && selectedAction === 'reject'}
             style={styles.rejectBtn}
             textColor='#2C7E88'
+            disabled={isDisabled}
+            labelStyle={isDisabled ? styles.disabledButtonText : undefined}
           >
             Decline
           </Button>
@@ -232,13 +290,16 @@ export default function MyRequestsDetailedView() {
             loading={isSubmitting && selectedAction === 'cancel'}
             style={styles.rejectBtn}
             textColor='#2C7E88'
+            disabled={isDisabled}
+            labelStyle={isDisabled ? styles.disabledButtonText : undefined}
           >
             Withdraw
           </Button>
         </View>
       )}
 
-      {(myInvite?.status === 'CANCELLED' || myInvite?.status === 'DECLINED') && (
+      {(myInvite?.status === 'CANCELLED' ||
+        myInvite?.status === 'DECLINED') && (
         <View style={styles.bottomButtonContainer}>
           <Button
             icon='check'
@@ -246,6 +307,8 @@ export default function MyRequestsDetailedView() {
             onPress={() => handleAction('accept')}
             loading={isSubmitting && selectedAction === 'accept'}
             style={styles.acceptBtn}
+            disabled={isDisabled}
+            labelStyle={isDisabled ? styles.disabledButtonText : undefined}
           >
             Accept Again
           </Button>
@@ -304,8 +367,8 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   playersScroll: {
-  maxHeight: 180,
-},
+    maxHeight: 180,
+  },
   title: {
     fontSize: 20,
     fontWeight: '600',
@@ -472,5 +535,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  
+  disabledButton: {
+    backgroundColor: '#ccc',
+    borderColor: '#ccc',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  disabledButtonText: {
+    color: '#666',
+  },
 });

@@ -413,7 +413,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
           onPress={() => {
             router.push({
               pathname: '/(authenticated)/openPlayDetailedView',
-              params: { sessionId: row.id },
+              params: { sessionId: row.id, disabled: String(disabled) },
             });
           }}
         >
