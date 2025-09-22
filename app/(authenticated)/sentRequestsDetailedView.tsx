@@ -12,11 +12,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Button, Modal, Portal } from 'react-native-paper';
+import { Button, Dialog, Portal, TextInput } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
 
@@ -314,42 +313,41 @@ export default function SentRequestDetailedView() {
         </TouchableOpacity>
       </View>
 
-      {/* Modal */}
+      {/* Dialog */}
       <Portal>
-        <Modal
+        <Dialog
           visible={commentModalVisible}
           onDismiss={() => setCommentModalVisible(false)}
-          contentContainerStyle={styles.modalContainer}
         >
-          <Text style={styles.modalTitle}>Withdraw Game Invite</Text>
-          <TextInput
-            placeholder='Optional comment'
-            multiline
-            numberOfLines={4}
-            value={withdrawComment}
-            onChangeText={setWithdrawComment}
-            style={styles.input}
-          />
-          <View style={styles.buttonRow}>
+          <Dialog.Title>Cancel Game Invite</Dialog.Title>
+
+          <Dialog.Content>
+            <TextInput
+              label="Optional comment"
+              multiline
+              numberOfLines={4}
+              value={withdrawComment}
+              onChangeText={setWithdrawComment}
+              mode="outlined"
+            />
+          </Dialog.Content>
+
+          <Dialog.Actions>
             <Button
-              mode='outlined'
               onPress={() => setCommentModalVisible(false)}
-              style={{ flex: 1 }}
               disabled={status === 'loading' || isDisabled}
             >
               Cancel
             </Button>
             <Button
-              mode='contained'
               onPress={handleWithdraw}
               loading={status === 'loading'}
               disabled={status === 'loading' || isDisabled}
-              style={{ flex: 1, marginLeft: 10 }}
             >
               Confirm
             </Button>
-          </View>
-        </Modal>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </ScrollView>
   );

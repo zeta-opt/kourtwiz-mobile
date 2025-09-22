@@ -195,7 +195,7 @@ const UserProfile = () => {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#cce5e3" />
+          <Ionicons name="chevron-back" size={24} color="#cce5e3" />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Profile</Text>
@@ -211,16 +211,12 @@ const UserProfile = () => {
           )}
         </View>
         <View style={styles.profileInfo}>
-          {userData.name ? (
+          {userData.name || userData.email ? (
             <Text style={styles.nameText}>{userData.name}</Text>
           ) : (
             <ActivityIndicator size="small" color="#fff" />
           )}
-          {userData.email ? (
             <Text style={styles.emailText}>{userData.email}</Text>
-          ) : (
-            <ActivityIndicator size="small" color="#fff" />
-          )}
         </View>
         <TouchableOpacity
           style={styles.editButton}
@@ -273,11 +269,13 @@ const UserProfile = () => {
                   ? `${String(userData.dateOfBirth[1]).padStart(2, "0")}/${String(
                       userData.dateOfBirth[2]
                     ).padStart(2, "0")}/${userData.dateOfBirth[0]}`
-                  : new Date(userData.dateOfBirth).toLocaleDateString("en-US", {
+                  : userData.dateOfBirth
+                  ? new Date(userData.dateOfBirth).toLocaleDateString("en-US", {
                       month: "2-digit",
                       day: "2-digit",
                       year: "numeric",
                     })
+                  : "MM/DD/YYYY"
               }
             />
 
@@ -288,7 +286,7 @@ const UserProfile = () => {
             <InfoLoader value={userData.phoneNumber} />
 
             <Text style={styles.sectionTitle}>SKILL RATING</Text>
-            <Text style={[styles.inputReadonly, { backgroundColor: "#fffadc" }]}>
+            <Text style={[styles.inputReadonly, { backgroundColor: "#FFFADC" }]}>
               {Number(userData.skillLevel ?? 1).toFixed(1)}
             </Text>
           </>
@@ -437,102 +435,13 @@ const UserProfile = () => {
 export default UserProfile;
 
 const styles = StyleSheet.create({
-  infoText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 4,
-  },  
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: 4,
-    marginTop: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    backgroundColor: '#FAFAFA',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: '#333',
-  },
-  readOnlyInput: {
-    backgroundColor: '#F1F1F1',
-    color: '#999',
-  },
-  modal_Overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  },
-  modal_Container: {
-    width: '80%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    elevation: 5,
-  },
-  modal_Title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  timeOption: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    marginVertical: 5,
-  },
-  timeOptionSelected: {
-    backgroundColor: '#2F7C83',
-    borderColor: '#2F7C83',
-  },
-  timeOptionText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#333',
-  },
-  timeOptionTextSelected: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  saveButton: {
-    backgroundColor: '#2F7C83',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  cancelButtonText: {
-    color: '#888',
-    fontWeight: 'bold',
-  },  
   headerContainer: {
-    backgroundColor: '#2F7C83',
+    backgroundColor: '#2C7E88',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 56,
     paddingHorizontal: 16,
+    paddingTop: 25,
   },
   backButton: {
     width: 24,
@@ -553,12 +462,12 @@ const styles = StyleSheet.create({
   },
   // ===== HEADER & PROFILE SUMMARY =====
   header: {
-    backgroundColor: '#2F7C83', // teal color background
+    backgroundColor: '#2C7E88',
     paddingTop: 20,
     paddingBottom: 28,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -590,31 +499,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   editButton: {
-    backgroundColor: '#60a4b4', // semi-transparent white
+    backgroundColor: '#59A7B0',
     borderRadius: 18,
-    paddingVertical: 6,
-    paddingHorizontal: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
   editButtonText: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: 16,
+    fontWeight: '500',
     color: '#FFFFFF',
   },
 
   // ===== PERSONAL DETAILS CARD =====
   DetailsCard: {
-    backgroundColor: '#f3f2f7',
-    borderRadius: 18,
-    marginHorizontal: 20,
-    marginTop: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    backgroundColor: '#F3F2F7',
+    borderRadius: 12,
+    marginHorizontal: 18,
+    marginVertical: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 12,
     elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#2F7C83',
+    color: '#2C7E88',
     marginBottom: 10,
     marginTop: 12,
   },
@@ -658,7 +571,7 @@ const styles = StyleSheet.create({
   },
   sectionHelperText: {
     fontSize: 13,
-    color: '#2F7C83',
+    color: '#2C7E88',
     paddingHorizontal: 8,
     marginBottom: 10,
   },

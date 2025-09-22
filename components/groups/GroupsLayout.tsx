@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   FlatList,
   Image,
@@ -17,6 +16,7 @@ import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Searchbar } from "react-native-paper";
 
 // Filter types
 const FILTERS = [
@@ -309,25 +309,17 @@ export default function GroupsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Search box */}
-      {sortedData.length > 0 && (
-        <View style={styles.searchContainer}>
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color="#8E8E8E"
-            style={{ marginLeft: 12, marginRight: 6 }}
-          />
-          <TextInput
-            placeholder="Search Group Name"
-            placeholderTextColor="#8E8E8E"
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            clearButtonMode="while-editing"
-          />
-        </View>
-      )}
+      {/* Search Bar */}
+      <Searchbar
+        placeholder="Search Group Name"
+        placeholderTextColor="#8E8E8E"
+        onChangeText={setSearch}
+        value={search}
+        style={styles.searchContainer}        // container style
+        inputStyle={styles.searchInput} // text input style
+        iconColor="#8E8E8E"
+        clearIcon="close"               // shows clear button
+      />
 
       {/* Filters */}
       {/* <View style={styles.filters}>
@@ -396,32 +388,35 @@ export default function GroupsScreen() {
         <Text style={styles.errorText}>Error: {error}</Text>
       )}
 
-      {/* Message list */}
-      <FlatList
-        data={sortedData}
-        keyExtractor={(item) => item.group.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          <View style={styles.loaderContainer}>
-            <View style={styles.iconBackground}>
-              <Ionicons name="people" size={60} color="#457B83" />
+      {status === 'success' && (
+        <FlatList
+          data={sortedData}
+          keyExtractor={(item) => item.group.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.loaderContainer}>
+              <View style={styles.iconBackground}>
+                <Ionicons name="people" size={60} color="#457B83" />
+              </View>
+              <Text style={styles.errorText}>
+                {search && sortedData.length === 0
+                  ? 'No groups found'
+                  : "Here, you didn't create any group yet, please create a group"}
+              </Text>
             </View>
-            <Text style={styles.errorText}>
-              Here, you didn&apos;t create any group yet, please create a group
-            </Text>
-          </View>
-        )}
-      />
+          )}
+        />
+      )}
 
-        {/* Open Modal Button */}
-        <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => router.push("/(authenticated)/create-group")}
-        >
-            <Text style={styles.createButtonText}>Create Group</Text>
-        </TouchableOpacity>
+      {/* Open Modal Button */}
+      <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => router.push("/(authenticated)/create-group")}
+      >
+          <Text style={styles.createButtonText}>Create Group</Text>
+      </TouchableOpacity>
     </LinearGradient>
   );
 }
@@ -437,7 +432,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: 20,
   },
   backIcon: {
     width: 32,
@@ -446,7 +441,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "600",
     color: "#2E2E2E",
   },
@@ -473,18 +468,14 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F7F8",
-    borderWidth: 0.5,
-    borderColor: "#2E2E2E",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    height: 44,
-    marginBottom: 12,
+    marginVertical: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: "#2E2E2E",
-    paddingVertical: 8,
+    color: "#333333",
   },
   filters: {
     flexDirection: "row",

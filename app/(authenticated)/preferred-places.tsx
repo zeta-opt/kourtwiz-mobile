@@ -6,7 +6,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TextInput,
   SafeAreaView,
   Alert,
   ScrollView,
@@ -15,6 +14,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Searchbar } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import UserAvatar from '@/assets/UserAvatar';
 import { router } from 'expo-router';
@@ -228,17 +228,22 @@ export default function PreferredPlacesScreen() {
         <UserAvatar size={32} onPress={() => {}} />
       </View>
 
-      <View style={styles.searchWrapper}>
-        <TextInput
+      <View style={styles.searchContainer}>
+        <Searchbar
           placeholder="Search"
-          style={styles.searchInput}
-          value={searchText}
           onChangeText={setSearchText}
+          value={searchText}
+          style={[styles.searchBar, {borderRadius: 15, marginHorizontal: 10}]}
+          inputStyle={styles.searchInput}
+          iconColor="#666"
+          placeholderTextColor="#999"
         />
         {isLoading && (
           <View style={{ padding: 10, alignItems: 'center' }}>
             <ActivityIndicator size="small" color="#2CA6A4" />
-            <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>Loading places...</Text>
+            <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+              Loading places...
+            </Text>
           </View>
         )}
       </View>
@@ -283,12 +288,15 @@ export default function PreferredPlacesScreen() {
         <View style={styles.modal_Overlay}>
           <View style={styles.modal_Container}>
             <Text style={styles.modal_Title}>Select Preferred Places</Text>
-            <View style={styles.searchWrapper}>
-              <TextInput
+            <View style={styles.searchContainer}>
+              <Searchbar
                 placeholder="Search"
-                style={styles.searchInput}
-                value={searchText}
                 onChangeText={setSearchText}
+                value={searchText}
+                style={styles.searchBar}
+                inputStyle={styles.searchInput}
+                iconColor="#666"
+                placeholderTextColor="#999"
               />
             </View>
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
@@ -387,7 +395,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    backgroundColor: '#FFF',
+    marginTop: 12,
   },
   backButton: { 
     width: 32, 
@@ -401,18 +409,18 @@ const styles = StyleSheet.create({
     textAlign: 'center', 
     color: '#333' 
   },
-  searchWrapper: { 
-    paddingHorizontal: 12, 
-    paddingVertical: 10, 
-    backgroundColor: '#FFFFFF' 
+  searchContainer: { 
+    paddingTop: 8, 
+    paddingBottom: 16 
   },
-  searchInput: {
-    height: 40,
-    backgroundColor: '#D4D4D4',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    color: '#333',
+  searchBar: {
+    backgroundColor: '#e5e5e5',
+    borderRadius: 25,
+    height: 45,
+  },
+  searchInput: { 
+    fontSize: 15, 
+    marginTop: -5,
   },
   sectionLabel: {
     paddingHorizontal: 12,
@@ -420,13 +428,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
-  },
-  placesList: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 12,
-    borderRadius: 12,
-    elevation: 3,
   },
   placeItem: {
     flexDirection: 'row',
@@ -448,7 +449,11 @@ const styles = StyleSheet.create({
     margin: 15,
     borderRadius: 8,
     backgroundColor: '#fff',
-    elevation: 3,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   iconCircle: {
     width: 28,

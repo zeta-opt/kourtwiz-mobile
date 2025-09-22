@@ -381,10 +381,9 @@ const EditProfile = () => {
           onPress={() => router.replace('/(authenticated)/profile')}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#cce5e3" />
+          <Ionicons name="chevron-back" size={24} color="#cce5e3" />
         </TouchableOpacity>
         <Text style={styles.modalTitle}>Edit Profile</Text>
-        {/* Placeholder for right side to center title */}
         <View style={styles.backButton} />
       </View>
 
@@ -401,7 +400,7 @@ const EditProfile = () => {
 
           {/* Pencil Icon */}
           <TouchableOpacity style={styles.editAvatarIcon} onPress={pickImage}>
-            <Ionicons name="pencil" size={18} color="#2F7C83" />
+            <Ionicons name="pencil" size={18} color="#2C7E88" />
           </TouchableOpacity>
         </View>
 
@@ -534,7 +533,7 @@ const EditProfile = () => {
         <Text style={styles.label}>Date Of Birth</Text>
         <View style={[styles.dateInput,styles.readOnlyInput]}>
           <Text style={userData.dateOfBirth ? styles.dateText : styles.placeholderText}>
-            {userData.dateOfBirth || 'Enter Date of birth'}
+            {userData.dateOfBirth || "MM/DD/YYYY"}
           </Text>
         </View>
 
@@ -657,7 +656,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   headerContainer: {
-    backgroundColor: '#2F7C83',
+    backgroundColor: '#2C7E88',
     height: 80,
     paddingHorizontal: 16,
     flexDirection: 'row',
@@ -677,7 +676,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   avatarContainer: {
-    backgroundColor: '#2F7C83',
+    backgroundColor: '#2C7E88',
     alignItems: 'center',
     marginTop: -30,
     marginBottom: 24,
@@ -713,12 +712,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },  
   formContainer: {
-    backgroundColor: '#f3f2f7',
+    backgroundColor: '#F3F2F7',
     borderRadius: 12,
     marginHorizontal: 16,
     paddingHorizontal: 16,
     paddingVertical: 20,
     elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   label: {
     fontSize: 14,
@@ -785,7 +788,6 @@ const styles = StyleSheet.create({
   genderButtonSelected: {
     borderWidth: 2,
     borderColor:'#3E6370',
-    color: '#3E6370',
     fontWeight: '600',
     fontSize: 14,
   },
@@ -805,13 +807,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   saveButton: {
-    backgroundColor: '#2F7C83',
+    backgroundColor: '#2C7E88',
     marginHorizontal: 16,
     borderRadius: 12,
     paddingVertical: 16,
-    marginTop: 24,
-    marginBottom: 32,
-    elevation: 2,
+    marginVertical: 32,
   },
   saveButtonText: {
     color: '#fff',
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
   },
   verifyBtn: {
     marginLeft: 8,
-    backgroundColor: '#2F7C83',
+    backgroundColor: '#2C7E88',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,

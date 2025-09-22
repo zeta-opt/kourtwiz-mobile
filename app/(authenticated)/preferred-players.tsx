@@ -9,9 +9,9 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  TextInput,
   ActivityIndicator,
 } from 'react-native';
+import { Searchbar } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -142,12 +142,15 @@ const PreferredPlayersScreen = () => {
         </View>
 
         {/* SEARCH */}
-        <View style={styles.searchWrapper}>
-          <TextInput
+        <View style={styles.searchContainer}>
+          <Searchbar
             placeholder="Search"
-            style={styles.searchInput}
-            value={searchText}
             onChangeText={setSearchText}
+            value={searchText}
+            style={styles.searchBar}
+            inputStyle={styles.searchInput}
+            iconColor="#666"
+            placeholderTextColor="#999"
           />
         </View>
 
@@ -243,167 +246,134 @@ const PreferredPlayersScreen = () => {
 export default PreferredPlayersScreen;
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 16, backgroundColor: '#fff', },  
-    header: {
-        height: 56,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 12,
-    },
-    iconCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#E0F7F6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    name: {
-        fontSize: 16,
-        fontWeight: '400',
-        color: '#333',
-    },
-    phoneText: {
-        fontSize: 14,
-        color: '#666',
-    },      
-    backButton: {
-        width: 32,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        flex: 1,
-        textAlign: 'center',
-        fontSize: 20,
-        fontWeight: '600',
-    },
-    emptyMessageWrapper: { 
-        paddingHorizontal: 16, 
-        paddingVertical: 20 
-    },
-    emptyMessage: { 
-        fontSize: 15, 
-        color: '#666', 
-        textAlign: 'center' 
-    },
-    item: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        paddingLeft: 16,
-        paddingRight: 16,
-        borderBottomWidth: 1,
-        borderColor: '#ECECEC',
-    },  
-    buttonsContainer: { 
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        paddingHorizontal: 12, 
-        paddingBottom: 4, 
-        paddingTop: 5, 
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderColor: '#eee',
-    },
-    addButton: {
-        borderWidth: 2,
-        borderColor: '#327D85',
-        borderRadius: 32,
-        height: 48,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    addButtonText: {     
-        fontSize: 17, 
-        fontWeight: '600', 
-        color: '#327D85' 
-    },
-    doneButton: {
-        backgroundColor: '#327D85',
-        borderRadius: 32,
-        height: 48,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10,
-        marginTop: 5,
-    },
-    doneButtonText: { 
-        fontSize: 17, 
-        fontWeight: '600', 
-        color: '#FFFFFF' 
-    },
-    searchWrapper: { 
-        paddingHorizontal: 12, 
-        paddingVertical: 10, 
-        backgroundColor: '#FFFFFF' 
-    },
-    searchInput: {
-        height: 40,
-        backgroundColor: '#D4D4D4',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        fontSize: 15,
-        color: '#333',
-    },
-    sectionLabel: {
-        paddingHorizontal: 12,
-        paddingTop: 10,
-        fontSize: 16,
-        fontWeight: '500',
-        color: '#333',
-    },
-    optionsContainer: {
-        maxHeight: 500,
-        marginTop: 15,
-        borderRadius: 8,
-        backgroundColor: '#fff',
-        elevation: 3,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    optionModalContainer: {
-        width: '80%',
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        paddingVertical: 20,
-        paddingHorizontal: 15,
-        alignItems: 'center',
-        elevation: 5, // for Android shadow
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-    },
-    optionButton: {
-        width: '100%',
-        paddingVertical: 12,
-        borderRadius: 8,
-        backgroundColor: '#f2f2f2',
-        alignItems: 'center',
-        marginVertical: 6,
-    },
-    optionButtonText: {
-        fontSize: 16,
-        color: '#333',
-        fontWeight: '600',
-    },
-    modalFooter: {
-        flexDirection: 'row', justifyContent: 'space-around', padding: 10,
-    },
-    saveBtn: {
-        backgroundColor: 'green', padding: 10, borderRadius: 8,
-    },
-    cancelBtn: {
-        backgroundColor: 'gray', padding: 10, borderRadius: 8,
-    },
-    saveText: { color: 'white', fontWeight: 'bold' },
-    cancelText: { color: 'white', fontWeight: 'bold' },
+  container: { 
+    flex: 1, padding: 16, backgroundColor: '#fff'
+  },  
+  header: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    marginTop: 12
+  },
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E0F7F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#333',
+  },
+  phoneText: {
+    fontSize: 14,
+    color: '#666',
+  },      
+  backButton: {
+    width: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  emptyMessageWrapper: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 20 
+  },
+  emptyMessage: { 
+    fontSize: 15, 
+    color: '#666', 
+    textAlign: 'center' 
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingLeft: 16,
+    paddingRight: 16,
+    borderBottomWidth: 1,
+    borderColor: '#ECECEC',
+  },  
+  buttonsContainer: { 
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12, 
+    paddingBottom: 4, 
+    paddingTop: 5, 
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderColor: '#eee',
+  },
+  addButton: {
+    borderWidth: 2,
+    borderColor: '#327D85',
+    borderRadius: 32,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {     
+    fontSize: 17, 
+    fontWeight: '600', 
+    color: '#327D85' 
+  },
+  doneButton: {
+    backgroundColor: '#327D85',
+    borderRadius: 32,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    marginTop: 5,
+  },
+  doneButtonText: { 
+    fontSize: 17, 
+    fontWeight: '600', 
+    color: '#FFFFFF' 
+  },
+  searchContainer: { 
+    paddingTop: 8, 
+    paddingBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  searchBar: {
+    backgroundColor: '#e5e5e5',
+    borderRadius: 10,
+    height: 45,
+  },
+  searchInput: { 
+    fontSize: 15,
+    marginTop: -5,
+  },
+  sectionLabel: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  optionsContainer: {
+    maxHeight: 500,
+    marginTop: 20,
+    marginHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
 });

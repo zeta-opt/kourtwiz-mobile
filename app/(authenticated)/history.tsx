@@ -2,7 +2,7 @@ import UserAvatar from '@/assets/UserAvatar';
 import { useSubmitGameFeedback } from '@/hooks/apis/game-feedback/useSubmitGameFeedback';
 import { useGetPlayerSchedule } from '@/hooks/apis/set-availability/useGetPlayerSchedule';
 import { RootState } from '@/store';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import moment from 'moment';
@@ -259,10 +259,10 @@ const HistoryPage = () => {
       {/* Header */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color="black" />
+          <MaterialIcons name="arrow-back-ios" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>History</Text>
-        <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
+        <TouchableOpacity onPress={() => router.replace('/(authenticated)/profile')}>
           <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
@@ -295,8 +295,8 @@ const HistoryPage = () => {
                         {
                           justifyContent: 'space-between',
                           backgroundColor: '#F0F8FF',
-                          borderRadius: 6,
-                          padding: 6,
+                          borderRadius: 8,
+                          padding: 8,
                         },
                       ]}
                     >
@@ -307,7 +307,7 @@ const HistoryPage = () => {
                             name="map-marker"
                             size={16}
                             color="#327D85"
-                            style={{ marginRight: 8 }}
+                            style={{ marginRight: 4 }}
                           />
                           <Text style={[styles.subText, { color: '#327D85' }]}>
                             {ev.location || 'No location'}
@@ -591,12 +591,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 20,
     marginBottom: 10,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   cardInfo: {
     flexDirection: 'row',
@@ -618,11 +618,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     marginBottom: 12,
   },
   dateHeader: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '500',
     marginVertical: 10,
     color: '#555',
   },
