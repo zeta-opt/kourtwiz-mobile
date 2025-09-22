@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 2,
-    borderBottomWidth: 1,
+    // borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   statusBadgeContainer: {

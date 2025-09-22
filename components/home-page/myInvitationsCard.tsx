@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomColor: '#eee',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0,
   },
   textBlock: {
     flex: 1,

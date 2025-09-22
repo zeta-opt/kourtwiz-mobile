@@ -480,7 +480,7 @@ const Dashboard = () => {
   };
   return (
     <PaperProvider>
-      <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1 }}>
+      <LinearGradient colors={['#ffffff', '#FFFFFF']} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.inviteWrapper}>
             <View style={styles.tabRow}>
@@ -540,8 +540,9 @@ const Dashboard = () => {
                 </TouchableOpacity>
               ) : null}
             </View>
+            <View style={styles.horizontalLine} />
             <LinearGradient
-              colors={['#E0F7FA', '#FFFFFF']}
+              colors={['#ffffff', '#FFFFFF']}
               style={styles.inviteScrollContainer}
             >
               <ScrollView
@@ -602,6 +603,7 @@ const Dashboard = () => {
                       ))
                   )
                 ) : (
+                  
                   <OpenPlayCard
                     data={[
                       ...upcomingOpenPlays,
@@ -610,6 +612,8 @@ const Dashboard = () => {
                     refetch={refetchOpenPlay}
                     refetchInitiated={refetchInitiated}
                   />
+                  
+                  
                 )}
               </ScrollView>
             </LinearGradient>
@@ -735,7 +739,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 8,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 6,
     fontSize: 12,
     fontWeight: '600',
     overflow: 'hidden',
@@ -753,10 +757,25 @@ const styles = StyleSheet.create({
     borderColor: '#F0F0F0',
     color: '#888888',
   },
-  inviteWrapper: {
-    marginTop: 16,
-    marginBottom: 24,
-  },
+ inviteWrapper: {
+  // marginTop: 4,
+  marginBottom: 24,
+  borderWidth: 0,
+  // borderColor: '#ddd',
+  borderRadius: 16,
+  padding: 10,
+  backgroundColor: '#fff', // keep cards white for maximum shadow effect
+
+  // Shadow for iOS
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.12,
+  shadowRadius: 6,
+  
+  // Shadow for Android
+  elevation: 4,
+},
+
   viewAllText: {
     fontSize: 14,
     fontWeight: '500',
@@ -765,7 +784,7 @@ const styles = StyleSheet.create({
   },
   inviteScrollContainer: {
     borderRadius: 16,
-    padding: 10,
+    //  padding: 6,
     maxHeight: 240,
     overflow: 'hidden',
   },
@@ -850,4 +869,19 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingBottom: 10,
   },
+horizontalLine: {
+  borderBottomColor: '#ccc',
+  borderBottomWidth: 1.05,
+  marginTop: 4,   
+  marginHorizontal: -12,
+},
+horizontalLine2: {
+  borderBottomColor: '#ccc',
+  borderBottomWidth: 1.05,
+  // marginTop: 4,   
+  // width: '100%',
+  marginHorizontal: -16,
+},
+
+
 });

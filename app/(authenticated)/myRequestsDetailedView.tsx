@@ -263,6 +263,7 @@ export default function MyRequestsDetailedView() {
             style={styles.acceptBtn}
             disabled={isDisabled}
             labelStyle={isDisabled ? styles.disabledButtonText : undefined}
+            textColor='#ffffff'
           >
             Accept
           </Button>
@@ -309,6 +310,7 @@ export default function MyRequestsDetailedView() {
             style={styles.acceptBtn}
             disabled={isDisabled}
             labelStyle={isDisabled ? styles.disabledButtonText : undefined}
+            textColor='#ffffff'
           >
             Accept Again
           </Button>
@@ -524,6 +526,7 @@ const styles = StyleSheet.create({
   acceptBtn: {
     marginRight: 8,
     backgroundColor: '#2C7E88',
+    color: '#fff',
   },
   rejectBtn: {
     borderColor: '#2C7E88',

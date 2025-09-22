@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     zIndex: 1,
+    paddingBottom: 8,
   },
   text: { fontSize: 20, fontWeight: '500', color: '#333' },
   profileButton: { flexDirection: 'row', alignItems: 'center' },

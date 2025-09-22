@@ -511,6 +511,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
               }
               style={[
                 styles.button,
+                { maxWidth: 120 },
                 row.initiated && styles.cancelButton,
                 row.isWaitlisted && styles.waitlistWithdrawButton,
                 row.isRegistered && styles.withdrawButton,
@@ -540,15 +541,17 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
             </Button>
           </View>
         </TouchableOpacity>
+        
       ))}
+      <View style={styles.horizontalLine2} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: 8,
-    borderBottomWidth: 1,
+    // marginBottom: 8,
+    //  borderBottomWidth: 1,
     borderBottomColor: '#eee',
     padding: 6,
   },
@@ -598,14 +601,22 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#2F7C83',
     borderRadius: 6,
-    height: 36,
+    height: 28,
     justifyContent: 'center',
+    maxWidth: '100%', 
   },
   cancelButton: {
     backgroundColor: '#B00020',
   },
-  buttonContent: { height: 36, paddingHorizontal: 12 },
-  buttonLabel: { fontSize: 12, fontWeight: 'bold', color: '#FFFFFF' },
+  horizontalLine2: {
+  borderBottomColor: '#ccc',
+  borderBottomWidth: 1.05,
+  // marginTop: 4,   
+  // width: '100%',
+  marginHorizontal: -16,
+},
+  buttonContent: { height: 36, paddingHorizontal: 8 },
+  buttonLabel: { fontSize: 10, fontWeight: 'bold', color: '#FFFFFF',flexShrink: 1,overflow: 'hidden', },
   noDataText: {
     textAlign: 'center',
     color: '#000000',
