@@ -301,7 +301,7 @@ export default function GroupsScreen() {
     <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1, padding: 10, }}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
-            <Ionicons name="chevron-back-outline" size={24} color="#4A4A4A" />
+            <Ionicons name="chevron-back-outline" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Groups</Text>
         <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
@@ -387,7 +387,7 @@ export default function GroupsScreen() {
 
       {status === 'loading' && (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#2E7165" style={{ marginBottom: 10 }} />
+          <ActivityIndicator size="large" color="#457B83" style={{ marginBottom: 10 }} />
           <Text style={styles.loaderText}>Loading groups...</Text>
         </View>
       )}
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#2E7165",
+    backgroundColor: "#457B83",
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -500,12 +500,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   filterBtnActive: {
-    backgroundColor: "#2E7165",
-    borderColor: "#2E7165",
+    backgroundColor: "#457B83",
+    borderColor: "#457B83",
   },
   filterBtnInactive: {
     backgroundColor: "transparent",
-    borderColor: "#2E7165",
+    borderColor: "#457B83",
   },
   filterText: {
     fontSize: 14,
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   filterTextInactive: {
-    color: "#2E7165",
+    color: "#457B83",
   },
   filterCountBadge: {
     marginLeft: 4,
@@ -530,14 +530,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   filterCountBadgeInactive: {
-    backgroundColor: "#2E7165",
+    backgroundColor: "#457B83",
   },
   filterCountText: {
     fontSize: 11,
     fontWeight: "600",
   },
   filterCountTextActive: {
-    color: "#2E7165",
+    color: "#457B83",
   },
   filterCountTextInactive: {
     color: "#fff",
@@ -596,13 +596,13 @@ const styles = StyleSheet.create({
   },
   unreadText: {
     fontWeight: "700",
-    color: "#2E7165",
+    color: "#457B83",
   },
   unreadBadge: {
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#2E7165",
+    backgroundColor: "#457B83",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 5,
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   loaderText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#2E7165',
+    color: '#457B83',
   },
   iconBackground: {
     backgroundColor: '#ebf6f5',
