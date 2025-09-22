@@ -14,6 +14,23 @@ import {
 import MapView, { Marker, Region } from 'react-native-maps';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
+// 🔹 Utility: sort bookings by date & time
+const sortBookings = (bookings: any[]) => {
+  return bookings.sort((a, b) => {
+    const aTime = new Date(
+      `${a.date}T${String(a.startTime.hour).padStart(2, '0')}:${String(
+        a.startTime.minute
+      ).padStart(2, '0')}`
+    );
+    const bTime = new Date(
+      `${b.date}T${String(b.startTime.hour).padStart(2, '0')}:${String(
+        b.startTime.minute
+      ).padStart(2, '0')}`
+    );
+    return aTime.getTime() - bTime.getTime();
+  });
+};
+
 const PlayersNearbyMap = () => {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     null
@@ -54,6 +71,7 @@ const PlayersNearbyMap = () => {
     (data || []).reduce((acc: any, player: any) => {
       player.bookings.forEach((club: any) => {
         const clubId = `${club.clubName}-${club.clubLat}-${club.clubLong}`;
+
         if (!acc[clubId]) {
           acc[clubId] = {
             clubId,
@@ -63,11 +81,24 @@ const PlayersNearbyMap = () => {
             players: [],
           };
         }
-        acc[clubId].players.push({
-          playerUserId: player.playerUserId,
-          playerName: player.playerName,
-          bookings: club.bookingDetails,
-        });
+
+        // Check if player already exists in this club
+        let existingPlayer = acc[clubId].players.find(
+          (p: any) => p.playerUserId === player.playerUserId
+        );
+
+        if (!existingPlayer) {
+          existingPlayer = {
+            playerUserId: player.playerUserId,
+            playerName: player.playerName,
+            bookings: [],
+          };
+          acc[clubId].players.push(existingPlayer);
+        }
+
+        // Add bookings and sort
+        existingPlayer.bookings.push(...club.bookingDetails);
+        existingPlayer.bookings = sortBookings(existingPlayer.bookings);
       });
       return acc;
     }, {})
@@ -125,16 +156,16 @@ const PlayersNearbyMap = () => {
               {/* Custom Marker */}
               <View style={styles.markerContainer}>
                 <View style={styles.arrowBox}>
-                  {Platform.OS === "android" && (
+                  {Platform.OS === 'android' && (
                     <Text style={styles.markerTextAndroid}>
-                      {club.players.length + "\n"}
-                      {club.players.length === 1 ? "player" : "players"}
+                      {club.players.length + '\n'}
+                      {club.players.length === 1 ? 'player' : 'players'}
                     </Text>
                   )}
-                  {Platform.OS === "ios" && (
+                  {Platform.OS === 'ios' && (
                     <Text style={styles.markerText}>
-                      {club.players.length}{" "}
-                      {club.players.length === 1 ? "player" : "players"}
+                      {club.players.length}{' '}
+                      {club.players.length === 1 ? 'player' : 'players'}
                     </Text>
                   )}
                 </View>
@@ -160,17 +191,17 @@ const PlayersNearbyMap = () => {
         onPress={() => setFullscreen(true)}
         style={styles.expandButton}
       >
-        <Icon name='arrow-expand' size={24} color='#333' />
+        <Icon name="arrow-expand" size={24} color="#333" />
       </TouchableOpacity>
 
       {/* Fullscreen Map */}
-      <Modal visible={fullscreen} animationType='slide'>
+      <Modal visible={fullscreen} animationType="slide">
         <View style={{ flex: 1 }}>
           <TouchableOpacity
             onPress={() => setFullscreen(false)}
             style={styles.closeButton}
           >
-            <Icon name='close' size={28} color='#333' />
+            <Icon name="close" size={28} color="#333" />
           </TouchableOpacity>
 
           {coords && (
@@ -193,16 +224,16 @@ const PlayersNearbyMap = () => {
                 >
                   <View style={styles.markerContainer}>
                     <View style={styles.arrowBox}>
-                      {Platform.OS === "android" && (
+                      {Platform.OS === 'android' && (
                         <Text style={styles.markerTextAndroid}>
-                          {club.players.length + "\n"}
-                          {club.players.length === 1 ? "player" : "players"}
+                          {club.players.length + '\n'}
+                          {club.players.length === 1 ? 'player' : 'players'}
                         </Text>
                       )}
-                      {Platform.OS === "ios" && (
+                      {Platform.OS === 'ios' && (
                         <Text style={styles.markerText}>
-                          {club.players.length}{" "}
-                          {club.players.length === 1 ? "player" : "players"}
+                          {club.players.length}{' '}
+                          {club.players.length === 1 ? 'player' : 'players'}
                         </Text>
                       )}
                     </View>
@@ -229,13 +260,13 @@ const PlayersNearbyMap = () => {
 
 export default PlayersNearbyMap;
 
-// Overlay component shows all players in the club
+// 🔹 Overlay shows club players + bookings
 const OverlayContent = ({ club, close }: { club: any; close: () => void }) => (
   <View style={styles.overlayCard}>
     <View style={styles.overlayHeader}>
       <Text style={styles.overlayTitle}>📍 {club.clubName}</Text>
       <TouchableOpacity onPress={close}>
-        <Icon name='close' size={20} color='#333' />
+        <Icon name="close" size={20} color="#333" />
       </TouchableOpacity>
     </View>
 
@@ -348,8 +379,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   markerText: { fontSize: 12, fontWeight: '600' },
-  markerTextAndroid: { 
-    fontSize: 8, fontWeight: "500", textAlign: "center", includeFontPadding: false
+  markerTextAndroid: {
+    fontSize: 8,
+    fontWeight: '500',
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   arrowDown: {
     width: 0,
