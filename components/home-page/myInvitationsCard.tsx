@@ -165,10 +165,10 @@ const InvitationCard: React.FC<InvitationCardProps> = ({
               disabled && { backgroundColor: '#aaa' },
             ]} // 🔑 faded if disabled
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.cancelButtonText}>Withdraw</Text>
           </TouchableOpacity>
         ) : invite.status === 'WITHDRAWN' ? (
-          <Text style={styles.cancelledText}>🚫 Withdrawn</Text>
+          <Text style={styles.cancelledText}>🚫 Cancelled</Text>
         ) : invite.status === 'DECLINED' || invite.status === 'CANCELLED' ? (
           <TouchableOpacity
             onPress={async () => {

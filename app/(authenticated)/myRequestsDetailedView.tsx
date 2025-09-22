@@ -24,37 +24,22 @@ function arrayToDate(arr: number[]): Date {
 
 export default function MyRequestsDetailedView() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
-  const { data, loading, error, refetch } =
-    useGetPlayerFinderRequest(requestId);
-  console.log('Request Data:', data);
-  const {
-    cancelInvitation,
-    status: cancelStatus,
-    error: cancelerror,
-  } = useCancelInvitation(refetch);
+  const { data, loading, error, refetch } = useGetPlayerFinderRequest(requestId);
+  const { cancelInvitation, status: cancelStatus, error: cancelerror } = useCancelInvitation(refetch);
 
   const [dialogVisible, setDialogVisible] = useState(false);
   const [comment, setComment] = useState('');
-  const [selectedAction, setSelectedAction] = useState<
-    'accept' | 'reject' | 'cancel' | null
-  >(null);
+  const [selectedAction, setSelectedAction] = useState<'accept' | 'reject' | 'cancel' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loggedInUserId = useSelector(
-    (state: RootState) => state.auth.user.userId
-  );
+  const loggedInUserId = useSelector((state: RootState) => state.auth.user.userId);
 
   if (loading) return <ActivityIndicator size='large' style={styles.loader} />;
-  if (error || !data)
-    return <Text style={styles.error}>Error loading data</Text>;
+  if (error || !data) return <Text style={styles.error}>Error loading data</Text>;
 
-  const myInvite = data?.find(
-    (invite: any) => invite.userId === loggedInUserId
-  );
-
+  const myInvite = data?.find((invite: any) => invite.userId === loggedInUserId);
   const invite = data[0];
-  console.log('Invite Details:', invite);
-  console.log('My Invite:', myInvite);
+
   const playTime = arrayToDate(invite?.playTime);
   const playEndTime = arrayToDate(invite?.playEndTime);
   const dateString = playTime.toLocaleDateString('en-US', {
@@ -62,7 +47,6 @@ export default function MyRequestsDetailedView() {
     day: '2-digit',
     year: 'numeric',
   });
-  console.log('Play Time:', playTime);
   const timeString = playTime.toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -90,35 +74,20 @@ export default function MyRequestsDetailedView() {
       setIsSubmitting(true);
 
       if (selectedAction === 'accept' || selectedAction === 'reject') {
-        const oldUrl =
-          selectedAction === 'accept'
-            ? myInvite.acceptUrl
-            : myInvite.declineUrl;
-
+        const oldUrl = selectedAction === 'accept' ? myInvite.acceptUrl : myInvite.declineUrl;
         const newBase = 'https://api.vddette.com';
         const urlObj = new URL(oldUrl);
-        const newUrl = `${newBase}${urlObj.pathname}${
-          urlObj.search
-        }&comments=${encodeURIComponent(comment)}`;
-
-        console.log('Submitting to URL:', newUrl);
-
+        const newUrl = `${newBase}${urlObj.pathname}${urlObj.search}&comments=${encodeURIComponent(comment)}`;
         const response = await fetch(newUrl);
         if (response.status === 200) {
           Alert.alert('Success', `Invitation ${selectedAction}ed`);
           refetch();
         } else {
           const errorText = await response.text();
-          console.log('Error response:', errorText);
           Alert.alert('Error', errorText || 'Failed to process the invitation');
         }
       } else if (selectedAction === 'cancel') {
-        const ok = await cancelInvitation(
-          invite.requestId,
-          loggedInUserId,
-          comment || ''
-        );
-
+        const ok = await cancelInvitation(invite.requestId, loggedInUserId, comment || '');
         if (ok) {
           Alert.alert('Success', 'Invitation cancelled');
           refetch();
@@ -127,10 +96,7 @@ export default function MyRequestsDetailedView() {
         }
       }
     } catch (err) {
-      Alert.alert(
-        'Error',
-        `Something went wrong while trying to ${selectedAction}`
-      );
+      Alert.alert('Error', `Something went wrong while trying to ${selectedAction}`);
     } finally {
       setIsSubmitting(false);
       setDialogVisible(false);
@@ -145,9 +111,7 @@ export default function MyRequestsDetailedView() {
           <Ionicons name='chevron-back' size={24} color='#000' />
         </TouchableOpacity>
         <Text style={styles.title}>Incoming Request</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/(authenticated)/profile')}
-        >
+        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
           <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
@@ -161,12 +125,7 @@ export default function MyRequestsDetailedView() {
             <View style={styles.row}>
               <View style={styles.column}>
                 <View style={styles.infoCard}>
-                  <FontAwesome5
-                    name='calendar-alt'
-                    size={20}
-                    color='#2CA6A4'
-                    solid
-                  />
+                  <FontAwesome5 name='calendar-alt' size={20} color='#2CA6A4' solid />
                 </View>
                 <Text style={styles.infoText}>{dateString}</Text>
               </View>
@@ -185,7 +144,6 @@ export default function MyRequestsDetailedView() {
                 </Text>
               </View>
             </View>
-
             <View style={styles.locationRow}>
               <View style={styles.locationIconWrapper}>
                 <FontAwesome5 name='map-marker-alt' size={16} color='#2CA6A4' />
@@ -194,8 +152,36 @@ export default function MyRequestsDetailedView() {
             </View>
           </View>
 
-          <View style={styles.chatPreviewContainer}>
+          {/* Players Box (NEW) */}
+          <ScrollView style={[styles.playersScroll,styles.playersBox]}
+              contentContainerStyle={{ paddingVertical: 2, paddingBottom: 16 }}
+              showsVerticalScrollIndicator={false}>
+            <Text style={styles.playersBoxTitle}>Players</Text>
+            <View style={styles.playerRow}>
+              <Text style={styles.playerName}>{invite.inviteeName}(invitee)</Text>
+              <Text style={[styles.status, styles.statusAccepted]}>ACCEPTED</Text>
+            </View>
+           
+            {data.map((player, idx) => (
+              <View key={player.userId || idx} style={styles.playerRow}>
+                <Text style={styles.playerName}>{player.name}</Text>
+                <Text style={[
+                  styles.status,
+                  player.status === 'ACCEPTED'
+                    ? styles.statusAccepted
+                    : player.status === 'PENDING'
+                    ? styles.statusPending
+                    : styles.statusOther
+                ]}>
+                  {player.status === 'CANCELLED' ? 'DECLINED' : player.status}
+                </Text>
+              </View>
+            ))}
             
+          </ScrollView>
+
+          {/* Chat Preview */}
+          <View style={styles.chatPreviewContainer}>
             <TouchableOpacity
               style={styles.chatRow}
               onPress={() =>
@@ -206,12 +192,7 @@ export default function MyRequestsDetailedView() {
               }
             >
               <Text style={styles.chatPreviewText}>Chat with players here...</Text>
-              {/* <Text style={styles.joinButtonText}>Chat</Text> */}
-              <MaterialCommunityIcons
-              name='message-text-outline'
-              size={16}
-              color='#007BFF'
-            />
+              <MaterialCommunityIcons name='message-text-outline' size={16} color='#007BFF' />
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -251,15 +232,13 @@ export default function MyRequestsDetailedView() {
             loading={isSubmitting && selectedAction === 'cancel'}
             style={styles.rejectBtn}
             textColor='#2C7E88'
-            
           >
-            Cancel
+            Withdraw
           </Button>
         </View>
       )}
 
-      {(myInvite?.status === 'CANCELLED' ||
-        myInvite?.status === 'DECLINED') && (
+      {(myInvite?.status === 'CANCELLED' || myInvite?.status === 'DECLINED') && (
         <View style={styles.bottomButtonContainer}>
           <Button
             icon='check'
@@ -275,7 +254,7 @@ export default function MyRequestsDetailedView() {
 
       {myInvite?.status === 'WITHDRAWN' && (
         <View>
-          <Text style={styles.withdrawBtn}>🚫 Withdrawn</Text>
+          <Text style={styles.withdrawBtn}>🚫 Cancelled</Text>
         </View>
       )}
 
@@ -324,6 +303,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 25,
   },
+  playersScroll: {
+  maxHeight: 180,
+},
   title: {
     fontSize: 20,
     fontWeight: '600',
@@ -389,11 +371,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '40%',
     alignSelf: 'center',
-    // shadowColor: '#000',          
-    // shadowOpacity: 0.45,          
-    // shadowRadius: 14,              
-    // shadowOffset: { width: 0, height: 6 }, 
-    // elevation: 4,    
   },
   locationIconWrapper: {
     backgroundColor: '#E6F7F7',
@@ -401,6 +378,49 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  playersBox: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  playersBoxTitle: {
+    fontWeight: '700',
+    fontSize: 16,
+    marginBottom: 8,
+    color: '#2C7E88',
+  },
+  playerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+  },
+  playerName: {
+    fontSize: 15,
+    color: '#111',
+  },
+  status: {
+    fontSize: 13,
+    textTransform: 'capitalize',
+    fontWeight: 'bold',
+  },
+  statusAccepted: {
+    color: '#2CA650',
+  },
+  statusPending: {
+    color: '#FF9500',
+  },
+  statusOther: {
+    color: '#d62246',
   },
   chatPreviewContainer: {
     backgroundColor: '#fff',
@@ -439,20 +459,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   acceptBtn: {
-    // flex: 1,
     marginRight: 8,
     backgroundColor: '#2C7E88',
   },
   rejectBtn: {
-    // flex: 1,
     borderColor: '#2C7E88',
     borderWidth: 1,
     color: '#2C7E88',
   },
   chatRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-},
-
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  
 });

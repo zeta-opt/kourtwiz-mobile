@@ -160,7 +160,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
                   style={styles.cancelButton}
                   onPress={() => onCancel(invite)}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={styles.cancelButtonText}>Withdraw</Text>
                 </TouchableOpacity>
               </>
               

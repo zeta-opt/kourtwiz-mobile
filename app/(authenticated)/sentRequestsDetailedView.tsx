@@ -224,11 +224,11 @@ export default function SentRequestDetailedView() {
 
       {/* Withdraw Button */}
       <View style={styles.chatPreviewContainer}>
-        <Text style={styles.chatPreviewText}>Withdraw the game for all...</Text>
+        <Text style={styles.chatPreviewText}>Cancel the game for all...</Text>
         <TouchableOpacity 
           style={[styles.joinButton,]} 
           onPress={() => {setCommentModalVisible(true)}}>
-          <Text style={styles.joinButtonText}>Withdraw Request</Text>
+          <Text style={styles.joinButtonText}>Cancel Request</Text>
         </TouchableOpacity>
       </View>
 
