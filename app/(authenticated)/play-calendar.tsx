@@ -84,6 +84,7 @@ export default function PlayCalendarPage() {
   }>({});
   const [playerDetailsVisible, setPlayerDetailsVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState<any[]>([]);
+    const [inviteeName, setInviteeName] = useState<string | null>(null);
 
   // fetch accepted/total counts for all invites
   useEffect(() => {
@@ -358,15 +359,24 @@ export default function PlayCalendarPage() {
 
   const handleDialogSubmit = async () => {
     if (!selectedInvite || !selectedAction) return;
+    setDialogVisible(false);
     try {
       setLoadingId(selectedInvite.id);
       if (selectedAction === 'accept' || selectedAction === 'reject') {
-        const baseUrl =
+        const oldUrl =
           selectedAction === 'accept'
             ? selectedInvite.acceptUrl
             : selectedInvite.declineUrl;
-        const url = `${baseUrl}&comments=${encodeURIComponent(comment)}`;
-        const response = await fetch(url);
+
+        const newBase = 'https://api.vddette.com';
+        const urlObj = new URL(oldUrl);
+        console.log('Parsed URL:', urlObj);
+        const newUrl = `${newBase}${urlObj.pathname}${
+          urlObj.search
+        }&comments=${encodeURIComponent(comment)}`;
+
+        console.log('Submitting to URL:', newUrl);
+        const response = await fetch(newUrl);
         if (response.status === 200) {
           Alert.alert('Success', `Invitation ${selectedAction}ed`);
           await refetch();
@@ -417,8 +427,21 @@ export default function PlayCalendarPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      console.log('player details',res.data);
       setSelectedPlayers(res.data);
+      if (res.data.length > 0) {
+      setInviteeName(res.data[0].inviteeName || 'N/A');
+    }
       setPlayerDetailsVisible(true);
+      const total = res.data[0]?.playersNeeded + 1 || 1;
+      const accepted =
+        res.data.filter((p: any) => p.status === 'ACCEPTED').length + 1;
+
+      // Update playerCounts state for this requestId
+      setPlayerCounts((prevCounts) => ({
+        ...prevCounts,
+        [requestId]: { accepted, total },
+      }));
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch player details');
     }
@@ -580,7 +603,7 @@ export default function PlayCalendarPage() {
           >
             <ScrollView>
               <ScrollView contentContainerStyle={styles.dialogContent}>
-                <PlayerDetailsModal players={selectedPlayers} />
+                <PlayerDetailsModal players={selectedPlayers} inviteeName={inviteeName} />
               </ScrollView>
             </ScrollView>
           </Modal>
