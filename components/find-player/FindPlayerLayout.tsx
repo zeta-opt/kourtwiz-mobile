@@ -701,7 +701,9 @@ const FindPlayerLayout = () => {
           </View>
           <View style={styles.formSection}>
             <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>Max Players</Text>
+              <Text style={styles.sectionTitle}>
+                Total Players Including You
+              </Text>
               <TextInput
                 style={styles.input}
                 value={playerCountInput}

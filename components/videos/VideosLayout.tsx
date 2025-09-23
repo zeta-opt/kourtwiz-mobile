@@ -1,7 +1,7 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { useGetVideos } from '@/hooks/apis/videos/useGetVideos';
 import { RootState } from '@/store';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -197,7 +197,7 @@ const VideosLayout = () => {
       <View style={styles.mainHeader}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-            <Ionicons name='arrow-back' size={24} color='#cce5e3' />
+            <MaterialIcons name='arrow-back-ios' size={24} color='#fff' />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
             <Text style={styles.mainTitle}>Videos</Text>
@@ -216,15 +216,19 @@ const VideosLayout = () => {
           placeholder='Search'
           onChangeText={handleSearch}
           value={searchQuery}
-          style={styles.searchBar}
-          inputStyle={styles.searchInput}
+          style={{
+            backgroundColor: '#e5e5e5',
+            borderRadius: 15,
+            height: 53,
+          }}
+          inputStyle={{ fontSize: 14, color: '#000' }}
           iconColor='#666'
-          placeholderTextColor='#999'
+          placeholderTextColor='#9F9F9F'
           theme={{
             colors: {
-              primary: '#333', // this controls the text color and focus color
-              text: '#333', // this controls the input text color
-              placeholder: '#999',
+              primary: '#2C7E88',
+              text: '#000',
+              placeholder: '#9F9F9F',
             },
           }}
         />
@@ -434,19 +438,13 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     color: '#fff',
   },
-  subtitle: { color: 'rgba(255, 255, 255, 0.75)', fontSize: 12, marginTop: 4 },
+
   backButton: { marginRight: 8, marginLeft: -8 },
   searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
-  searchBar: {
-    backgroundColor: '#e5e5e5',
-    elevation: 0,
-    borderRadius: 15,
-    height: 45,
-  },
-  searchInput: { fontSize: 14, paddingLeft: 0 },
+  searchInput: { fontSize: 14 },
   filterContainer: { maxHeight: 50, marginBottom: 8, minHeight: 45 },
   filterContent: { paddingHorizontal: 16, gap: 12 },
   filterButton: {
