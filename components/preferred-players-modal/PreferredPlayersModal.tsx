@@ -8,6 +8,7 @@ import { router, usePathname } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Modal,
   Platform,
   Text as RNText,
@@ -47,6 +48,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
 }) => {
   const pathname = usePathname();
 
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deviceContacts, setDeviceContacts] = useState<Contact[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
@@ -98,10 +100,14 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     setLoadingContacts(true);
     try {
       const { status } = await Contacts.getPermissionsAsync();
+
       if (status !== 'granted') {
+        setPermissionDenied(true);
         setLoadingContacts(false);
         return;
       }
+
+      setPermissionDenied(false);
 
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
@@ -120,7 +126,6 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
           const nameMatches = normalizeName(c.contactName) === currentUserName;
           const phoneMatches =
             normalizePhoneNumber(c.contactPhoneNumber) === currentUserPhone;
-          // EXCLUDE if EITHER name or phone matches current user
           return !(nameMatches || phoneMatches);
         });
 
@@ -686,6 +691,20 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
                     <RNText style={styles.loadingText}>
                       Loading contacts...
                     </RNText>
+                  </View>
+                ) : permissionDenied ? (
+                  <View style={styles.centerContent}>
+                    <RNText style={styles.emptyText}>
+                      Contacts permission is required
+                    </RNText>
+                    <Button
+                      mode='contained'
+                      onPress={() => Linking.openSettings()}
+                      style={{ marginTop: 12, backgroundColor: '#2C7E88' }}
+                      textColor='#fff'
+                    >
+                      Open Settings
+                    </Button>
                   </View>
                 ) : filteredContacts.length > 0 ? (
                   <View style={styles.section}>
