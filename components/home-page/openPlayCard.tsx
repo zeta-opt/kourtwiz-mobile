@@ -409,7 +409,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
       {rows.map((row) => (
         <TouchableOpacity
           key={row.id}
-          style={[styles.card, cardStyle]}
+          style={[styles.card]}
           onPress={() => {
             router.push({
               pathname: '/(authenticated)/openPlayDetailedView',
@@ -550,16 +550,17 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-     marginBottom: 18,
+     marginBottom: 10,
       borderBottomWidth: 1,
     borderBottomColor: '#eee',
      paddingBottom: 6,
+     marginTop: 6,
   },
   placeText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#111827',
-    marginTop: 6,
+    // marginTop: 6,
   },
   disabledButton: {
     backgroundColor: '#9CA3AF', // greyed out
@@ -579,7 +580,7 @@ const styles = StyleSheet.create({
   datePeopleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 2,
   },
   dateText: { fontSize: 13, color: '#4B5563' },
   separator: { marginHorizontal: 6, color: '#9CA3AF' },
@@ -596,7 +597,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 7,
   },
   button: {
     backgroundColor: '#2F7C83',
