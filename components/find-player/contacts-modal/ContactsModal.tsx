@@ -54,10 +54,10 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   const [loading, setLoading] = useState(false);
   const normalizePhoneNumber = (phone: string) => {
     const cleaned = phone
-    .trim()
-    .replace(/[^\d+]/g, '')       
-    .replace(/(?!^)\+/g, '');     
-  return cleaned;
+      .trim()
+      .replace(/[^\d+]/g, '')
+      .replace(/(?!^)\+/g, '');
+    return cleaned;
   };
 
   useEffect(() => {
@@ -252,6 +252,16 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={styles.searchBar}
+          placeholderTextColor='#9F9F9F'
+          inputStyle={{ fontSize: 14, color: '#000' }}
+          iconColor='#666'
+          theme={{
+            colors: {
+              primary: '#2C7E88',
+              text: '#000',
+              placeholder: '#9F9F9F',
+            },
+          }}
         />
 
         <Divider />
@@ -285,7 +295,9 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
         contentContainerStyle={styles.modalContainer}
       >
         <View style={styles.header}>
-          <Text variant='headlineSmall'>Contacts</Text>
+          <Text style={styles.title} variant='headlineSmall'>
+            Contacts
+          </Text>
           <IconButton icon='close' size={24} onPress={handleCancel} />
         </View>
 
@@ -301,6 +313,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
             style={styles.addButton}
             contentStyle={{ paddingVertical: 10 }}
             labelStyle={{ fontSize: 16 }}
+            textColor='#fff'
           >
             Add Contacts ({selectedLocalDeviceContacts.length})
           </Button>
@@ -317,6 +330,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
+  title: {
+    color: '#000',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -327,7 +343,8 @@ const styles = StyleSheet.create({
   searchBar: {
     margin: 16,
     marginTop: 8,
-    backgroundColor: '#D9D9D9',
+    backgroundColor: '#e5e5e5',
+    borderRadius: 8,
   },
   footer: {
     padding: 16,
