@@ -12,7 +12,7 @@ import {
   openPreferredPlaceModal,
   openPreferredPlayersModal,
 } from '@/store/uiSlice';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { Picker } from '@react-native-picker/picker';
 import * as Contacts from 'expo-contacts';
@@ -39,7 +39,6 @@ import { Button, Icon, IconButton } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import error_image from '../../assets/images/error_image.png';
 import success_image from '../../assets/images/success_image.png';
-import ContactsModal from '../find-player/contacts-modal/ContactsModal';
 import PreferredPlacesModal from '../find-player/preferred-places-modal/PreferredPlacesModal';
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
@@ -609,18 +608,18 @@ const CreateEventForm = () => {
         <View style={{ flex: 1 }}>
           <View style={styles.mainHeader}>
             <View style={styles.header}>
-               <TouchableOpacity
-                          onPress={() => {
-                            resetForm();
-                            if (redirectHome) {
-                              router.replace('/home');
-                            } else {
-                              router.back();
-                            }
-                          }}
-                          style={styles.backButton}
-                        >
-              <MaterialIcons name='arrow-back-ios' size={24} color='#fff' />
+              <TouchableOpacity
+                onPress={() => {
+                  resetForm();
+                  if (redirectHome) {
+                    router.replace('/home');
+                  } else {
+                    router.back();
+                  }
+                }}
+                style={styles.backButton}
+              >
+                <MaterialIcons name='arrow-back-ios' size={24} color='#fff' />
               </TouchableOpacity>
               <View style={styles.headerTextContainer}>
                 <Text style={styles.MainTitle}>
@@ -636,433 +635,443 @@ const CreateEventForm = () => {
             </View>
           </View>
 
-        <View style={styles.formContainer}>
-          <ScrollView contentContainerStyle={styles.card}>
-            <Text style={styles.sectionTitle}>Event Name</Text>
-            <EventNameSearch
-              value={eventName}
-              onChange={setEventName}
-              userId={userId || ''}
-              error={errors.eventName}
-              onSelect={(event) => {
-                setEventName(event.eventName);
-                setCourt(event.courtId || '');
-                setPrice(event.priceForPlay?.toString() || '');
-                setSkillLevel(event.skillLevel || 0);
-                setMaxPlayers(event.maxPlayers?.toString() || '');
-                setDescription(event.description || '');
-                dispatch(setPlaceToPlay(event.allCourts?.Name || ''));
-                if (event.preferredPlayers?.length > 0) {
-                  dispatch(setPreferredContacts(event.preferredPlayers));
-                }
-              }}
-            />
-
-            <Text style={[styles.sectionTitle, { marginBottom: 0 }, {marginTop: 5}]}>Place</Text>
-            <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
-
-            <View style={styles.inputRow}>
-              <TouchableOpacity
-                onPress={() => setModalVisible(true)}
-                style={[{ flex: 1 }, { marginBottom: 10 },{ marginTop: 0 }]}
-              >
-                <TextInput
-                  style={[
-                    styles.input,
-                    errors.placeToPlay && {
-                      borderColor: 'red',
-                      borderWidth: 1,
-                    },
-                  ]}
-                  placeholder='Enter Place Name'
-                  placeholderTextColor='#9F9F9F'
-                  value={displayPlaceName}
-                  editable={false}
-                  pointerEvents='none'
-                />
-              </TouchableOpacity>
-
-              <IconButton
-                icon='plus'
-                size={24}
-                iconColor='white'
-                onPress={handleAddPlace}
-                style={[styles.disabledPlus, { marginBottom: 10 }]}
+          <View style={styles.formContainer}>
+            <ScrollView contentContainerStyle={styles.card}>
+              <Text style={styles.sectionTitle}>Event Name</Text>
+              <EventNameSearch
+                value={eventName}
+                onChange={setEventName}
+                userId={userId || ''}
+                error={errors.eventName}
+                onSelect={(event) => {
+                  setEventName(event.eventName);
+                  setCourt(event.courtId || '');
+                  setPrice(event.priceForPlay?.toString() || '');
+                  setSkillLevel(event.skillLevel || 0);
+                  setMaxPlayers(event.maxPlayers?.toString() || '');
+                  setDescription(event.description || '');
+                  dispatch(setPlaceToPlay(event.allCourts?.Name || ''));
+                  if (event.preferredPlayers?.length > 0) {
+                    dispatch(setPreferredContacts(event.preferredPlayers));
+                  }
+                }}
               />
-            </View>
-            <PreferredPlacesModal
-              visible={modalVisible}
-              handleClose={handleModalClose}
-              locationPermissionGranted={locationPermissionGranted}
-            />
-            {!isEditMode && (
-              <>
-                <Text style={styles.sectionTitle}>Court Selection (Optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder='Enter Court Name'
-                  placeholderTextColor='#9F9F9F'
-                  value={court}
-                  onChangeText={setCourt}
-                  editable={!editMode}
-                />
-              </>
-            )}
-            <GameSchedulePicker
-              selectedDate={selectedDate}
-              startTime={startTime}
-              endTime={endTime}
-              onDateChange={setSelectedDate}
-              onStartTimeChange={setStartTime}
-              onEndTimeChange={setEndTime}
-              errors={{
-                selectedDate: errors.date,
-                startTime: errors.startTime,
-                endTime: errors.endTime,
-              }}
-            />
 
-            {!isEditMode && (
-              <>
-                <Text style={styles.sectionTitle}>Repeat Event</Text>
-                <View
-                  style={[
-                    {
-                      borderColor: 'black',
-                      borderWidth: 1,
-                      borderRadius: 5,
-                    },
-                    errors.repeat && {
-                      borderColor: 'red',
-                    },
-                    {marginTop:0}
-                  ]}
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { marginBottom: 0 },
+                  { marginTop: 5 },
+                ]}
+              >
+                Place
+              </Text>
+              <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
+
+              <View style={styles.inputRow}>
+                <TouchableOpacity
+                  onPress={() => setModalVisible(true)}
+                  style={[{ flex: 1 }, { marginBottom: 10 }, { marginTop: 0 }]}
                 >
-                  <RepeatPicker
-                    repeat={repeat}
-                    handleRepeatChange={handleRepeatChange}
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.sectionTitle}>Repeat End Date</Text>
-                  <Button
-                    mode='outlined'
+                  <TextInput
                     style={[
-                      styles.dateTimeButton,
-                      styles.roundedButton,
-                      styles.whiteButton,
-                      styles.blackBorder,
-                      errors.repeatEndDate && {
+                      styles.input,
+                      errors.placeToPlay && {
                         borderColor: 'red',
                         borderWidth: 1,
                       },
                     ]}
-                    onPress={() => setShowRepeatEndDatePicker(true)}
-                    contentStyle={styles.fullWidth}
-                  >
-                    <View style={styles.buttonContent}>
-                      <Text
-                        style={[
-                          styles.timeText,
-                          { color: repeatEndDate ? '#000' : '#9F9F9F' },
-                        ]}
-                      >
-                        {repeatEndDate
-                          ? repeatEndDate.toLocaleDateString('en-US')
-                          : 'MM/DD/YYYY'}
-                      </Text>
-                      <Icon
-                        source='calendar'
-                        size={20}
-                        color={repeatEndDate ? '#000' : '#9F9F9F'}
-                      />
-                    </View>
-                  </Button>
-                </View>
-
-                {showRepeatEndDatePicker && (
-                  <DateTimePickerModal
-                    isVisible={showRepeatEndDatePicker}
-                    mode='date'
-                    onConfirm={(date) => {
-                      setShowRepeatEndDatePicker(false);
-                      setRepeatEndDate(date);
-                    }}
-                    onCancel={() => setShowRepeatEndDatePicker(false)}
-                    date={repeatEndDate || new Date()}
-                    display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
-                    minimumDate={new Date(2000, 0, 1)}
-                    maximumDate={new Date(2100, 11, 31)}
+                    placeholder='Enter Place Name'
+                    placeholderTextColor='#9F9F9F'
+                    value={displayPlaceName}
+                    editable={false}
+                    pointerEvents='none'
                   />
-                )}
-              </>
-            )}
+                </TouchableOpacity>
 
-            <View style={styles.formSection}>
-              <View style={styles.sliderSection}>
-                <Text style={styles.skillLevelTitle}>Skill Level</Text>
-                <View onLayout={handleLayout} style={styles.sliderWrapper}>
-                  <Animated.View
-                    style={[styles.floatingLabel, { left: sliderPos - 10 }]}
-                  >
-                    <Text style={styles.floatingText}>
-                      {skillLevel.toFixed(1)}
-                    </Text>
-                  </Animated.View>
-
-                  <Slider
-                    style={styles.slider}
-                    minimumValue={0}
-                    maximumValue={5}
-                    step={0.1}
-                    value={skillLevel}
-                    minimumTrackTintColor='#2C7E88'
-                    maximumTrackTintColor='#E5E7EB'
-                    thumbTintColor='#2C7E88'
-                    onValueChange={handleValueChange}
-                  />
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={styles.halfInput}>
-                <Text style={styles.sectionTitle}>Price (Optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder='Enter Price'
-                  placeholderTextColor='#9F9F9F'
-                  value={price}
-                  onChangeText={setPrice}
-                  keyboardType='numeric'
-                  editable={!editMode}
+                <IconButton
+                  icon='plus'
+                  size={24}
+                  iconColor='white'
+                  onPress={handleAddPlace}
+                  style={[styles.disabledPlus, { marginBottom: 10 }]}
                 />
               </View>
-
-              <View style={styles.halfInput}>
-                <Text style={styles.sectionTitle}>Players (Including self)</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    errors.maxPlayers && { borderColor: 'red', borderWidth: 1 },
-                  ]}
-                  placeholder='Enter Max Players'
-                  placeholderTextColor='#9F9F9F'
-                  value={maxPlayers}
-                  onChangeText={setMaxPlayers}
-                  keyboardType='numeric'
-                />
-              </View>
-            </View>
-
-            {!isEditMode && (
-              <>
-                <Text style={styles.sectionTitle}>Description (Optional)</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder='Add event details...'
-                  placeholderTextColor='#9F9F9F'
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                  numberOfLines={3}
-                />
-                <View style={styles.preferredplayer}>
-                <PreferredPlayersSelector
-                  preferredContacts={preferredContacts}
-                  onShowPreferredPlayers={showPreferredPlayers}
-                  onAddContact={handleAddContact}
-                  onRemovePlayer={handleRemovePlayer}
-                />
-
-                <PreferredPlayersModal
-                  visible={preferredPlayersModal}
-                  onClose={() => dispatch(closePreferredPlayersModal())}
-                  onSelectPlayers={handleSelectPlayers}
-                  selectedPlayers={preferredContacts}
-                />
-
-                <ContactsModal
-                  visible={contactsModalVisible}
-                  onClose={() => setContactsModalVisible(false)}
-                  onSelectContacts={handleSelectContactsFromDevice}
-                  selectedContacts={preferredContacts}
-                />
-                </View>
-              </>
-            )}
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={isEditMode ? handleUpdate : handleSubmit}
-            >
-              <Text style={styles.buttonText}>
-                {isEditMode ? 'Update Event' : 'Create Event'}
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-
-        <Modal visible={showCustomModal} animationType='slide' transparent>
-          <View style={styles.overlay}>
-            <View style={styles.modalWrapper}>
-              <View style={styles.containerModal}>
-                <Text style={styles.title}>Custom</Text>
-                <ScrollView
-                  contentContainerStyle={styles.containerModal}
-                  keyboardShouldPersistTaps='handled'
-                >
-                  <Text style={styles.sectionTitle}>Frequency</Text>
-                  <View style={styles.pickerWrapper1}>
-                    <Picker
-                      selectedValue={customRepeat}
-                      onValueChange={setCustomRepeat}
-                      style={styles.picker}
-                      itemStyle={{ color: '#000' }}
-                    >
-                      <Picker.Item label='Daily' value='daily' />
-                      <Picker.Item label='Weekly' value='weekly' />
-                      <Picker.Item label='Monthly' value='monthly' />
-                    </Picker>
-                  </View>
-
-                  <Text style={styles.sectionTitle}>Every</Text>
-                  <View style={styles.pickerWrapper1}>
-                    <Picker
-                      selectedValue={customInterval}
-                      onValueChange={(value) =>
-                        setCustomInterval(Number(value))
-                      }
-                      style={styles.picker}
-                      itemStyle={{ color: '#000' }}
-                    >
-                      {Array.from({ length: 30 }, (_, i) => (
-                        <Picker.Item
-                          key={i + 1}
-                          label={`${i + 1} ${
-                            customRepeat === 'daily'
-                              ? 'Days'
-                              : customRepeat === 'weekly'
-                              ? 'Weeks'
-                              : 'Months'
-                          }`}
-                          value={i + 1}
-                        />
-                      ))}
-                    </Picker>
-                  </View>
-
-                  <Text style={styles.subText}>
-                    Event will occur every {customInterval} {customRepeat}
+              <PreferredPlacesModal
+                visible={modalVisible}
+                handleClose={handleModalClose}
+                locationPermissionGranted={locationPermissionGranted}
+              />
+              {!isEditMode && (
+                <>
+                  <Text style={styles.sectionTitle}>
+                    Court Selection (Optional)
                   </Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder='Enter Court Name'
+                    placeholderTextColor='#9F9F9F'
+                    value={court}
+                    onChangeText={setCourt}
+                    editable={!editMode}
+                  />
+                </>
+              )}
+              <GameSchedulePicker
+                selectedDate={selectedDate}
+                startTime={startTime}
+                endTime={endTime}
+                onDateChange={setSelectedDate}
+                onStartTimeChange={setStartTime}
+                onEndTimeChange={setEndTime}
+                errors={{
+                  selectedDate: errors.date,
+                  startTime: errors.startTime,
+                  endTime: errors.endTime,
+                }}
+              />
 
-                  {customRepeat === 'weekly' && (
-                    <View style={styles.dayList}>
-                      {DAYS.map((day) => (
-                        <TouchableOpacity
-                          key={day}
-                          onPress={() => {
-                            setCustomRepeatDays((prev) =>
-                              prev.includes(day.toUpperCase())
-                                ? prev.filter((d) => d !== day.toUpperCase())
-                                : [...prev, day.toUpperCase()]
-                            );
-                          }}
-                          style={styles.dayRow}
+              {!isEditMode && (
+                <>
+                  <Text style={styles.sectionTitle}>Repeat Event</Text>
+                  <View
+                    style={[
+                      {
+                        borderColor: 'black',
+                        borderWidth: 1,
+                        borderRadius: 5,
+                      },
+                      errors.repeat && {
+                        borderColor: 'red',
+                      },
+                      { marginTop: 0 },
+                    ]}
+                  >
+                    <RepeatPicker
+                      repeat={repeat}
+                      handleRepeatChange={handleRepeatChange}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.sectionTitle}>Repeat End Date</Text>
+                    <Button
+                      mode='outlined'
+                      style={[
+                        styles.dateTimeButton,
+                        styles.roundedButton,
+                        styles.whiteButton,
+                        styles.blackBorder,
+                        errors.repeatEndDate && {
+                          borderColor: 'red',
+                          borderWidth: 1,
+                        },
+                      ]}
+                      onPress={() => setShowRepeatEndDatePicker(true)}
+                      contentStyle={styles.fullWidth}
+                    >
+                      <View style={styles.buttonContent}>
+                        <Text
+                          style={[
+                            styles.timeText,
+                            { color: repeatEndDate ? '#000' : '#9F9F9F' },
+                          ]}
                         >
-                          <Text>{day}</Text>
-                          <Text>
-                            {customRepeatDays.includes(day.toUpperCase())
-                              ? '🔘'
-                              : '⚪️'}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+                          {repeatEndDate
+                            ? repeatEndDate.toLocaleDateString('en-US')
+                            : 'MM/DD/YYYY'}
+                        </Text>
+                        <Icon
+                          source='calendar'
+                          size={20}
+                          color={repeatEndDate ? '#000' : '#9F9F9F'}
+                        />
+                      </View>
+                    </Button>
+                  </View>
+
+                  {showRepeatEndDatePicker && (
+                    <DateTimePickerModal
+                      isVisible={showRepeatEndDatePicker}
+                      mode='date'
+                      onConfirm={(date) => {
+                        setShowRepeatEndDatePicker(false);
+                        setRepeatEndDate(date);
+                      }}
+                      onCancel={() => setShowRepeatEndDatePicker(false)}
+                      date={repeatEndDate || new Date()}
+                      display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+                      minimumDate={new Date(2000, 0, 1)}
+                      maximumDate={new Date(2100, 11, 31)}
+                    />
                   )}
+                </>
+              )}
 
-                  {customRepeat === 'monthly' && (
-                    <View style={styles.calendarWrapper}>
-                      <Calendar
-                        onDayPress={(day) => {
-                          const dateStr = day.dateString;
-                          const selected = customRepeatDates.find((d) =>
-                            formatDateToLocalISOString(d).startsWith(dateStr)
-                          );
+              <View style={styles.formSection}>
+                <View style={styles.sliderSection}>
+                  <Text style={styles.skillLevelTitle}>Skill Level</Text>
+                  <View onLayout={handleLayout} style={styles.sliderWrapper}>
+                    <Animated.View
+                      style={[styles.floatingLabel, { left: sliderPos - 10 }]}
+                    >
+                      <Text style={styles.floatingText}>
+                        {skillLevel.toFixed(1)}
+                      </Text>
+                    </Animated.View>
 
-                          if (selected) {
-                            setCustomRepeatDates((prev) =>
-                              prev.filter(
-                                (d) =>
-                                  !formatDateToLocalISOString(d).startsWith(
-                                    dateStr
-                                  )
-                              )
+                    <Slider
+                      style={styles.slider}
+                      minimumValue={0}
+                      maximumValue={5}
+                      step={0.1}
+                      value={skillLevel}
+                      minimumTrackTintColor='#2C7E88'
+                      maximumTrackTintColor='#E5E7EB'
+                      thumbTintColor='#2C7E88'
+                      onValueChange={handleValueChange}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={styles.halfInput}>
+                  <Text style={styles.sectionTitle}>Price (Optional)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder='Enter Price'
+                    placeholderTextColor='#9F9F9F'
+                    value={price}
+                    onChangeText={setPrice}
+                    keyboardType='numeric'
+                    editable={!editMode}
+                  />
+                </View>
+
+                <View style={styles.halfInput}>
+                  <Text style={styles.sectionTitle}>
+                    Players (Including self)
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      errors.maxPlayers && {
+                        borderColor: 'red',
+                        borderWidth: 1,
+                      },
+                    ]}
+                    placeholder='Enter Max Players'
+                    placeholderTextColor='#9F9F9F'
+                    value={maxPlayers}
+                    onChangeText={setMaxPlayers}
+                    keyboardType='numeric'
+                  />
+                </View>
+              </View>
+
+              {!isEditMode && (
+                <>
+                  <Text style={styles.sectionTitle}>
+                    Description (Optional)
+                  </Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder='Add event details...'
+                    placeholderTextColor='#9F9F9F'
+                    value={description}
+                    onChangeText={setDescription}
+                    multiline
+                    numberOfLines={3}
+                  />
+                  <View style={styles.preferredplayer}>
+                    <PreferredPlayersSelector
+                      preferredContacts={preferredContacts}
+                      onShowPreferredPlayers={showPreferredPlayers}
+                      onAddContact={handleAddContact}
+                      onRemovePlayer={handleRemovePlayer}
+                    />
+
+                    <PreferredPlayersModal
+                      visible={preferredPlayersModal}
+                      onClose={() => dispatch(closePreferredPlayersModal())}
+                      onSelectPlayers={handleSelectPlayers}
+                      selectedPlayers={preferredContacts}
+                    />
+                  </View>
+                </>
+              )}
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={isEditMode ? handleUpdate : handleSubmit}
+              >
+                <Text style={styles.buttonText}>
+                  {isEditMode ? 'Update Event' : 'Create Event'}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+
+          <Modal visible={showCustomModal} animationType='slide' transparent>
+            <View style={styles.overlay}>
+              <View style={styles.modalWrapper}>
+                <View style={styles.containerModal}>
+                  <Text style={styles.title}>Custom</Text>
+                  <ScrollView
+                    contentContainerStyle={styles.containerModal}
+                    keyboardShouldPersistTaps='handled'
+                  >
+                    <Text style={styles.sectionTitle}>Frequency</Text>
+                    <View style={styles.pickerWrapper1}>
+                      <Picker
+                        selectedValue={customRepeat}
+                        onValueChange={setCustomRepeat}
+                        style={styles.picker}
+                        itemStyle={{ color: '#000' }}
+                      >
+                        <Picker.Item label='Daily' value='daily' />
+                        <Picker.Item label='Weekly' value='weekly' />
+                        <Picker.Item label='Monthly' value='monthly' />
+                      </Picker>
+                    </View>
+
+                    <Text style={styles.sectionTitle}>Every</Text>
+                    <View style={styles.pickerWrapper1}>
+                      <Picker
+                        selectedValue={customInterval}
+                        onValueChange={(value) =>
+                          setCustomInterval(Number(value))
+                        }
+                        style={styles.picker}
+                        itemStyle={{ color: '#000' }}
+                      >
+                        {Array.from({ length: 30 }, (_, i) => (
+                          <Picker.Item
+                            key={i + 1}
+                            label={`${i + 1} ${
+                              customRepeat === 'daily'
+                                ? 'Days'
+                                : customRepeat === 'weekly'
+                                ? 'Weeks'
+                                : 'Months'
+                            }`}
+                            value={i + 1}
+                          />
+                        ))}
+                      </Picker>
+                    </View>
+
+                    <Text style={styles.subText}>
+                      Event will occur every {customInterval} {customRepeat}
+                    </Text>
+
+                    {customRepeat === 'weekly' && (
+                      <View style={styles.dayList}>
+                        {DAYS.map((day) => (
+                          <TouchableOpacity
+                            key={day}
+                            onPress={() => {
+                              setCustomRepeatDays((prev) =>
+                                prev.includes(day.toUpperCase())
+                                  ? prev.filter((d) => d !== day.toUpperCase())
+                                  : [...prev, day.toUpperCase()]
+                              );
+                            }}
+                            style={styles.dayRow}
+                          >
+                            <Text>{day}</Text>
+                            <Text>
+                              {customRepeatDays.includes(day.toUpperCase())
+                                ? '🔘'
+                                : '⚪️'}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+
+                    {customRepeat === 'monthly' && (
+                      <View style={styles.calendarWrapper}>
+                        <Calendar
+                          onDayPress={(day) => {
+                            const dateStr = day.dateString;
+                            const selected = customRepeatDates.find((d) =>
+                              formatDateToLocalISOString(d).startsWith(dateStr)
                             );
-                          } else {
-                            setCustomRepeatDates((prev) => [
-                              ...prev,
-                              new Date(
-                                `${dateStr}T${startTime?.getHours() || 0}:${
-                                  startTime?.getMinutes() || 0
-                                }:00.00`
-                              ),
-                            ]);
-                          }
-                        }}
-                        markedDates={customRepeatDates.reduce((acc, date) => {
-                          const formatted =
-                            formatDateToLocalISOString(date).split('T')[0];
-                          acc[formatted] = {
-                            selected: true,
-                            selectedColor: '#00adf5',
-                          };
-                          return acc;
-                        }, {} as Record<string, any>)}
-                      />
-                    </View>
-                  )}
 
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleCustomApply}
-                  >
-                    <Text style={styles.buttonText}>Customize</Text>
-                  </TouchableOpacity>
+                            if (selected) {
+                              setCustomRepeatDates((prev) =>
+                                prev.filter(
+                                  (d) =>
+                                    !formatDateToLocalISOString(d).startsWith(
+                                      dateStr
+                                    )
+                                )
+                              );
+                            } else {
+                              setCustomRepeatDates((prev) => [
+                                ...prev,
+                                new Date(
+                                  `${dateStr}T${startTime?.getHours() || 0}:${
+                                    startTime?.getMinutes() || 0
+                                  }:00.00`
+                                ),
+                              ]);
+                            }
+                          }}
+                          markedDates={customRepeatDates.reduce((acc, date) => {
+                            const formatted =
+                              formatDateToLocalISOString(date).split('T')[0];
+                            acc[formatted] = {
+                              selected: true,
+                              selectedColor: '#00adf5',
+                            };
+                            return acc;
+                          }, {} as Record<string, any>)}
+                        />
+                      </View>
+                    )}
 
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => setShowCustomModal(false)}
-                  >
-                    <Text style={styles.cancelText}>Cancel</Text>
-                  </TouchableOpacity>
-                </ScrollView>
+                    <TouchableOpacity
+                      style={styles.button}
+                      onPress={handleCustomApply}
+                    >
+                      <Text style={styles.buttonText}>Customize</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => setShowCustomModal(false)}
+                    >
+                      <Text style={styles.cancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </View>
               </View>
             </View>
-          </View>
-        </Modal>
-        <StatusModal
-          visible={successVisible}
-          onClose={() => setSuccessVisible(false)}
-          onButtonPress={() => {
-            setSuccessVisible(false);
-            router.replace('/(authenticated)/home');
-          }}
-          imageSource={success_image}
-          title='Event Created Successfully!'
-          description='You can now share the event, view details, or make changes anytime.'
-          buttonText='Got It'
-          buttonColor='#00796B'
-        />
+          </Modal>
+          <StatusModal
+            visible={successVisible}
+            onClose={() => setSuccessVisible(false)}
+            onButtonPress={() => {
+              setSuccessVisible(false);
+              router.replace('/(authenticated)/home');
+            }}
+            imageSource={success_image}
+            title='Event Created Successfully!'
+            description='You can now share the event, view details, or make changes anytime.'
+            buttonText='Got It'
+            buttonColor='#00796B'
+          />
 
-        <StatusModal
-          visible={errorVisible}
-          onClose={() => setErrorVisible(false)}
-          imageSource={error_image}
-          title='Event Not Created.'
-          description='Please review your details and try again. If the issue continues, contact support.'
-          buttonText='Try Again'
-          buttonColor='#E53935'
-        />
+          <StatusModal
+            visible={errorVisible}
+            onClose={() => setErrorVisible(false)}
+            imageSource={error_image}
+            title='Event Not Created.'
+            description='Please review your details and try again. If the issue continues, contact support.'
+            buttonText='Try Again'
+            buttonColor='#E53935'
+          />
         </View>
       </SafeAreaView>
     </>
@@ -1074,7 +1083,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C7E88',
     flexGrow: 1,
   },
-  
+
   containerModal: {
     paddingTop: 20,
     paddingHorizontal: 20,
@@ -1115,7 +1124,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomLeftRadius: 15,
     borderBottomRightRadius: 15,
-    backgroundColor: '#2C7E88'
+    backgroundColor: '#2C7E88',
   },
 
   MainTitle: {
@@ -1135,7 +1144,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
   },
-    enddate: {
+  enddate: {
     marginBottom: 10,
     color: '#4ea0ac',
   },
@@ -1158,9 +1167,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 24,
   },
-  preferredplayer :{
-    marginTop:45,
-    marginBottom:0,
+  preferredplayer: {
+    marginTop: 45,
+    marginBottom: 0,
   },
   row: {
     flexDirection: 'row',
@@ -1186,7 +1195,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#000',
     borderRadius: 6,
-    marginBottom:8,
+    marginBottom: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
@@ -1249,7 +1258,7 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 16,
-    marginTop:8,
+    marginTop: 8,
   },
   inputLabel: {
     marginBottom: 8,

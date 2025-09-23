@@ -45,7 +45,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import GameSchedulePicker from '../game-scheduler-picker/GameSchedulePicker';
 import PreferredPlayersModal from '../preferred-players-modal/PreferredPlayersModal';
 import PreferredPlayersSelector from '../preferred-players/PreferredPlayersSelector';
-import ContactsModal from './contacts-modal/ContactsModal';
 import EventNameSearch from './event-name-search/EventNameSearch';
 import PreferredPlacesModal from './preferred-places-modal/PreferredPlacesModal';
 
@@ -737,13 +736,6 @@ const FindPlayerLayout = () => {
                 onClose={() => dispatch(closePreferredPlayersModal())}
                 onSelectPlayers={handleSelectPlayers}
                 selectedPlayers={preferredContacts}
-              />
-
-              <ContactsModal
-                visible={contactsModalVisible}
-                onClose={() => setContactsModalVisible(false)}
-                onSelectContacts={handleSelectContactsFromDevice}
-                selectedContacts={preferredContacts}
               />
             </>
           )}

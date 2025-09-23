@@ -1,29 +1,29 @@
-import React, { useEffect, useMemo, useState } from "react";
+import UserAvatar from '@/assets/UserAvatar';
+import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
+import { RootState } from '@/store';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
-  ActivityIndicator,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import UserAvatar from "@/assets/UserAvatar";
-import { router } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Searchbar } from "react-native-paper";
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Searchbar } from 'react-native-paper';
+import { useSelector } from 'react-redux';
 
 // Filter types
 const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "read", label: "Read" },
-  { key: "unread", label: "Unread" },
-  { key: "favorite", label: "Favorites" },
+  { key: 'all', label: 'All' },
+  { key: 'read', label: 'Read' },
+  { key: 'unread', label: 'Unread' },
+  { key: 'favorite', label: 'Favorites' },
 ];
 
 export interface Contact {
@@ -34,11 +34,14 @@ export interface Contact {
 export default function GroupsScreen() {
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
-  const { getGroups, status, error, data, refetch } = useGetGroupsByPhoneNumber();
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
+  const { getGroups, status, error, data, refetch } =
+    useGetGroupsByPhoneNumber();
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
   const [favoriteGroups, setFavoriteGroups] = useState<string[]>([]);
-  const [lastReadTimestamps, setLastReadTimestamps] = useState<{ [key: string]: string }>({});
+  const [lastReadTimestamps, setLastReadTimestamps] = useState<{
+    [key: string]: string;
+  }>({});
 
   useEffect(() => {
     if (user?.phoneNumber) {
@@ -58,7 +61,7 @@ export default function GroupsScreen() {
     }
 
     // ISO string or numeric epoch
-    if (typeof ts === "string" || typeof ts === "number") {
+    if (typeof ts === 'string' || typeof ts === 'number') {
       const dt = new Date(ts);
       return isNaN(dt.getTime()) ? null : dt;
     }
@@ -72,7 +75,14 @@ export default function GroupsScreen() {
     if (!comments || comments.length === 0) return null;
     let max: Date | null = null;
     for (const c of comments) {
-      const rawTs = c.timestamp ?? c.time ?? c.createdAt ?? c.created_at ?? c.editedAt ?? c.date ?? c.ts;
+      const rawTs =
+        c.timestamp ??
+        c.time ??
+        c.createdAt ??
+        c.created_at ??
+        c.editedAt ??
+        c.date ??
+        c.ts;
       const d = parseTimestamp(rawTs);
       if (d && (!max || d > max)) max = d;
     }
@@ -83,20 +93,30 @@ export default function GroupsScreen() {
   function getGroupLatestMessageTime(item: any): Date | null {
     const latestFromComments = getLatestCommentTimestamp(item.comments || []);
     if (latestFromComments) return latestFromComments;
-    const fallback = parseTimestamp(item.lastUpdated ?? item.updatedAt ?? item.updated_at ?? item.last_update);
+    const fallback = parseTimestamp(
+      item.lastUpdated ?? item.updatedAt ?? item.updated_at ?? item.last_update
+    );
     return fallback;
   }
 
   // handleOpenChat accepts optional latestMessageTime to set lastRead timestamp correctly
-  const handleOpenChat = async (groupId: string, latestMessageTime?: Date | null) => {
-    const tsValue = latestMessageTime ? latestMessageTime.toISOString() : new Date().toISOString();
+  const handleOpenChat = async (
+    groupId: string,
+    latestMessageTime?: Date | null
+  ) => {
+    const tsValue = latestMessageTime
+      ? latestMessageTime.toISOString()
+      : new Date().toISOString();
     const updatedTimestamps = {
       ...lastReadTimestamps,
       [groupId]: tsValue,
     };
     setLastReadTimestamps(updatedTimestamps);
     try {
-      await AsyncStorage.setItem('lastReadTimestamps', JSON.stringify(updatedTimestamps));
+      await AsyncStorage.setItem(
+        'lastReadTimestamps',
+        JSON.stringify(updatedTimestamps)
+      );
     } catch (err) {
       console.warn('Failed to persist lastReadTimestamps', err);
     }
@@ -140,7 +160,7 @@ export default function GroupsScreen() {
     const key = `favoriteGroups_${userId}`;
     let updated;
     if (favoriteGroups.includes(groupId)) {
-      updated = favoriteGroups.filter(id => id !== groupId);
+      updated = favoriteGroups.filter((id) => id !== groupId);
     } else {
       updated = [...favoriteGroups, groupId];
     }
@@ -155,8 +175,10 @@ export default function GroupsScreen() {
   // ---------- FIX: use unified logic for unread calculation ----------
   // Only consider a group unread when it *has a latest message* AND that message is newer than the last-read timestamp.
   function getGroupLatestActivityTime(item: any): Date | null {
-    const lastMsgTs = parseTimestamp(item.lastMessage?.timestamp)?.getTime() ?? -Infinity;
-    const updatedTs = parseTimestamp(item.group?.updatedAt)?.getTime() ?? -Infinity;
+    const lastMsgTs =
+      parseTimestamp(item.lastMessage?.timestamp)?.getTime() ?? -Infinity;
+    const updatedTs =
+      parseTimestamp(item.group?.updatedAt)?.getTime() ?? -Infinity;
     const ts = Math.max(lastMsgTs, updatedTs);
     return ts === -Infinity ? null : new Date(ts);
   }
@@ -174,19 +196,22 @@ export default function GroupsScreen() {
 
   // Filtered data (memoized for perf)
   const filteredData = useMemo(() => {
-    const q = (search || "").trim().toLowerCase();
+    const q = (search || '').trim().toLowerCase();
     return (data ?? []).filter((item: any) => {
       // search by group name or latest message
-      const name = (item.group?.name ?? "").toLowerCase();
-      const latestMessageText = (item.lastMessage?.commentText ?? "").toLowerCase();
-      const matchesSearch = !q || name.includes(q) || latestMessageText.includes(q);
+      const name = (item.group?.name ?? '').toLowerCase();
+      const latestMessageText = (
+        item.lastMessage?.commentText ?? ''
+      ).toLowerCase();
+      const matchesSearch =
+        !q || name.includes(q) || latestMessageText.includes(q);
       if (!matchesSearch) return false;
 
       const unread = groupHasUnread(item);
 
-      if (filter === "read") return !unread;
-      if (filter === "unread") return unread;
-      if (filter === "favorite") return favoriteGroups.includes(item.group.id);
+      if (filter === 'read') return !unread;
+      if (filter === 'unread') return unread;
+      if (filter === 'favorite') return favoriteGroups.includes(item.group.id);
 
       return true;
     });
@@ -196,12 +221,16 @@ export default function GroupsScreen() {
   const sortedData = useMemo(() => {
     const arr = [...filteredData];
     arr.sort((a, b) => {
-      const aLastMsg = parseTimestamp(a.lastMessage?.timestamp)?.getTime() ?? -Infinity;
-      const aUpdated = parseTimestamp(a.group?.updatedAt)?.getTime() ?? -Infinity;
+      const aLastMsg =
+        parseTimestamp(a.lastMessage?.timestamp)?.getTime() ?? -Infinity;
+      const aUpdated =
+        parseTimestamp(a.group?.updatedAt)?.getTime() ?? -Infinity;
       const aTs = Math.max(aLastMsg, aUpdated);
 
-      const bLastMsg = parseTimestamp(b.lastMessage?.timestamp)?.getTime() ?? -Infinity;
-      const bUpdated = parseTimestamp(b.group?.updatedAt)?.getTime() ?? -Infinity;
+      const bLastMsg =
+        parseTimestamp(b.lastMessage?.timestamp)?.getTime() ?? -Infinity;
+      const bUpdated =
+        parseTimestamp(b.group?.updatedAt)?.getTime() ?? -Infinity;
       const bTs = Math.max(bLastMsg, bUpdated);
 
       return bTs - aTs; // newer activity first
@@ -213,35 +242,46 @@ export default function GroupsScreen() {
   const renderItem = ({ item }: { item: any }) => {
     const group = item.group;
     const lastMessage = item.lastMessage;
-    const adminMember = group.members?.find((m: any) => m.userId === group.createdByUserId);
-    const adminName = adminMember?.name || "Admin";
+    const adminMember = group.members?.find(
+      (m: any) => m.userId === group.createdByUserId
+    );
+    const adminName = adminMember?.name || 'Admin';
 
     const latestMessageTime = lastMessage
-    ? parseTimestamp(lastMessage.timestamp)
-    : parseTimestamp(group.updatedAt);
-    const lastMessageText = lastMessage?.commentText ?? "No new messages";
+      ? parseTimestamp(lastMessage.timestamp)
+      : parseTimestamp(group.updatedAt);
+    const lastMessageText = lastMessage?.commentText ?? 'No new messages';
     const lastReadAt = lastReadTimestamps[group.id];
     const lastReadDate = lastReadAt ? new Date(lastReadAt) : null;
     const hasMessages = Boolean(latestMessageTime);
-    const isRead = hasMessages ? (lastReadDate ? latestMessageTime!.getTime() <= lastReadDate.getTime() : false) : true;
+    const isRead = hasMessages
+      ? lastReadDate
+        ? latestMessageTime!.getTime() <= lastReadDate.getTime()
+        : false
+      : true;
     const isFavorite = favoriteGroups.includes(group.id);
 
-    let messagePreview = "No new messages";
+    let messagePreview = 'No new messages';
     if (!hasMessages) {
-      messagePreview = group.createdByUserId && group.createdByUserId !== user?.userId
-        ? `${adminName} added you`
-        : "You are the Admin";
+      messagePreview =
+        group.createdByUserId && group.createdByUserId !== user?.userId
+          ? `${adminName} added you`
+          : 'You are the Admin';
     } else {
-      messagePreview = !isRead ? "new messages" : "No new messages";
+      messagePreview = !isRead ? 'new messages' : 'No new messages';
     }
 
     return (
       <TouchableOpacity
         style={styles.messageRow}
-        onPress={() => 
-          router.replace({ pathname: '/(authenticated)/group-info/[id]', params: { id: group.id } })
+        onPress={
+          () =>
+            router.replace({
+              pathname: '/(authenticated)/group-info/[id]',
+              params: { id: group.id },
+            })
           // handleOpenChat(group.id, latestMessageTime)
-          }
+        }
         onLongPress={() => toggleFavorite(item.id)}
       >
         {group.avatarUrl ? (
@@ -249,7 +289,7 @@ export default function GroupsScreen() {
         ) : (
           <View style={styles.initialsCircle}>
             <Text style={styles.initialsText}>
-              {(group.name || "")
+              {(group.name || '')
                 .split(' ')
                 .map((w: string) => w[0] || '')
                 .join('')
@@ -265,15 +305,17 @@ export default function GroupsScreen() {
               {group.name}
               {isFavorite && (
                 <Ionicons
-                  name="star"
+                  name='star'
                   size={16}
-                  color="#FFD700"
+                  color='#FFD700'
                   style={{ marginLeft: 4 }}
                 />
               )}
             </Text>
             <Text style={styles.time}>
-              {latestMessageTime ? latestMessageTime.toLocaleString() : (group.lastUpdated || '')}
+              {latestMessageTime
+                ? latestMessageTime.toLocaleString()
+                : group.lastUpdated || ''}
             </Text>
           </View>
           <View style={styles.rowSpaceBetween}>
@@ -294,31 +336,45 @@ export default function GroupsScreen() {
   };
 
   // ---------- UI: filter badges counts use same logic ----------
-  const unreadCount = (data ?? []).filter((g:any) => groupHasUnread(g)).length;
+  const unreadCount = (data ?? []).filter((g: any) => groupHasUnread(g)).length;
   const favoriteCount = favoriteGroups.length;
 
   return (
-    <LinearGradient colors={['#E0F7FA', '#FFFFFF']} style={{ flex: 1, padding: 10, }}>
+    <LinearGradient
+      colors={['#E0F7FA', '#FFFFFF']}
+      style={{ flex: 1, padding: 10 }}
+    >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace('/(authenticated)/home')}>
-            <Ionicons name="chevron-back-outline" size={24} color="#333" />
+        <TouchableOpacity
+          onPress={() => router.replace('/(authenticated)/home')}
+        >
+          <Ionicons name='chevron-back-outline' size={24} color='#333' />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Groups</Text>
-        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
-            <UserAvatar size={36} />
+        <TouchableOpacity
+          onPress={() => router.push('/(authenticated)/profile')}
+        >
+          <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
       <Searchbar
-        placeholder="Search Group Name"
-        placeholderTextColor="#8E8E8E"
+        placeholder='Search Group Name'
+        placeholderTextColor='#9F9F9F'
         onChangeText={setSearch}
         value={search}
-        style={styles.searchContainer}        // container style
+        style={styles.searchContainer} // container style
         inputStyle={styles.searchInput} // text input style
-        iconColor="#8E8E8E"
-        clearIcon="close"               // shows clear button
+        iconColor='#8E8E8E'
+        clearIcon='close' // shows clear button
+        theme={{
+          colors: {
+            primary: '#2C7E88',
+            text: '#000',
+            placeholder: '#9F9F9F',
+          },
+        }}
       />
 
       {/* Filters */}
@@ -379,7 +435,11 @@ export default function GroupsScreen() {
 
       {status === 'loading' && (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#457B83" style={{ marginBottom: 10 }} />
+          <ActivityIndicator
+            size='large'
+            color='#457B83'
+            style={{ marginBottom: 10 }}
+          />
           <Text style={styles.loaderText}>Loading groups...</Text>
         </View>
       )}
@@ -398,7 +458,7 @@ export default function GroupsScreen() {
           ListEmptyComponent={() => (
             <View style={styles.loaderContainer}>
               <View style={styles.iconBackground}>
-                <Ionicons name="people" size={60} color="#457B83" />
+                <Ionicons name='people' size={60} color='#457B83' />
               </View>
               <Text style={styles.errorText}>
                 {search && sortedData.length === 0
@@ -412,10 +472,10 @@ export default function GroupsScreen() {
 
       {/* Open Modal Button */}
       <TouchableOpacity
-          style={styles.createButton}
-          onPress={() => router.push("/(authenticated)/create-group")}
+        style={styles.createButton}
+        onPress={() => router.push('/(authenticated)/create-group')}
       >
-          <Text style={styles.createButtonText}>Create Group</Text>
+        <Text style={styles.createButtonText}>Create Group</Text>
       </TouchableOpacity>
     </LinearGradient>
   );
@@ -424,38 +484,38 @@ export default function GroupsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#D9E3E3",
+    backgroundColor: '#D9E3E3',
     paddingTop: 54,
     paddingHorizontal: 16,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
   backIcon: {
     width: 32,
     height: 32,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "600",
-    color: "#2E2E2E",
+    fontWeight: '600',
+    color: '#2E2E2E',
   },
   headerAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#bbb",
+    backgroundColor: '#bbb',
   },
   initialsCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#457B83",
+    backgroundColor: '#457B83',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -464,74 +524,74 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
-  },  
+  },
   searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginVertical: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: "#333333",
+    color: '#000',
   },
   filters: {
-    flexDirection: "row",
+    flexDirection: 'row',
     marginBottom: 16,
   },
   filterBtn: {
-    flexDirection: "row",
+    flexDirection: 'row',
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 9,
     marginRight: 10,
-    alignItems: "center",
+    alignItems: 'center',
     borderWidth: 1,
   },
   filterBtnActive: {
-    backgroundColor: "#457B83",
-    borderColor: "#457B83",
+    backgroundColor: '#457B83',
+    borderColor: '#457B83',
   },
   filterBtnInactive: {
-    backgroundColor: "transparent",
-    borderColor: "#457B83",
+    backgroundColor: 'transparent',
+    borderColor: '#457B83',
   },
   filterText: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   filterTextActive: {
-    color: "#ffffff",
+    color: '#ffffff',
   },
   filterTextInactive: {
-    color: "#457B83",
+    color: '#457B83',
   },
   filterCountBadge: {
     marginLeft: 4,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 3,
   },
   filterCountBadgeActive: {
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
   },
   filterCountBadgeInactive: {
-    backgroundColor: "#457B83",
+    backgroundColor: '#457B83',
   },
   filterCountText: {
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   filterCountTextActive: {
-    color: "#457B83",
+    color: '#457B83',
   },
   filterCountTextInactive: {
-    color: "#fff",
+    color: '#fff',
   },
   favoriteHint: {
     textAlign: 'center',
@@ -540,75 +600,75 @@ const styles = StyleSheet.create({
     marginVertical: 6,
   },
   messageRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#E3E9EA",
+    borderBottomColor: '#E3E9EA',
   },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
     marginRight: 12,
-    backgroundColor: "#ccc",
+    backgroundColor: '#ccc',
   },
   messageContent: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   rowSpaceBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   name: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#212121",
+    fontWeight: '600',
+    color: '#212121',
   },
   verifiedBadge: {
     marginLeft: 6,
   },
   time: {
     fontSize: 11,
-    fontWeight: "400",
-    color: "#6492A6",
+    fontWeight: '400',
+    color: '#6492A6',
   },
   messageText: {
     fontSize: 14,
-    fontWeight: "400",
-    color: "#4A4A4A",
+    fontWeight: '400',
+    color: '#4A4A4A',
     flex: 1,
   },
   unreadText: {
-    fontWeight: "700",
-    color: "#457B83",
+    fontWeight: '700',
+    color: '#457B83',
   },
   unreadBadge: {
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#457B83",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#457B83',
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 5,
     marginLeft: 8,
   },
   unreadBadgeText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   createButton: {
     marginTop: 10,
     marginBottom: 10,
     alignItems: 'center',
-    backgroundColor: "#457B83",
+    backgroundColor: '#457B83',
     paddingVertical: 16,
     paddingHorizontal: 12,
     borderRadius: 30,

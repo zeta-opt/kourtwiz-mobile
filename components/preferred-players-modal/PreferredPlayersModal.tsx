@@ -2,7 +2,9 @@ import { useGetGroupsByPhoneNumber } from '@/hooks/apis/groups/useGetGroups';
 import { useGetRegisteredPlayers } from '@/hooks/apis/player-finder/useGetRegisteredPlayers';
 import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
 import { RootState } from '@/store';
+import { MaterialIcons } from '@expo/vector-icons';
 import * as Contacts from 'expo-contacts';
+import { router, usePathname } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,9 +18,7 @@ import {
   View,
 } from 'react-native';
 import { Button, Checkbox, Chip, Searchbar } from 'react-native-paper';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
-import { router, usePathname } from 'expo-router';
 
 export interface Contact {
   contactName: string;
@@ -52,20 +52,18 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   const [loadingContacts, setLoadingContacts] = useState(false);
 
   // Normalizers
- const normalizePhoneNumber = (phone = '') =>
-  String(phone || '')
-    .trim()
-    .replace(/[^\d+]/g, '')    // keep digits and '+'
-    .replace(/(?!^)\+/g, '');  // remove '+' if not at start
+  const normalizePhoneNumber = (phone = '') =>
+    String(phone || '')
+      .trim()
+      .replace(/[^\d+]/g, '') // keep digits and '+'
+      .replace(/(?!^)\+/g, ''); // remove '+' if not at start
 
   const normalizeName = (n = '') =>
     String(n || '')
       .trim()
       .toLowerCase();
 
-  const [tempSelectedPlayers, setTempSelectedPlayers] = useState<Contact[]>(
-    []
-  );
+  const [tempSelectedPlayers, setTempSelectedPlayers] = useState<Contact[]>([]);
   // group ids for which "select all" was used or to keep track as selected groups
   const [tempSelectedGroupIds, setTempSelectedGroupIds] = useState<string[]>(
     []
@@ -218,36 +216,44 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
   /* --------- Preferred players from API (normalize + exclude current user by name OR phone) --------- */
   const normalizedCurrentName = normalizeName(currentUserName);
   const normalizedCurrentPhone = normalizePhoneNumber(currentUserPhone);
-  
+
   const preferToPlayWith = Array.isArray(
     userDetails?.playerDetails?.preferToPlayWith
   )
     ? userDetails.playerDetails.preferToPlayWith
     : [];
-  
+
   const preferredPlayersAsContacts: Contact[] = preferToPlayWith
-    .map((player: any, index: number): Contact & { _normalizedPhone: string } => {
-      const name = player?.contactName || `Preferred ${index + 1}`;
-      const phoneRaw = player?.contactPhoneNumber || `preferred-${index}`;
-      return {
-        contactName: name,
-        contactPhoneNumber: phoneRaw,
-        _normalizedPhone: normalizePhoneNumber(phoneRaw),
-      };
-    })
+    .map(
+      (player: any, index: number): Contact & { _normalizedPhone: string } => {
+        const name = player?.contactName || `Preferred ${index + 1}`;
+        const phoneRaw = player?.contactPhoneNumber || `preferred-${index}`;
+        return {
+          contactName: name,
+          contactPhoneNumber: phoneRaw,
+          _normalizedPhone: normalizePhoneNumber(phoneRaw),
+        };
+      }
+    )
     .filter((p: Contact & { _normalizedPhone: string }) => {
       // exclude current user (by phone only)
       return p._normalizedPhone !== normalizedCurrentPhone;
     })
     .filter(
-      (p: Contact & { _normalizedPhone: string }, index: number, arr: Contact & { _normalizedPhone: string }[]) =>
+      (
+        p: Contact & { _normalizedPhone: string },
+        index: number,
+        arr: Contact & { _normalizedPhone: string }[]
+      ) =>
         index ===
         arr.findIndex((q) => q._normalizedPhone === p._normalizedPhone)
     )
-    .map(({ contactName, contactPhoneNumber }: Contact): Contact => ({
-      contactName,
-      contactPhoneNumber,
-    }));
+    .map(
+      ({ contactName, contactPhoneNumber }: Contact): Contact => ({
+        contactName,
+        contactPhoneNumber,
+      })
+    );
 
   /* --------- Registered players (normalize + exclude current user by OR) --------- */
   const registeredPlayersAsContacts: Contact[] = (registeredPlayers || [])
@@ -320,12 +326,13 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
 
   /* --------- Group helpers ---------- */
 
-  const isGroupExpanded = (group: Group) =>
-    expandedGroupIds.includes(group.id);
+  const isGroupExpanded = (group: Group) => expandedGroupIds.includes(group.id);
 
   const toggleGroupExpanded = (group: Group) => {
     setExpandedGroupIds((prev) =>
-      prev.includes(group.id) ? prev.filter((id) => id !== group.id) : [...prev, group.id]
+      prev.includes(group.id)
+        ? prev.filter((id) => id !== group.id)
+        : [...prev, group.id]
     );
   };
 
@@ -369,14 +376,15 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     if (groupAllSelected) {
       // Deselect all members from this group
       setTempSelectedPlayers((prev) =>
-        prev.filter((p) =>
-          !incoming.some((m) => {
-            const pmPhone = normalizePhoneNumber(m.contactPhoneNumber || '');
-            const pmName = normalizeName(m.contactName || '');
-            const pPhone = normalizePhoneNumber(p.contactPhoneNumber || '');
-            const pName = normalizeName(p.contactName || '');
-            return pmPhone === pPhone || pmName === pName;
-          })
+        prev.filter(
+          (p) =>
+            !incoming.some((m) => {
+              const pmPhone = normalizePhoneNumber(m.contactPhoneNumber || '');
+              const pmName = normalizeName(m.contactName || '');
+              const pPhone = normalizePhoneNumber(p.contactPhoneNumber || '');
+              const pName = normalizeName(p.contactName || '');
+              return pmPhone === pPhone || pmName === pName;
+            })
         )
       );
       // remove group id from selected group ids
@@ -396,9 +404,9 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
       );
 
       const toAdd = incoming.filter((p) => {
-        const key = `${normalizePhoneNumber(p.contactPhoneNumber)}|${normalizeName(
-          p.contactName
-        )}`;
+        const key = `${normalizePhoneNumber(
+          p.contactPhoneNumber
+        )}|${normalizeName(p.contactName)}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -408,11 +416,16 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
     });
 
     // mark group as selected via group id
-    setTempSelectedGroupIds((prev) => (prev.includes(group.id) ? prev : [...prev, group.id]));
+    setTempSelectedGroupIds((prev) =>
+      prev.includes(group.id) ? prev : [...prev, group.id]
+    );
   };
 
   // toggle a single member inside a group
-  const handleToggleMemberInGroup = (member: { name?: string; phoneNumber?: string }) => {
+  const handleToggleMemberInGroup = (member: {
+    name?: string;
+    phoneNumber?: string;
+  }) => {
     const contact: Contact = {
       contactName: member.name || 'Unknown',
       contactPhoneNumber: member.phoneNumber || '',
@@ -460,7 +473,9 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
               {group.groupName || 'Unnamed Group'}
             </RNText>
             <RNText style={styles.playerPhone}>
-              {group.membersCount > 0 ? `${group.membersCount} members` : 'No members'}
+              {group.membersCount > 0
+                ? `${group.membersCount} members`
+                : 'No members'}
             </RNText>
           </View>
 
@@ -468,7 +483,11 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
             {/* Select all / Deselect all button */}
             <TouchableOpacity
               onPress={() => handleToggleSelectAllForGroup(group)}
-              style={{ marginRight: 8, paddingHorizontal: 8, paddingVertical: 6 }}
+              style={{
+                marginRight: 8,
+                paddingHorizontal: 8,
+                paddingVertical: 6,
+              }}
             >
               <RNText style={{ fontSize: 13 }}>
                 {groupAllSelected ? 'Deselect all' : 'Select all'}
@@ -477,7 +496,11 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
 
             {/* Collapse/expand indicator */}
             <MaterialIcons
-              name={isGroupExpanded(group) ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+              name={
+                isGroupExpanded(group)
+                  ? 'keyboard-arrow-up'
+                  : 'keyboard-arrow-down'
+              }
               size={24}
               color='#333'
             />
@@ -490,9 +513,11 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
             {(group.members || [])
               .filter((m) => {
                 // exclude current user defensively from listing
-                const nameMatches = normalizeName(m.name || '') === currentUserName;
+                const nameMatches =
+                  normalizeName(m.name || '') === currentUserName;
                 const phoneMatches =
-                  normalizePhoneNumber(m.phoneNumber || '') === currentUserPhone;
+                  normalizePhoneNumber(m.phoneNumber || '') ===
+                  currentUserPhone;
                 return !(nameMatches || phoneMatches);
               })
               .map((member, mi) => {
@@ -516,7 +541,9 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
                       </RNText>
                     </View>
                     <Checkbox
-                      status={isPlayerSelected(contact) ? 'checked' : 'unchecked'}
+                      status={
+                        isPlayerSelected(contact) ? 'checked' : 'unchecked'
+                      }
                       onPress={() => handleToggleMemberInGroup(member)}
                       color='#2C7E88'
                     />
@@ -559,6 +586,14 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
             value={searchQuery}
             style={styles.searchBar}
             inputStyle={styles.searchInput}
+            placeholderTextColor='#9F9F9F'
+            theme={{
+              colors: {
+                primary: '#2C7E88',
+                text: '#000',
+                placeholder: '#9F9F9F',
+              },
+            }}
           />
         </View>
 
@@ -720,6 +755,7 @@ const PreferredPlayersModal: React.FC<PreferredPlayersModalProps> = ({
                 style={styles.groupButton}
                 labelStyle={styles.groupButtonLabel}
                 contentStyle={styles.groupButtonContent}
+                textColor='#fff'
               >
                 Create New Group
               </Button>
@@ -768,6 +804,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     fontSize: 16,
+    color: '#000',
   },
   scrollView: {
     flex: 1,
