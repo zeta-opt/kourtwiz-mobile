@@ -166,27 +166,28 @@ export default function SetAvailabilityForm({
     setEndDate(updated);
     hideEndDatePicker();
   };
+  const normalizeAllDayDates = (date: Date) => {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+};
+
  const handleUpdate = async () => {
   let start = startDate;
   let end = endDate;
-
   if (!start || !end) {
-    Alert.alert('Error', 'Please select start and end time');
-    return;
-  }
+      Alert.alert('Error', 'Please select start and end time');
+      return;
+    }
 
-  if (allDay) {
-    start = new Date(start);
-    start.setHours(0, 0, 0, 0);
-
-    end = new Date(start);
-    end.setHours(23, 59, 59, 999);
-  }
-
-  let repeatEnd = repeatEndDate;
-  if (allDay && repeatEndDate) {
-    repeatEnd = new Date(repeatEndDate);
-    repeatEnd.setHours(23, 59, 59, 999);
+  if (allDay && startDate) {
+    const { start: normalizedStart, end: normalizedEnd } = normalizeAllDayDates(startDate);
+    start = normalizedStart;
+    end = normalizedEnd;
   }
 
   const payload = {
@@ -195,7 +196,7 @@ export default function SetAvailabilityForm({
     reason,
     startTime: formatDateToLocalISOString(start),
     endTime: formatDateToLocalISOString(end),
-    repeatEndDate: repeatEnd ? formatDateToLocalISOString(repeatEnd) : undefined,
+    repeatEndDate: repeatEndDate ? formatDateToLocalISOString(repeatEndDate) : undefined,
   };
 
   console.log('Update payload:', payload);
@@ -248,24 +249,21 @@ export default function SetAvailabilityForm({
     let end = endDate;
 
     if (allDay && startDate) {
-
-      start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-
-      end = new Date(startDate);
-      end.setHours(23, 59, 59, 999);
+      const { start: normalizedStart, end: normalizedEnd } = normalizeAllDayDates(startDate);
+      start = normalizedStart;
+      end = normalizedEnd; // end = same day, just 23:59
     }
+
     const payload: UnavailabilityData = {
       reason,
       startTime: formatDateToLocalISOString(start),
       endTime: formatDateToLocalISOString(end),
       eventRepeatType: 'NONE',
-      repeatEndDate: formatDateToLocalISOString(endDate),
+      repeatEndDate: repeatEndDate ? formatDateToLocalISOString(repeatEndDate) : undefined,
       repeatInterval: 0,
       repeatOnDays: [],
       repeatOnDates: [],
     };
-
     // Handle repeat logic
     if (repeat && repeat.toUpperCase() !== 'NONE') {
       let eventRepeatType: UnavailabilityData['eventRepeatType'] = 'NONE';

@@ -1,13 +1,24 @@
 import React, { useState, useMemo } from "react";
-import { View, Alert,  StyleSheet, TouchableOpacity,SafeAreaView, Text, Modal } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  Text,
+  Modal,
+} from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
 import { Calendar as BigCalendar } from "react-native-big-calendar";
-import { parseISO, formatISO, isWithinInterval, isSameDay, format } from "date-fns";
+import { parseISO, isWithinInterval, isSameDay, format } from "date-fns";
 
 import UserAvatar from "@/assets/UserAvatar";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+
 import SetAvailabilityForm from "./SetAvailabilityForm";
+import { useGetPlayerSchedule } from "@/hooks/apis/set-availability/useGetPlayerSchedule";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { router } from "expo-router";
 
 type ScheduleEvent = {
   sessionId: string;
@@ -18,30 +29,77 @@ type ScheduleEvent = {
 };
 
 type Props = {
-  schedule: ScheduleEvent[];
   refetch: () => Promise<void>;
 };
-export default function AvailabilityCalendar({ schedule, refetch }: Props) {
+
+export default function AvailabilityCalendar({ refetch }: Props) {
+  const user = useSelector((state: RootState) => state.auth.user);
+  const userId = user?.userId;
+
+  const { data: scheduleData } = useGetPlayerSchedule(userId);
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showForm, setShowForm] = useState(false);
-const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
+  const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
 
+  // Helpers
+  const formatDateToLocalISOString = (date: Date) => {
+    const pad = (num: number) => String(num).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+      date.getDate()
+    )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+      date.getSeconds()
+    )}.000`;
+  };
 
-  // Sanitize schedule data
+  const parseDateArray = (arr: number[] | string) => {
+    if (!Array.isArray(arr)) return new Date(arr);
+    const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] = arr;
+    return new Date(
+      year,
+      month - 1,
+      day,
+      hour,
+      minute,
+      second,
+      Math.floor(nano / 1e6)
+    );
+  };
+
+  // Parse scheduleData safely
+  const parsedData = useMemo(() => {
+    if (!scheduleData) return null;
+    if (typeof scheduleData === "string") {
+      try {
+        return JSON.parse(decodeURIComponent(scheduleData));
+      } catch (err) {
+        console.error("Failed to parse scheduleData:", err, scheduleData);
+        return null;
+      }
+    }
+    return scheduleData;
+  }, [scheduleData]);
+
+  const parsedSchedule: ScheduleEvent[] =
+    parsedData?.unavailableEntries?.map((entry: any) => ({
+      sessionId: entry.sessionId,
+      title: entry.title,
+      reason: entry.reason,
+      startTime: formatDateToLocalISOString(parseDateArray(entry.startTime)),
+      endTime: formatDateToLocalISOString(parseDateArray(entry.endTime)),
+    })) ?? [];
+    console.log(parsedSchedule)
+  // Sanitize
   const sanitizedSchedule: ScheduleEvent[] = useMemo(() => {
-    return (schedule ?? []).map((e) => {
-      let start: Date;
-      let end: Date;
-
-      if (typeof e.startTime === "string") start = parseISO(e.startTime);
-      else if (typeof e.startTime === "number")
-        start = new Date(e.startTime, 0, 1, 9, 0);
-      else start = new Date();
-
-      if (typeof e.endTime === "string") end = parseISO(e.endTime);
-      else if (typeof e.endTime === "number")
-        end = new Date(e.endTime, 0, 1, 17, 0);
-      else end = new Date(start.getTime() + 60 * 60 * 1000);
+    return parsedSchedule.map((e) => {
+      const start =
+        typeof e.startTime === "string"
+          ? parseISO(e.startTime)
+          : new Date(e.startTime);
+      const end =
+        typeof e.endTime === "string"
+          ? parseISO(e.endTime)
+          : new Date(e.endTime);
 
       return {
         ...e,
@@ -50,9 +108,9 @@ const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
         title: e.title || "Unavailable",
       };
     });
-  }, [schedule]);
+  }, [parsedSchedule]);
 
-  // Filter events for selected day
+  // Filter by selected date
   const filteredEvents = useMemo(() => {
     return sanitizedSchedule.filter((e) => {
       const start = parseISO(e.startTime);
@@ -64,37 +122,26 @@ const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
     });
   }, [sanitizedSchedule, selectedDate]);
 
-  const events = useMemo(
-    () =>
-      filteredEvents.map((e) => ({
-        title: e.reason,
-        start: parseISO(e.startTime),
-        end: parseISO(e.endTime),
-        color: "#FF6B6B",
-        sessionId: e.sessionId,
-        reason: e.reason,
-      })),
-    [filteredEvents]
-  );
+  const events = filteredEvents.map((e) => ({
+    title: e.reason,
+    start: parseISO(e.startTime),
+    end: parseISO(e.endTime),
+    color: "#FF6B6B",
+    sessionId: e.sessionId,
+    reason: e.reason,
+  }));
 
-  const handlePressEvent = (event: any) => {
-    Alert.alert(
-      "Unavailable",
-      `Reason: ${event.reason}\nFrom: ${event.start.toLocaleString()}\nTo: ${event.end.toLocaleString()}`
-    );
-  };
+  const markedDates = useMemo(() => {
+    const marks: Record<string, any> = {};
+    sanitizedSchedule.forEach((e) => {
+      const dateStr = format(parseISO(e.startTime), "yyyy-MM-dd");
+      marks[dateStr] = { marked: true, dotColor: "#FF6B6B" };
+    });
+    return marks;
+  }, [sanitizedSchedule]);
 
-  // Highlight dates with events
- const markedDates = useMemo(() => {
-  const marks: Record<string, any> = {};
-  sanitizedSchedule.forEach((e) => {
-    const dateStr = format(parseISO(e.startTime), "yyyy-MM-dd"); // local date
-    marks[dateStr] = { marked: true, dotColor: "#FF6B6B" };
-  });
-  return marks;
-}, [sanitizedSchedule]);
   return (
-     <SafeAreaView>
+    <SafeAreaView>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -113,65 +160,66 @@ const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
 
       {/* Month Calendar Picker */}
       <Calendar
-        onDayPress={(day: DateData) => setSelectedDate(new Date(day.dateString))}
+        onDayPress={(day: DateData) =>
+          setSelectedDate(new Date(day.dateString))
+        }
         markedDates={markedDates}
         enableSwipeMonths={true}
       />
 
       {/* Day View Calendar */}
       <BigCalendar
-  events={events}
-  height={600}
-  mode="day"
-  date={selectedDate}
-  onPressEvent={(event) => {
-    setEditingEvent({
-      sessionId: event.sessionId,
-      title: event.title || 'Unavailable',
-      reason: event.reason,
-      startTime: event.start.toISOString(),
-      endTime: event.end.toISOString(),
-    });
-    setShowForm(true);
-  }}
-  onPressCell={(date) => {
-    // empty slot
-    setEditingEvent({
-      sessionId: '',
-      title: '',
-      reason: '',
-      startTime: date.toISOString(),
-      endTime: date.toISOString(),
-    });
-    setShowForm(true);
-  }}
-/>
-<Modal visible={showForm} animationType="slide">
-<SetAvailabilityForm
-  event={editingEvent}
-  onClose={() => setShowForm(false)}
-   onSave={async () => {
-            setShowForm(false);
-            await refetch(); // 👈 refresh after save
-          }}
-/>
-</Modal>
+        events={events}
+        height={600}
+        mode="day"
+        date={selectedDate}
+        onPressEvent={(event) => {
+          setEditingEvent({
+            sessionId: event.sessionId,
+            title: event.title || "Unavailable",
+            reason: event.reason,
+            startTime: event.start.toISOString(),
+            endTime: event.end.toISOString(),
+          });
+          setShowForm(true);
+        }}
+        onPressCell={(date) => {
+          setEditingEvent({
+            sessionId: "",
+            title: "",
+            reason: "",
+            startTime: date.toISOString(),
+            endTime: date.toISOString(),
+          });
+          setShowForm(true);
+        }}
+      />
 
+      <Modal visible={showForm} animationType="slide">
+        <SetAvailabilityForm
+          event={editingEvent}
+          onClose={() => setShowForm(false)}
+          onSave={async () => {
+            setShowForm(false);
+            await refetch();
+          }}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-   container: {
+  container: {
     flex: 1,
-    backgroundColor: '#EAF6F5',
+    backgroundColor: "#EAF6F5",
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 15,
     paddingVertical: 15,
-    alignItems: 'center',
-    backgroundColor: '#2F7C83',
+    alignItems: "center",
+    backgroundColor: "#2F7C83",
   },
   backButton: {
     paddingRight: 10,
@@ -181,9 +229,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
 });
