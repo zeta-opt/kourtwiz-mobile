@@ -8,12 +8,13 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { router } from 'expo-router';
-import { useGetAllComments, Comment } from '@/hooks/apis/player-finder/useGetAllComments';
 import * as Location from 'expo-location';
+import { useGetAllComments, Comment } from '@/hooks/apis/player-finder/useGetAllComments';
+import UserAvatar from '@/assets/UserAvatar';
+import { Ionicons } from '@expo/vector-icons';
 
 const convertDateArrayToDate = (arr: number[]) => {
   if (!Array.isArray(arr) || arr.length < 3) return new Date(NaN);
@@ -21,7 +22,7 @@ const convertDateArrayToDate = (arr: number[]) => {
   return new Date(year, month - 1, day, hour, minute, second);
 };
 
-const formatTime = (timestamp: number[] | string | null | undefined) => {
+export const formatTime = (timestamp: number[] | string | null | undefined) => {
   if (!timestamp) return '--:--';
 
   let date: Date;
@@ -145,7 +146,7 @@ export default function NewMessages() {
         break;
 
       case 'Individual Message':
-        if (!msg.requestId || !msg.userId || !msg.userName) {
+        if (!msg.requestId || !msg.receiverId || !msg.userName) {
           alert('Chat not available for this message.');
           return;
         }
@@ -171,32 +172,26 @@ export default function NewMessages() {
   const renderMessageRow = (msg: Comment, isModal = false) => (
     <View
       key={msg.id}
-      style={isModal ? styles.modalMessageBlock : styles.messageBlock}
+      style={styles.messageBlock}
     >
       <View style={styles.userRow}>
-        <MaterialIcons name="person" size={16} color="#444" />
-        <View style={styles.modalMessageRow}>
-          <Text style={styles.username}>{msg.userName}</Text>
+        <UserAvatar size={32} />
+        <View style={styles.timeMessageContainer}>
           <Text style={styles.timeText}>{formatTime(msg.timestamp)}</Text>
-        </View>
-      </View>
-
-      <View style={styles.modalMessageRow}>
-        <TouchableOpacity
-          style={{ flex: 1 }}
-          onPress={() => {
-            if (isModal) setModalVisible(false);
-            handleMessagePress(msg);
-          }}
-        >
-          <Text
-            style={isModal ? styles.modalMessageText : styles.messageText}
-            numberOfLines={1}
+          <TouchableOpacity
+            onPress={() => {
+              if (isModal) setModalVisible(false);
+              handleMessagePress(msg);
+            }}
           >
-            {msg.commentText}
-          </Text>
-        </TouchableOpacity>
-
+            <Text
+              style={styles.messageText}
+              numberOfLines={1}
+            >
+              {msg.commentText}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
           style={styles.joinButton}
           onPress={() => {
@@ -207,7 +202,6 @@ export default function NewMessages() {
           <Text style={styles.joinButtonText}>Reply</Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.separator}></View>
     </View>
   );
 
@@ -215,7 +209,10 @@ export default function NewMessages() {
     <>
       <View style={styles.container}>
         <View style={styles.headerRow}>
-          <Text style={styles.heading}>New Messages</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.heading}>All New Messages</Text>
+            <Ionicons name="information-circle-outline" size={20} color="#257073" style={{ marginLeft: 6 }} />
+          </View>
           {sortedMessages.length > 2 && (
             <TouchableOpacity onPress={() => setModalVisible(true)}>
               <Text style={styles.viewAllText}>View All</Text>
@@ -236,8 +233,11 @@ export default function NewMessages() {
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>All New Messages</Text>
+            <View style={styles.headerRow}>
+              <View style={styles.titleRow}>
+                <Text style={styles.heading}>All New Messages</Text>
+                <Ionicons name="information-circle-outline" size={20} color="#257073" style={{ marginLeft: 6 }} />
+              </View>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Text style={styles.closeButton}>×</Text>
               </TouchableOpacity>
@@ -290,19 +290,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 8,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   messageBlock: {
-    marginBottom: 12,
+    marginVertical: 12,
   },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     marginBottom: 4,
-  },
-  username: {
-    fontSize: 14,
-    color: '#333',
-    marginLeft: 6,
-    fontWeight: '500',
   },
   messageRow: {
     flexDirection: 'row',
@@ -311,22 +310,27 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   messageText: {
+    fontSize: 13,
+    color: '#333',
+    lineHeight: 16,
+  },
+  timeMessageContainer: {
+    flexDirection: 'column',
+    marginLeft: 10,
     flex: 1,
-    fontSize: 14,
-    color: '#444',
   },
   timeText: {
-    marginLeft: 10,
     fontSize: 12,
-    color: '#999',
+    color: '#555',
+    lineHeight: 18,
   },
-   joinButton: {
-    alignSelf: 'flex-end',
+  joinButton: {
+    marginLeft: 12,
     backgroundColor: 'transparent',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
-    borderWidth:1,
+    borderWidth: 1,
     borderColor: '#257073',
   },
   joinButtonText: { 
@@ -347,49 +351,17 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 30,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomColor: '#ddd',
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
   closeButton: {
-    fontSize: 26,
+    fontSize: 25,
     fontWeight: '600',
     color: '#666',
+    marginRight: 8,
   },
   modalScroll: {
     marginTop: 12,
   },
-  modalMessageBlock: {
-    marginBottom: 12,
-  },
-  modalMessageRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 6,
-  },
   separator: {
     height: 1,
     backgroundColor: '#ddd',
-  },
-  modalMessageText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#444',
-  },
-  modalTimeText: {
-    marginLeft: 10,
-    fontSize: 12,
-    color: '#999',
   },
 });

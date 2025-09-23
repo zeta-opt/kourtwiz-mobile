@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#E8F6F8' },
   commentSection: { flex: 1, backgroundColor: '#E8F6F8' },
   header: {
-    backgroundColor: '#007A7A',
+    backgroundColor: '#2C7E88',
     paddingTop: Platform.OS === 'ios' ? 48 : 36,
     paddingBottom: 16,
     paddingHorizontal: 16,

@@ -5,10 +5,15 @@ import { useState, useEffect } from 'react';
 
 type Comment = {
   id: string;
+  requestId: string;
   userId: string;
   userName: string;
+  receiverUserId: string;
   commentText: string;
-  imageUrl?: string;
+  image?: string;
+  timestamp?: string;
+  edited?: boolean;
+  editedAt?: string;
 };
 
 type UseGetCommentsReturn = {

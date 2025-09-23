@@ -15,9 +15,46 @@ import {
 import { useGetComments } from '@/hooks/apis/player-finder/useGetPlayerFinderComments';
 import { useUpdateComment } from '@/hooks/apis/player-finder/useUpdatePlayerFinderComment';
 import { useDeleteComment } from '@/hooks/apis/player-finder/useDeletePlayerFinderComment';
+import { formatTime } from '@/components/home-page/NewMessages';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { IconButton } from 'react-native-paper';
+
+const parseCommentTimestamp = (ts: number[] | string | null | undefined): Date => {
+  if (!ts) return new Date(NaN);
+  if (Array.isArray(ts)) {
+    const [year, month, day, hour = 0, minute = 0, second = 0] = ts;
+    return new Date(year, month - 1, day, hour, minute, second);
+  }
+  if (typeof ts === 'string') return new Date(ts);
+  return new Date(NaN);
+};
+
+const formatMessageDate = (date: Date): string => {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  const isSameDay = (d1: Date, d2: Date) =>
+    d1.getDate() === d2.getDate() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getFullYear() === d2.getFullYear();
+
+  if (isSameDay(date, today)) {
+    return "Today";
+  } else if (isSameDay(date, yesterday)) {
+    return "Yesterday";
+  }
+
+  // within last 7 days → show weekday
+  const diffInDays = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffInDays < 7) {
+    return date.toLocaleDateString([], { weekday: "long" }); // e.g. Saturday
+  }
+
+  // else → show full date
+  return date.toLocaleDateString([], { day: "2-digit", month: "long", year: "numeric" });
+};
 
 type Props = {
   requestId: string;
@@ -80,106 +117,120 @@ export const GetCommentPlayerFinder: React.FC<Props> = ({
       }}
     >
       <View style={{ flex: 1 }}>
-        {data.map((comment) => {
+        {data.map((comment, index) => {
           const isOwnMessage = comment.userId === user?.userId;
           const hasText = !!comment.commentText?.trim();
           const hasImage = !!comment.image;
           const imageUri = hasImage ? `data:image/jpeg;base64,${comment.image}` : null;
+          
+          const currentDate = parseCommentTimestamp(comment.timestamp);
+          const prevComment = index > 0 ? data[index - 1] : null;
+          const prevDate = prevComment ? parseCommentTimestamp(prevComment.timestamp) : null;
+          const showDateHeader =
+            !prevDate || currentDate.toDateString() !== prevDate.toDateString();
 
           if (!hasText && !hasImage) return null;
 
           return (
-            <View
-              key={comment.id}
-              style={[
-                styles.commentWrapper,
-                isOwnMessage ? styles.alignRight : styles.alignLeft,
-              ]}
-            >
+            <View key={comment.id}>
+              {showDateHeader && (
+                <View style={styles.dateHeader}>
+                  <Text style={styles.dateHeaderText}>{formatMessageDate(currentDate)}</Text>
+                </View>
+              )}
               <View
+                key={comment.id}
                 style={[
-                  styles.commentBubble,
-                  isOwnMessage ? styles.ownBubble : styles.otherBubble,
+                  styles.commentWrapper,
+                  isOwnMessage ? styles.alignRight : styles.alignLeft,
                 ]}
               >
-                <View style={styles.headerRow}>
-                  <Text style={styles.userName}>{comment.userName}</Text>
+                <View
+                  style={[
+                    styles.commentBubble,
+                    isOwnMessage ? styles.ownBubble : styles.otherBubble,
+                  ]}
+                >
+                  <View style={styles.headerRow}>
+                    <Text style={styles.userName}>{comment.userName}</Text>
 
-                  {isOwnMessage && (
-                    <View style={styles.menuContainer}>
-                      <IconButton
-                        icon="dots-vertical"
-                        size={18}
-                        onPress={() =>
-                          setMenuVisibleId(menuVisibleId === comment.id ? null : comment.id)
-                        }
+                    {isOwnMessage && (
+                      <View style={styles.menuContainer}>
+                        <IconButton
+                          icon="dots-vertical"
+                          size={18}
+                          onPress={() =>
+                            setMenuVisibleId(menuVisibleId === comment.id ? null : comment.id)
+                          }
+                        />
+
+                        {menuVisibleId === comment.id && (
+                          <TouchableWithoutFeedback onPress={() => {}}>
+                            <View style={styles.popupMenu}>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setEditingCommentId(comment.id);
+                                  setNewText(comment.commentText);
+                                  setMenuVisibleId(null);
+                                }}
+                              >
+                                <Text style={styles.popupItem}>✏ Edit</Text>
+                              </TouchableOpacity>
+
+                              <View style={styles.separator} />
+
+                              <TouchableOpacity
+                                onPress={() => {
+                                  handleDelete(comment.id);
+                                  setMenuVisibleId(null);
+                                }}
+                              >
+                                <Text style={[styles.popupItem, { color: 'red' }]}>🗑 Delete</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </TouchableWithoutFeedback>
+                        )}
+                      </View>
+                    )}
+                  </View>
+
+                  {editingCommentId === comment.id ? (
+                    <>
+                      <TextInput
+                        value={newText}
+                        onChangeText={setNewText}
+                        placeholder="Edit your comment"
+                        style={styles.input}
+                        multiline
                       />
-
-                      {menuVisibleId === comment.id && (
-                        <TouchableWithoutFeedback onPress={() => {}}>
-                          <View style={styles.popupMenu}>
-                            <TouchableOpacity
-                              onPress={() => {
-                                setEditingCommentId(comment.id);
-                                setNewText(comment.commentText);
-                                setMenuVisibleId(null);
-                              }}
-                            >
-                              <Text style={styles.popupItem}>✏ Edit</Text>
-                            </TouchableOpacity>
-
-                            <View style={styles.separator} />
-
-                            <TouchableOpacity
-                              onPress={() => {
-                                handleDelete(comment.id);
-                                setMenuVisibleId(null);
-                              }}
-                            >
-                              <Text style={[styles.popupItem, { color: 'red' }]}>🗑 Delete</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </TouchableWithoutFeedback>
+                      <View style={styles.buttonRow}>
+                        <TouchableOpacity
+                          style={[styles.actionBtn, styles.updateBtn]}
+                          onPress={() => handleUpdate(comment.id)}
+                          disabled={updateStatus === 'loading'}
+                        >
+                          <Text style={styles.actionText}>Update</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.actionBtn, styles.cancelBtn]}
+                          onPress={() => setEditingCommentId(null)}
+                        >
+                          <Text style={styles.actionText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      {hasText && <Text style={styles.commentText}>{comment.commentText}</Text>}
+                      {imageUri && (
+                        <Pressable onPress={() => openModal(imageUri)}>
+                          <Image source={{ uri: imageUri }} style={styles.commentImage} />
+                        </Pressable>
                       )}
-                    </View>
+                      <Text style={styles.timeText}>{formatTime(comment.timestamp)}</Text>
+                    </>
                   )}
                 </View>
-
-                {editingCommentId === comment.id ? (
-                  <>
-                    <TextInput
-                      value={newText}
-                      onChangeText={setNewText}
-                      placeholder="Edit your comment"
-                      style={styles.input}
-                      multiline
-                    />
-                    <View style={styles.buttonRow}>
-                      <TouchableOpacity
-                        style={[styles.actionBtn, styles.updateBtn]}
-                        onPress={() => handleUpdate(comment.id)}
-                        disabled={updateStatus === 'loading'}
-                      >
-                        <Text style={styles.actionText}>Update</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.actionBtn, styles.cancelBtn]}
-                        onPress={() => setEditingCommentId(null)}
-                      >
-                        <Text style={styles.actionText}>Cancel</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    {hasText && <Text style={styles.commentText}>{comment.commentText}</Text>}
-                    {imageUri && (
-                      <Pressable onPress={() => openModal(imageUri)}>
-                        <Image source={{ uri: imageUri }} style={styles.commentImage} />
-                      </Pressable>
-                    )}
-                  </>
-                )}
               </View>
             </View>
           );
@@ -223,12 +274,31 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
+  timeText: {
+    fontSize: 12,
+    color: '#707388',
+    alignSelf: 'flex-end',
+    marginTop: 2,
+  },
+  dateHeader: {
+    alignSelf: "center",
+    backgroundColor: "#999",
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginVertical: 10,
+  },
+  dateHeaderText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
   ownBubble: {
-    backgroundColor: '#d1e7dd',
+    backgroundColor: '#DAF1F3',
     borderTopRightRadius: 0,
   },
   otherBubble: {
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#F1F2F6',
     borderTopLeftRadius: 0,
   },
   headerRow: {
@@ -238,13 +308,12 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   userName: {
-    fontWeight: '600',
     fontSize: 12,
     color: '#444',
   },
   commentText: {
     fontSize: 14,
-    color: '#333',
+    color: '#333333',
     marginTop: 2,
   },
   commentImage: {
@@ -275,7 +344,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   menuContainer: {
-    position: 'relative', // ✅ fix to keep popup on the message
+    position: 'relative',
   },
   popupMenu: {
     position: 'absolute',
