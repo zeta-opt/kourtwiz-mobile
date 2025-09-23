@@ -130,6 +130,7 @@ const AddPlace = () => {
               params: {
                 newPlace: JSON.stringify(placeData.allCourts),
                 placeName: placeData.allCourts.Name,
+                redirectHome: 'true',
               },
             });
           } else {

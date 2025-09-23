@@ -1,24 +1,26 @@
+import UserAvatar from '@/assets/UserAvatar';
+import PreferredPlayersModal, {
+  Contact,
+} from '@/components/preferred-players-modal/PreferredPlayersModal';
+import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
+import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
+  ActivityIndicator,
   Alert,
-  SafeAreaView,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Searchbar } from 'react-native-paper';
 import { useSelector } from 'react-redux';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import UserAvatar from '@/assets/UserAvatar';
-import { useGetUserDetails } from '@/hooks/apis/player-finder/useGetUserDetails';
-import { useUpdateUserById } from '@/hooks/apis/user/useUpdateUserById';
-import PreferredPlayersModal, { Contact } from '@/components/preferred-players-modal/PreferredPlayersModal';
 
 const PreferredPlayersScreen = () => {
   const router = useRouter();
@@ -33,7 +35,9 @@ const PreferredPlayersScreen = () => {
   const [preferredPlayers, setPreferredPlayers] = useState<Contact[]>([]);
   const [showRegisteredModal, setShowRegisteredModal] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [filteredPreferredPlayers, setFilteredPreferredPlayers] = useState<Contact[]>([]);
+  const [filteredPreferredPlayers, setFilteredPreferredPlayers] = useState<
+    Contact[]
+  >([]);
   const { updateUserById } = useUpdateUserById();
 
   // --- Normalize contact ---
@@ -66,7 +70,9 @@ const PreferredPlayersScreen = () => {
   const toggleSelect = (item: Contact) => {
     if (isSelected(item.contactPhoneNumber)) {
       setUniquePreferredPlayers(
-        preferredPlayers.filter((p) => p.contactPhoneNumber !== item.contactPhoneNumber)
+        preferredPlayers.filter(
+          (p) => p.contactPhoneNumber !== item.contactPhoneNumber
+        )
       );
     } else {
       setUniquePreferredPlayers([...preferredPlayers, item]);
@@ -83,7 +89,7 @@ const PreferredPlayersScreen = () => {
           uniqueMap.set(normalized.contactPhoneNumber, normalized);
         }
       });
-  
+
       const uniquePreferredPlayers = Array.from(uniqueMap.values());
       const payload = {
         playerDetails: {
@@ -93,9 +99,9 @@ const PreferredPlayersScreen = () => {
           })),
         },
       };
-  
+
       await updateUserById(userId, payload);
-  
+
       setPreferredPlayers(uniquePreferredPlayers);
       setShowRegisteredModal(false);
       router.replace('/profile');
@@ -125,7 +131,7 @@ const PreferredPlayersScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior="padding"
+        behavior='padding'
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
@@ -135,7 +141,7 @@ const PreferredPlayersScreen = () => {
             onPress={() => router.replace('/profile')}
             style={styles.backButton}
           >
-            <Ionicons name="chevron-back" size={24} color="#000" />
+            <Ionicons name='chevron-back' size={24} color='#000' />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Preferred Players</Text>
           <UserAvatar size={32} onPress={() => console.log('Clicked Avatar')} />
@@ -144,21 +150,30 @@ const PreferredPlayersScreen = () => {
         {/* SEARCH */}
         <View style={styles.searchContainer}>
           <Searchbar
-            placeholder="Search"
+            placeholder='Search'
             onChangeText={setSearchText}
             value={searchText}
             style={styles.searchBar}
             inputStyle={styles.searchInput}
-            iconColor="#666"
-            placeholderTextColor="#999"
+            iconColor='#666'
+            placeholderTextColor='#9F9F9F'
+            theme={{
+              colors: {
+                primary: '#2C7E88',
+                text: '#000',
+                placeholder: '#9F9F9F',
+              },
+            }}
           />
         </View>
 
         {/* Loader */}
         {isLoading && (
           <View style={{ padding: 10, alignItems: 'center' }}>
-            <ActivityIndicator size="small" color="#2CA6A4" />
-            <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>Loading preferred players...</Text>
+            <ActivityIndicator size='small' color='#2CA6A4' />
+            <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+              Loading preferred players...
+            </Text>
           </View>
         )}
 
@@ -167,7 +182,9 @@ const PreferredPlayersScreen = () => {
           <>
             {preferredPlayers.length === 0 ? (
               <View style={styles.emptyMessageWrapper}>
-                <Text style={styles.emptyMessage}>No preferred players added yet.</Text>
+                <Text style={styles.emptyMessage}>
+                  No preferred players added yet.
+                </Text>
               </View>
             ) : filteredPreferredPlayers.length === 0 ? (
               <View style={styles.emptyMessageWrapper}>
@@ -181,10 +198,12 @@ const PreferredPlayersScreen = () => {
                 <View style={styles.optionsContainer}>
                   <FlatList
                     data={[...filteredPreferredPlayers].sort((a, b) =>
-                      a.contactName.toLowerCase().localeCompare(b.contactName.toLowerCase())
+                      a.contactName
+                        .toLowerCase()
+                        .localeCompare(b.contactName.toLowerCase())
                     )}
                     keyExtractor={(item) => item.contactPhoneNumber}
-                    keyboardShouldPersistTaps="handled"
+                    keyboardShouldPersistTaps='handled'
                     renderItem={({ item }) => {
                       const checked = isSelected(item.contactPhoneNumber);
                       return (
@@ -193,17 +212,27 @@ const PreferredPlayersScreen = () => {
                           onPress={() => toggleSelect(item)}
                         >
                           <View style={styles.iconCircle}>
-                            <Ionicons name="person" size={16} color="#2CA6A4" />
+                            <Ionicons name='person' size={16} color='#2CA6A4' />
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.name}>{item.contactName}</Text>
-                            <Text style={styles.phoneText}>{item.contactPhoneNumber}</Text>
+                            <Text style={styles.phoneText}>
+                              {item.contactPhoneNumber}
+                            </Text>
                           </View>
                           <TouchableOpacity onPress={() => toggleSelect(item)}>
                             {checked ? (
-                              <Ionicons name="close-circle" size={22} color="#D4D4D4" />
+                              <Ionicons
+                                name='close-circle'
+                                size={22}
+                                color='#D4D4D4'
+                              />
                             ) : (
-                              <Ionicons name="ellipse-outline" size={22} color="#327D85" />
+                              <Ionicons
+                                name='ellipse-outline'
+                                size={22}
+                                color='#327D85'
+                              />
                             )}
                           </TouchableOpacity>
                         </TouchableOpacity>
@@ -224,7 +253,10 @@ const PreferredPlayersScreen = () => {
           >
             <Text style={styles.addButtonText}>Add Players</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.doneButton} onPress={handleSavePreferredPlayers}>
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={handleSavePreferredPlayers}
+          >
             <Text style={styles.doneButtonText}>Save</Text>
           </TouchableOpacity>
         </View>
@@ -246,15 +278,17 @@ const PreferredPlayersScreen = () => {
 export default PreferredPlayersScreen;
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, padding: 16, backgroundColor: '#fff'
-  },  
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#fff',
+  },
   header: {
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    marginTop: 12
+    marginTop: 12,
   },
   iconCircle: {
     width: 32,
@@ -273,7 +307,7 @@ const styles = StyleSheet.create({
   phoneText: {
     fontSize: 14,
     color: '#666',
-  },      
+  },
   backButton: {
     width: 32,
     justifyContent: 'center',
@@ -285,14 +319,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
-  emptyMessageWrapper: { 
-    paddingHorizontal: 16, 
-    paddingVertical: 20 
+  emptyMessageWrapper: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
-  emptyMessage: { 
-    fontSize: 15, 
-    color: '#666', 
-    textAlign: 'center' 
+  emptyMessage: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
   },
   item: {
     flexDirection: 'row',
@@ -302,15 +336,15 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     borderBottomWidth: 1,
     borderColor: '#ECECEC',
-  },  
-  buttonsContainer: { 
+  },
+  buttonsContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 12, 
-    paddingBottom: 4, 
-    paddingTop: 5, 
+    paddingHorizontal: 12,
+    paddingBottom: 4,
+    paddingTop: 5,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderColor: '#eee',
@@ -323,10 +357,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  addButtonText: {     
-    fontSize: 17, 
-    fontWeight: '600', 
-    color: '#327D85' 
+  addButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#327D85',
   },
   doneButton: {
     backgroundColor: '#327D85',
@@ -337,13 +371,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 5,
   },
-  doneButtonText: { 
-    fontSize: 17, 
-    fontWeight: '600', 
-    color: '#FFFFFF' 
+  doneButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
-  searchContainer: { 
-    paddingTop: 8, 
+  searchContainer: {
+    paddingTop: 8,
     paddingBottom: 16,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -353,9 +387,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     height: 45,
   },
-  searchInput: { 
+  searchInput: {
     fontSize: 15,
     marginTop: -5,
+    color: '#000',
   },
   sectionLabel: {
     paddingHorizontal: 12,

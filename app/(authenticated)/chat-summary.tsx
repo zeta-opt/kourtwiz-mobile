@@ -1,6 +1,6 @@
 import UserAvatar from '@/assets/UserAvatar';
-import { GetCommentPlayerFinder } from '@/components/find-players/comment-layout/GetCommentPlayerFinder';
-import { PostCommentPlayerFinder } from '@/components/find-players/comment-layout/PostCommentPlayerFinder';
+import { GetCommentPlayerFinder } from '@/components/find-player/comment-layout/GetCommentPlayerFinder';
+import { PostCommentPlayerFinder } from '@/components/find-player/comment-layout/PostCommentPlayerFinder';
 import { useGetGroupById } from '@/hooks/apis/groups/useGetGroupById';
 import { useGetPlaySessionById } from '@/hooks/apis/join-play/useGetPlaySessionById';
 import { useGetPlayerFinderRequest } from '@/hooks/apis/player-finder/useGetPlayerFinderRequest';
@@ -55,8 +55,12 @@ export default function ChatSummaryPage() {
     !isGroupChat && !isSessionChat ? reqId : undefined
   );
 
-  const { getGroup, status: groupStatus, error: groupError, data: groupData } =
-    useGetGroupById();
+  const {
+    getGroup,
+    status: groupStatus,
+    error: groupError,
+    data: groupData,
+  } = useGetGroupById();
 
   useEffect(() => {
     if (isGroupChat && grpId) {
@@ -114,7 +118,7 @@ export default function ChatSummaryPage() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2C7E88" />
+        <ActivityIndicator size='large' color='#2C7E88' />
       </View>
     );
   }
@@ -146,23 +150,24 @@ export default function ChatSummaryPage() {
             }
           }}
         >
-          <MaterialIcons name="arrow-back-ios" size={24} color="#fff" />
+          <MaterialIcons name='arrow-back-ios' size={24} color='#fff' />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>{title || 'Chat'}</Text>
 
-        <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+        <TouchableOpacity
+          onPress={() => router.push('/(authenticated)/profile')}
+        >
           <UserAvatar size={36} />
         </TouchableOpacity>
       </View>
 
       {/* Chat Content */}
       <View style={styles.commentSection}>
-
         <ScrollView
           style={styles.chatBox}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps='handled'
+          keyboardDismissMode='on-drag'
         >
           <GetCommentPlayerFinder
             requestId={commentId}
@@ -176,7 +181,9 @@ export default function ChatSummaryPage() {
             <PostCommentPlayerFinder
               requestId={commentId}
               userId={userId}
-              receiverUserId={isIndividualMessage === 'true' ? directUserId : null}
+              receiverUserId={
+                isIndividualMessage === 'true' ? directUserId : null
+              }
               onSuccess={() => refetchComments()}
             />
           </View>
