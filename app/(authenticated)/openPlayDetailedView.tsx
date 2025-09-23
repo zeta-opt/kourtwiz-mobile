@@ -4,6 +4,7 @@ import { useGetPlaySessionById } from '@/hooks/apis/join-play/useGetPlaySessionB
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
+import { useCancelOpenPlay } from '@/hooks/apis/join-play/useCancelOpenPlay';
 import { RootState } from '@/store';
 import {
   FontAwesome5,
@@ -14,6 +15,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -41,6 +43,7 @@ export default function OpenPlayDetailedView() {
   const { joinPlaySession } = useMutateJoinPlay();
   const { withdraw } = useWithdrawFromPlay();
   const { withdrawFromWaitlist } = useWithdrawFromWaitlist();
+    const { cancel } = useCancelOpenPlay();
 
   const [loading, setLoading] = useState(false);
 
@@ -140,6 +143,45 @@ export default function OpenPlayDetailedView() {
     }
   };
 
+
+const handleCancelSession = async () => {
+  if (!selectedPlay) return;
+  Alert.alert(
+    'Cancel Event',
+    'Are you sure you want to cancel this event? This cannot be undone.',
+    [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            await cancel({ sessionId });
+            Toast.show({
+              type: 'success',
+              text1: 'Event canceled successfully',
+              topOffset: 100,
+            });
+            // Optionally go back or refresh
+            router.replace('/(authenticated)/home');
+            
+          } catch (err) {
+            Toast.show({
+              type: 'error',
+              text1: 'Failed to cancel event',
+              // text2: err?.message || 'Unknown error',
+              topOffset: 100,
+            });
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ],
+  );
+};
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F9F9F9' }}>
       <ScrollView
@@ -211,13 +253,13 @@ export default function OpenPlayDetailedView() {
               </Text>
             </View>
           </View>
-
+          <View style={{ height: 1, backgroundColor: '#EEE', marginVertical: 8,marginHorizontal:-15 }} />
           <View style={styles.row}>
-            <View style={styles.columnWide}>
+            <View style={[styles.columnWide,{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }]}>
               <View style={styles.iconCircle}>
                 <FontAwesome5 name='map-marker-alt' size={16} color='#2CA6A4' />
               </View>
-              <Text style={styles.infoText}>Event Place: {courtName}</Text>
+              <Text style={styles.infoText3}>Event Place: {courtName}</Text>
             </View>
             <View style={styles.column}>
               <View style={styles.iconCircle}>
@@ -315,29 +357,46 @@ export default function OpenPlayDetailedView() {
 
       {/* Action Button */}
 
-      <TouchableOpacity
-        disabled={loading || isDisabled}
-        style={[
-          styles.actionButton,
-          isWaitlisted && styles.waitlistWithdrawButton,
-          isRegistered && styles.withdrawButton,
-          !isRegistered && isFull && !isWaitlisted && styles.joinWaitlistButton,
-          isDisabled && styles.disabledButton,
-        ]}
-        onPress={handleJoinPlay}
-      >
-        <Text style={styles.actionButtonText}>
-          {loading
-            ? 'Please wait...'
-            : isWaitlisted
-            ? 'Withdraw from Waitlist'
-            : isRegistered
-            ? 'Withdraw'
-            : isFull
-            ? 'Join Waitlist'
-            : 'Register'}
-        </Text>
-      </TouchableOpacity>
+      {selectedPlay.requestorId === userId ? (
+        <TouchableOpacity
+          disabled={loading || isDisabled}
+          style={[
+            styles.actionButton,
+            { backgroundColor: '#D32F2F', marginBottom: 10, borderRadius: 25 },
+            isDisabled && styles.disabledButton,
+          ]}
+          onPress={handleCancelSession}
+        >
+          <Text style={styles.actionButtonText}>
+            {loading ? 'Please wait...' : 'Cancel'}
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          disabled={loading || isDisabled}
+          style={[
+            styles.actionButton,
+            isWaitlisted && styles.waitlistWithdrawButton,
+            isRegistered && styles.withdrawButton,
+            !isRegistered && isFull && !isWaitlisted && styles.joinWaitlistButton,
+            isDisabled && styles.disabledButton,
+          ]}
+          onPress={handleJoinPlay}
+        >
+          <Text style={styles.actionButtonText}>
+            {loading
+              ? 'Please wait...'
+              : isWaitlisted
+              ? 'Withdraw from Waitlist'
+              : isRegistered
+              ? 'Withdraw'
+              : isFull
+              ? 'Join Waitlist'
+              : 'Register'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
       {selectedPlay.requestorId === userId && (
         <TouchableOpacity
           disabled={isDisabled}
@@ -439,10 +498,11 @@ const styles = StyleSheet.create({
   },
   infoText: { marginTop: 4, fontSize: 13, color: '#333' },
   infoText2: { marginTop: 4, fontSize: 11, color: '#333' },
+  infoText3: { marginTop: -2, fontSize: 13, color: '#333',marginLeft: 8 },
   actionButton: {
     paddingVertical: 14,
     paddingHorizontal: 32,
-    borderRadius: 10,
+    borderRadius: 25,
     backgroundColor: '#2F7C83',
     marginBottom: 10,
     width: '80%',

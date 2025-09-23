@@ -155,7 +155,7 @@ export default function SentRequestDetailedView() {
             </Text>
           </View>
         </View>
-
+        <View style={{ height: 1, backgroundColor: '#EEE', marginVertical: 8,marginHorizontal:-15 }} />
         {/* Location */}
         <View style={styles.locationRow}>
           <View style={styles.locationIconWrapper}>

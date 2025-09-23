@@ -186,6 +186,7 @@ export default function MyRequestsDetailedView() {
                 </Text>
               </View>
             </View>
+            <View style={{ height: 1, backgroundColor: '#EEE', marginVertical: 8,marginHorizontal:-15 }} />
             <View style={styles.locationRow}>
               <View style={styles.locationIconWrapper}>
                 <FontAwesome5 name='map-marker-alt' size={16} color='#2CA6A4' />
