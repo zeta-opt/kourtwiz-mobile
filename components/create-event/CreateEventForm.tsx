@@ -687,7 +687,7 @@ const CreateEventForm = () => {
                 size={24}
                 iconColor='white'
                 onPress={handleAddPlace}
-                style={styles.disabledPlus}
+                style={[styles.disabledPlus, { marginBottom: 10 }]}
               />
             </View>
             <PreferredPlacesModal
@@ -816,9 +816,9 @@ const CreateEventForm = () => {
                     maximumValue={5}
                     step={0.1}
                     value={skillLevel}
-                    minimumTrackTintColor='#007AFF'
+                    minimumTrackTintColor='#2C7E88'
                     maximumTrackTintColor='#E5E7EB'
-                    thumbTintColor='#007AFF'
+                    thumbTintColor='#2C7E88'
                     onValueChange={handleValueChange}
                   />
                 </View>
@@ -840,7 +840,7 @@ const CreateEventForm = () => {
               </View>
 
               <View style={styles.halfInput}>
-                <Text style={styles.sectionTitle}>Max Players</Text>
+                <Text style={styles.sectionTitle}>Players (Including self)</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -1100,7 +1100,7 @@ const styles = StyleSheet.create({
   },
   disabledPlus: {
     backgroundColor: '#2C7E88',
-    marginTop: 8,
+    marginTop: 0,
     borderRadius: 8,
     opacity: 1,
   },
@@ -1327,7 +1327,7 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 20,
-    backgroundColor: '#007bff',
+    backgroundColor: '#2C7E88',
     borderRadius: 25,
     paddingVertical: 12,
     alignItems: 'center',
