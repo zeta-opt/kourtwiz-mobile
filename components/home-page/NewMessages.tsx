@@ -274,8 +274,9 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#2F757F',
     fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   card: {
     backgroundColor: '#fef9f0',
