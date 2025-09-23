@@ -541,7 +541,8 @@ const Dashboard = () => {
                 </TouchableOpacity>
               ) : null}
             </View>
-            <View style={styles.horizontalLine} />
+            {/* <View style={styles.horizontalLine} /> */}
+            <View style={{ height: 1, backgroundColor: '#EEE', marginVertical: 4,marginHorizontal:-15 }} />
             <LinearGradient
               colors={['#ffffff', '#FFFFFF']}
               style={styles.inviteScrollContainer}
