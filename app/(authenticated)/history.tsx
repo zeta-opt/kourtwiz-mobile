@@ -597,6 +597,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
+    color: '#333',
   },
   cardInfo: {
     flexDirection: 'row',
@@ -634,6 +635,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15,
     marginBottom: 4,
+    color: '#333',
   },
   subText: {
     fontSize: 14,
