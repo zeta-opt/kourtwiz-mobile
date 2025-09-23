@@ -12,6 +12,7 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -194,39 +195,41 @@ export default function MyRequestsDetailedView() {
           </View>
 
           {/* Players Box (NEW) */}
-          <ScrollView
-            style={[styles.playersScroll, styles.playersBox]}
-            contentContainerStyle={{ paddingVertical: 2, paddingBottom: 16 }}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={styles.playersBoxTitle}>Players</Text>
-            <View style={styles.playerRow}>
-              <Text style={styles.playerName}>
-                {invite.inviteeName}(invitee)
-              </Text>
-              <Text style={[styles.status, styles.statusAccepted]}>
-                ACCEPTED
-              </Text>
-            </View>
-
-            {data.map((player, idx) => (
-              <View key={player.userId || idx} style={styles.playerRow}>
-                <Text style={styles.playerName}>{player.name}</Text>
-                <Text
-                  style={[
-                    styles.status,
-                    player.status === 'ACCEPTED'
-                      ? styles.statusAccepted
-                      : player.status === 'PENDING'
-                      ? styles.statusPending
-                      : styles.statusOther,
-                  ]}
-                >
-                  {player.status === 'CANCELLED' ? 'DECLINED' : player.status}
+          <View style={styles.playersBox}>
+            <ScrollView
+              style={styles.playersScroll}
+              contentContainerStyle={{ paddingVertical: 2, paddingBottom: 16 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.playersBoxTitle}>Players</Text>
+              <View style={styles.playerRow}>
+                <Text style={styles.playerName}>
+                  {invite.inviteeName}(invitee)
+                </Text>
+                <Text style={[styles.status, styles.statusAccepted]}>
+                  ACCEPTED
                 </Text>
               </View>
-            ))}
-          </ScrollView>
+
+              {data.map((player, idx) => (
+                <View key={player.userId || idx} style={styles.playerRow}>
+                  <Text style={styles.playerName}>{player.name}</Text>
+                  <Text
+                    style={[
+                      styles.status,
+                      player.status === 'ACCEPTED'
+                        ? styles.statusAccepted
+                        : player.status === 'PENDING'
+                        ? styles.statusPending
+                        : styles.statusOther,
+                    ]}
+                  >
+                    {player.status === 'CANCELLED' ? 'DECLINED' : player.status}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
 
           {/* Chat Preview */}
           <View style={styles.chatPreviewContainer}>
@@ -388,11 +391,18 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 16,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
+
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 3 },
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   row: {
     flexDirection: 'row',
@@ -450,12 +460,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 16,
     marginBottom: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 3 },
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
+
   playersBoxTitle: {
     fontWeight: '700',
     fontSize: 16,
@@ -492,11 +509,17 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginTop: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 3 },
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   chatPreviewText: {
     fontSize: 14,
