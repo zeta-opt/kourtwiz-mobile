@@ -2,7 +2,6 @@ import * as Contacts from 'expo-contacts';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Linking,
   Pressable,
@@ -47,6 +46,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   onSelectContacts,
   selectedContacts,
 }) => {
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deviceContacts, setDeviceContacts] = useState<DeviceContact[]>([]);
   const [tempSelectedContacts, setTempSelectedContacts] =
@@ -70,25 +70,23 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
   const loadContacts = async () => {
     setLoading(true);
     try {
-      // Double-check permission before loading
       const { status } = await Contacts.getPermissionsAsync();
+
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Contact permission is required to load your contacts.',
-          [{ text: 'OK', onPress: () => onClose() }]
-        );
+        setPermissionDenied(true);
+        setDeviceContacts([]); // clear contacts so screen doesn't try to render them
         return;
       }
+
+      setPermissionDenied(false);
 
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
         sort: Contacts.SortTypes.FirstName,
       });
 
-      // Transform expo contacts to our format
       const transformedContacts: DeviceContact[] = data
-        .filter((contact) => contact.name) // Only contacts with names
+        .filter((contact) => contact.name)
         .map((contact) => ({
           id: contact.id || `contact-${Math.random()}`,
           name: contact.name || 'Unknown',
@@ -96,22 +94,10 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
         }));
 
       setDeviceContacts(transformedContacts);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error loading contacts:', error);
-
-      // Check if it's a permission error
-      if (error.message && error.message.includes('permission')) {
-        Alert.alert(
-          'Permission Error',
-          'Unable to access contacts. Please ensure you have granted contact permissions in your device settings.',
-          [
-            { text: 'Cancel', onPress: () => onClose() },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() },
-          ]
-        );
-      } else {
-        Alert.alert('Error', 'Failed to load contacts. Please try again.');
-      }
+      setPermissionDenied(true);
+      setDeviceContacts([]);
     } finally {
       setLoading(false);
     }
@@ -199,6 +185,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
     </Pressable>
   );
 
+  console.log(permissionDenied, 'permissionDenied');
   const renderContact = ({ item }: { item: DeviceContact }) => {
     const isSelected = isContactSelected(item);
 
@@ -241,6 +228,31 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
         <View style={styles.centerContent}>
           <ActivityIndicator size='large' />
           <Text style={styles.loadingText}>Loading contacts...</Text>
+        </View>
+      );
+    }
+
+    if (permissionDenied) {
+      return (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#fff',
+          }}
+        >
+          <Text style={{ color: '#000', fontSize: 16 }}>
+            Contacts permission is required
+          </Text>
+          <Button
+            mode='contained'
+            onPress={() => Linking.openSettings()}
+            style={{ marginTop: 12, backgroundColor: '#2C7E88' }}
+            textColor='#fff'
+          >
+            Open Settings
+          </Button>
         </View>
       );
     }
