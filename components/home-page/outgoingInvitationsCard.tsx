@@ -294,10 +294,10 @@ export default OutgoingInviteCardItem;
 
 const styles = StyleSheet.create({
   card: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+     paddingVertical: 12,
+    // paddingHorizontal: 16,
     marginBottom: 2,
-    // borderBottomWidth: 1,
+     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   statusBadgeContainer: {

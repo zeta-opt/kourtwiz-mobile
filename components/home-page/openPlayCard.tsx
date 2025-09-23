@@ -550,10 +550,10 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    // marginBottom: 8,
-    //  borderBottomWidth: 1,
+     marginBottom: 18,
+      borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    padding: 6,
+     paddingBottom: 6,
   },
   placeText: {
     fontSize: 16,

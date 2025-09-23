@@ -492,7 +492,7 @@ const Dashboard = () => {
                     ? styles.chipActive
                     : styles.chipInactive,
                 ]}
-                onPress={() => setActiveTab('INCOMING')}
+                onPress={() => {setActiveTab('INCOMING');}}
               >
                 Incoming ({incomingCount.length})
               </Text>
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
  inviteWrapper: {
   // marginTop: 4,
   marginBottom: 24,
-  borderWidth: 0,
+  borderWidth: -2,
   // borderColor: '#ddd',
   borderRadius: 16,
   padding: 10,
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
   shadowRadius: 6,
   
   // Shadow for Android
-  elevation: 4,
+  elevation: 5,
 },
 
   viewAllText: {
