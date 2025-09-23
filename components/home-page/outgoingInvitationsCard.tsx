@@ -294,7 +294,7 @@ export default OutgoingInviteCardItem;
 
 const styles = StyleSheet.create({
   card: {
-     paddingVertical: 12,
+     paddingVertical: 6,
     // paddingHorizontal: 16,
     marginBottom: 2,
      borderBottomWidth: 1,
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   statusBadgeContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   statusBadge: {
     borderRadius: 4,
