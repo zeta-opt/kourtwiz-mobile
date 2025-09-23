@@ -12,7 +12,7 @@ import {
   openPreferredPlaceModal,
   openPreferredPlayersModal,
 } from '@/store/uiSlice';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { Picker } from '@react-native-picker/picker';
 import * as Contacts from 'expo-contacts';
@@ -122,6 +122,7 @@ const CreateEventForm = () => {
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const redirectHome = params.redirectHome === 'true';
 
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customRepeat, setCustomRepeat] = useState<
@@ -608,11 +609,18 @@ const CreateEventForm = () => {
         <View style={{ flex: 1 }}>
           <View style={styles.mainHeader}>
             <View style={styles.header}>
-              <TouchableOpacity
-                onPress={() => router.back()}
-                style={styles.backButton}
-              >
-                <Ionicons name='arrow-back' size={24} color='#cce5e3' />
+               <TouchableOpacity
+                          onPress={() => {
+                            resetForm();
+                            if (redirectHome) {
+                              router.replace('/home');
+                            } else {
+                              router.back();
+                            }
+                          }}
+                          style={styles.backButton}
+                        >
+              <MaterialIcons name='arrow-back-ios' size={24} color='#fff' />
               </TouchableOpacity>
               <View style={styles.headerTextContainer}>
                 <Text style={styles.MainTitle}>
@@ -628,8 +636,9 @@ const CreateEventForm = () => {
             </View>
           </View>
 
+        <View style={styles.formContainer}>
           <ScrollView contentContainerStyle={styles.card}>
-            <Text style={styles.label}>Event Name *</Text>
+            <Text style={styles.sectionTitle}>Event Name</Text>
             <EventNameSearch
               value={eventName}
               onChange={setEventName}
@@ -649,13 +658,13 @@ const CreateEventForm = () => {
               }}
             />
 
-            <Text style={styles.label}>Place *</Text>
+            <Text style={[styles.sectionTitle, { marginBottom: 0 }, {marginTop: 5}]}>Place</Text>
             <Text style={styles.buttonText}>{'Enter Place Name'}</Text>
 
             <View style={styles.inputRow}>
               <TouchableOpacity
                 onPress={() => setModalVisible(true)}
-                style={{ flex: 1 }}
+                style={[{ flex: 1 }, { marginBottom: 10 },{ marginTop: 0 }]}
               >
                 <TextInput
                   style={[
@@ -666,7 +675,7 @@ const CreateEventForm = () => {
                     },
                   ]}
                   placeholder='Enter Place Name'
-                  placeholderTextColor='#5f5959ff'
+                  placeholderTextColor='#9F9F9F'
                   value={displayPlaceName}
                   editable={false}
                   pointerEvents='none'
@@ -688,11 +697,11 @@ const CreateEventForm = () => {
             />
             {!isEditMode && (
               <>
-                <Text style={styles.label}>Court Selection (Optional)</Text>
+                <Text style={styles.sectionTitle}>Court Selection (Optional)</Text>
                 <TextInput
                   style={styles.input}
                   placeholder='Enter Court Name'
-                  placeholderTextColor='#5f5959ff'
+                  placeholderTextColor='#9F9F9F'
                   value={court}
                   onChangeText={setCourt}
                   editable={!editMode}
@@ -715,7 +724,7 @@ const CreateEventForm = () => {
 
             {!isEditMode && (
               <>
-                <Text style={styles.label}>Repeat Event *</Text>
+                <Text style={styles.sectionTitle}>Repeat Event</Text>
                 <View
                   style={[
                     {
@@ -726,6 +735,7 @@ const CreateEventForm = () => {
                     errors.repeat && {
                       borderColor: 'red',
                     },
+                    {marginTop:0}
                   ]}
                 >
                   <RepeatPicker
@@ -734,7 +744,7 @@ const CreateEventForm = () => {
                   />
                 </View>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Repeat End Date *</Text>
+                  <Text style={styles.sectionTitle}>Repeat End Date</Text>
                   <Button
                     mode='outlined'
                     style={[
@@ -790,7 +800,7 @@ const CreateEventForm = () => {
 
             <View style={styles.formSection}>
               <View style={styles.sliderSection}>
-                <Text style={styles.skillLevelTitle}>Skill Level *</Text>
+                <Text style={styles.skillLevelTitle}>Skill Level</Text>
                 <View onLayout={handleLayout} style={styles.sliderWrapper}>
                   <Animated.View
                     style={[styles.floatingLabel, { left: sliderPos - 10 }]}
@@ -817,11 +827,11 @@ const CreateEventForm = () => {
 
             <View style={styles.row}>
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Price (Optional)</Text>
+                <Text style={styles.sectionTitle}>Price (Optional)</Text>
                 <TextInput
                   style={styles.input}
                   placeholder='Enter Price'
-                  placeholderTextColor='#5f5959ff'
+                  placeholderTextColor='#9F9F9F'
                   value={price}
                   onChangeText={setPrice}
                   keyboardType='numeric'
@@ -830,14 +840,14 @@ const CreateEventForm = () => {
               </View>
 
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Max Players *</Text>
+                <Text style={styles.sectionTitle}>Max Players</Text>
                 <TextInput
                   style={[
                     styles.input,
                     errors.maxPlayers && { borderColor: 'red', borderWidth: 1 },
                   ]}
                   placeholder='Enter Max Players'
-                  placeholderTextColor='#5f5959ff'
+                  placeholderTextColor='#9F9F9F'
                   value={maxPlayers}
                   onChangeText={setMaxPlayers}
                   keyboardType='numeric'
@@ -847,11 +857,11 @@ const CreateEventForm = () => {
 
             {!isEditMode && (
               <>
-                <Text style={styles.label}>Description (Optional)</Text>
+                <Text style={styles.sectionTitle}>Description (Optional)</Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder='Add event details...'
-                  placeholderTextColor='#5f5959ff'
+                  placeholderTextColor='#9F9F9F'
                   value={description}
                   onChangeText={setDescription}
                   multiline
@@ -901,7 +911,7 @@ const CreateEventForm = () => {
                   contentContainerStyle={styles.containerModal}
                   keyboardShouldPersistTaps='handled'
                 >
-                  <Text style={styles.label}>Frequency</Text>
+                  <Text style={styles.sectionTitle}>Frequency</Text>
                   <View style={styles.pickerWrapper1}>
                     <Picker
                       selectedValue={customRepeat}
@@ -915,7 +925,7 @@ const CreateEventForm = () => {
                     </Picker>
                   </View>
 
-                  <Text style={styles.label}>Every</Text>
+                  <Text style={styles.sectionTitle}>Every</Text>
                   <View style={styles.pickerWrapper1}>
                     <Picker
                       selectedValue={customInterval}
@@ -1053,6 +1063,7 @@ const CreateEventForm = () => {
           buttonText='Try Again'
           buttonColor='#E53935'
         />
+        </View>
       </SafeAreaView>
     </>
   );
@@ -1060,9 +1071,7 @@ const CreateEventForm = () => {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 8,
-    backgroundColor: '#51a4b0',
-    borderRadius: 10,
+    backgroundColor: '#2C7E88',
     flexGrow: 1,
   },
   
@@ -1078,9 +1087,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    paddingTop: 25,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   modalWrapper: {
     width: '100%',
@@ -1107,13 +1115,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomLeftRadius: 15,
     borderBottomRightRadius: 15,
+    backgroundColor: '#2C7E88'
+  },
+
+  MainTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    alignSelf: 'flex-start',
+    color: '#fff',
   },
   subtitle: {
     color: 'rgba(255, 255, 255, 0.75)',
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 0,
   },
-  enddate: {
+  formContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+  },
+    enddate: {
     marginBottom: 10,
     color: '#4ea0ac',
   },
@@ -1122,12 +1144,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     alignSelf: 'center',
-  },
-  MainTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    alignSelf: 'flex-start',
-    color: '#fff',
   },
   headerContent: {
     flexDirection: 'row',
@@ -1159,17 +1175,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 8,
   },
-  label: {
-    marginTop: 10,
-    fontSize: 14,
-    marginBottom: 4,
-    color: '#333',
+  sectionTitle: {
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#000',
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#000',
     borderRadius: 6,
+    marginBottom:8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
@@ -1221,9 +1238,9 @@ const styles = StyleSheet.create({
   },
   skillLevelTitle: {
     marginBottom: 8,
-    fontSize: 14,
-    color: '#444',
-    fontWeight: '500',
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '400',
   },
   sliderWrapper: {
     position: 'relative',
@@ -1232,6 +1249,7 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 16,
+    marginTop:8,
   },
   inputLabel: {
     marginBottom: 8,
