@@ -1,6 +1,6 @@
 import UserAvatar from '@/assets/UserAvatar';
 import { RootState } from '@/store';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -121,6 +121,7 @@ const AddPlace = () => {
               params: {
                 newPlace: JSON.stringify(placeData.allCourts),
                 placeName: placeData.allCourts.Name,
+                redirectHome: 'true',
               },
             });
           } else if (source === 'create-event') {
@@ -149,7 +150,7 @@ const AddPlace = () => {
             onPress={() => router.back()}
             style={styles.backButton}
           >
-            <Ionicons name='arrow-back' size={24} color='#cce5e3' />
+            <MaterialIcons name='arrow-back-ios' size={24} color='#fff' />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
             <Text style={styles.MainTitle}>Add Place</Text>
@@ -159,327 +160,341 @@ const AddPlace = () => {
         </View>
       </View>
 
-      <ScrollView style={styles.formScrollView}>
-        {/* Place Name */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Name</Text>
-          <TextInput
-            mode='outlined'
-            value={placeName}
-            onChangeText={setPlaceName}
-            placeholder='Enter name'
-            outlineColor='#000'
-            activeOutlineColor='#2C7E88'
-            style={styles.textInput}
-            contentStyle={{ height: 40, fontSize: 16 }}
-            theme={{ roundness: 8 }}
-          />
-        </View>
-
-        {/* Location */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Location</Text>
-          <TextInput
-            mode='outlined'
-            value={location}
-            onChangeText={setLocation}
-            placeholder='Enter Full Address'
-            style={styles.textInput}
-            outlineColor='#000'
-            activeOutlineColor='#2C7E88'
-            contentStyle={{ height: 40, fontSize: 16 }}
-            theme={{ roundness: 8 }}
-          />
-        </View>
-
-        {/* Type of Court (Optional) */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Type of Court (Optional)</Text>
-          <TextInput
-            mode='outlined'
-            value={courtType}
-            onChangeText={setCourtType}
-            placeholder='e.g., Indoor, Outdoor, Clay'
-            style={styles.textInput}
-            outlineColor='#000'
-            activeOutlineColor='#2C7E88'
-            contentStyle={{ height: 40, fontSize: 16 }}
-            theme={{ roundness: 8 }}
-          />
-        </View>
-
-        {/* Net Type */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Net Type</Text>
-          <View style={styles.netTypeContainer}>
-            <TouchableOpacity
-              style={[
-                styles.netTypeButton,
-                netType === 'permanent' && styles.netTypeButtonActive,
-              ]}
-              onPress={() => setNetType('permanent')}
-            >
-              <Text
-                style={[
-                  styles.netTypeText,
-                  netType === 'permanent' && styles.netTypeTextActive,
-                ]}
-              >
-                Permanent
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.netTypeButton,
-                netType === 'temporary' && styles.netTypeButtonActive,
-              ]}
-              onPress={() => setNetType('temporary')}
-            >
-              <Text
-                style={[
-                  styles.netTypeText,
-                  netType === 'temporary' && styles.netTypeTextActive,
-                ]}
-              >
-                Temporary
-              </Text>
-            </TouchableOpacity>
+      <View style={styles.formContainer}>
+        <ScrollView style={styles.formScrollView}>
+          {/* Place Name */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Name</Text>
+            <TextInput
+              mode='outlined'
+              value={placeName}
+              onChangeText={setPlaceName}
+              placeholder='Enter name'
+              placeholderTextColor='#9F9F9F'
+              outlineColor='#000'
+              activeOutlineColor='#2C7E88'
+              style={styles.textInput}
+              contentStyle={{ height: 40, fontSize: 16 }}
+              theme={{ roundness: 8 }}
+              textColor='#000'
+            />
           </View>
-        </View>
 
-        {/* Number of Courts */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Number of Courts</Text>
-          <TouchableOpacity
-            onPress={() => setShowCourtDropdown(!showCourtDropdown)}
-            style={styles.dropdownButton}
-          >
-            <Text style={styles.dropdownText}>{numberOfCourts}</Text>
-            <Ionicons name='chevron-down' size={20} color='#2C7E88' />
-          </TouchableOpacity>
-          {showCourtDropdown && (
-            <View style={styles.dropdownList}>
-              {courtNumbers.map((num) => (
-                <TouchableOpacity
-                  key={num}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setNumberOfCourts(num);
-                    setShowCourtDropdown(false);
-                  }}
+          {/* Location */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Location</Text>
+            <TextInput
+              mode='outlined'
+              value={location}
+              onChangeText={setLocation}
+              placeholder='Enter Full Address'
+              placeholderTextColor='#9F9F9F'
+              style={styles.textInput}
+              outlineColor='#000'
+              activeOutlineColor='#2C7E88'
+              contentStyle={{ height: 40, fontSize: 16 }}
+              theme={{ roundness: 8 }}
+              textColor='#000'
+            />
+          </View>
+
+          {/* Type of Court (Optional) */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Type of Court (Optional)</Text>
+            <TextInput
+              mode='outlined'
+              value={courtType}
+              onChangeText={setCourtType}
+              placeholder='e.g., Indoor, Outdoor, Clay'
+              placeholderTextColor='#9F9F9F'
+              style={styles.textInput}
+              outlineColor='#000'
+              activeOutlineColor='#2C7E88'
+              contentStyle={{ height: 40, fontSize: 16 }}
+              theme={{ roundness: 8 }}
+              textColor='#000'
+            />
+          </View>
+
+          {/* Net Type */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Net Type</Text>
+            <View style={styles.netTypeContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.netTypeButton,
+                  netType === 'permanent' && styles.netTypeButtonActive,
+                ]}
+                onPress={() => setNetType('permanent')}
+              >
+                <Text
+                  style={[
+                    styles.netTypeText,
+                    netType === 'permanent' && styles.netTypeTextActive,
+                  ]}
                 >
-                  <Text style={styles.dropdownItemText}>{num}</Text>
-                </TouchableOpacity>
-              ))}
+                  Permanent
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.netTypeButton,
+                  netType === 'temporary' && styles.netTypeButtonActive,
+                ]}
+                onPress={() => setNetType('temporary')}
+              >
+                <Text
+                  style={[
+                    styles.netTypeText,
+                    netType === 'temporary' && styles.netTypeTextActive,
+                  ]}
+                >
+                  Temporary
+                </Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
-
-        {/* Hours of Operation */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Hours of Operation</Text>
-          <View style={styles.timeRow}>
-            <TouchableOpacity
-              style={styles.timeButton}
-              onPress={showStartTimePicker}
-            >
-              <Text style={styles.timeLabel}>Start Time</Text>
-              <Text style={styles.timeText}>{formatTime(startTime)}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.timeButton}
-              onPress={showEndTimePicker}
-            >
-              <Text style={styles.timeLabel}>End Time</Text>
-              <Text style={styles.timeText}>{formatTime(endTime)}</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Start Time Picker Modal */}
-          <DatePicker
-            modal
-            mode='time'
-            open={isStartTimePickerVisible}
-            date={startTime}
-            onConfirm={(date) => {
-              setStartTime(date);
-              if (!endTime || endTime <= date) {
-                const newEndTime = new Date(date);
-                newEndTime.setHours(date.getHours() + 1);
-                setEndTime(newEndTime);
-              }
-              hideStartTimePicker();
-            }}
-            onCancel={hideStartTimePicker}
-          />
-
-          {/* End Time Picker Modal */}
-          <DatePicker
-            modal
-            mode='time'
-            open={isEndTimePickerVisible}
-            date={endTime}
-            onConfirm={(date) => {
-              setEndTime(date);
-              hideEndTimePicker();
-            }}
-            onCancel={hideEndTimePicker}
-          />
-        </View>
-
-        {/* Membership Required */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Membership Required</Text>
-          <View style={styles.membershipContainer}>
+          {/* Number of Courts */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Number of Courts</Text>
             <TouchableOpacity
-              style={[
-                styles.membershipButton,
-                membershipRequired === 'yes' && styles.membershipButtonActive,
-              ]}
-              onPress={() => {
-                console.log('Setting membership to yes');
-                setMembershipRequired('yes');
+              onPress={() => setShowCourtDropdown(!showCourtDropdown)}
+              style={styles.dropdownButton}
+            >
+              <Text style={styles.dropdownText}>{numberOfCourts}</Text>
+              <Ionicons name='chevron-down' size={20} color='#000' />
+            </TouchableOpacity>
+            {showCourtDropdown && (
+              <View style={styles.dropdownList}>
+                {courtNumbers.map((num) => (
+                  <TouchableOpacity
+                    key={num}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setNumberOfCourts(num);
+                      setShowCourtDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{num}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Hours of Operation */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Hours of Operation</Text>
+            <View style={styles.timeRow}>
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={showStartTimePicker}
+              >
+                <Text style={styles.timeLabel}>Start Time</Text>
+                <Text style={styles.timeText}>{formatTime(startTime)}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={showEndTimePicker}
+              >
+                <Text style={styles.timeLabel}>End Time</Text>
+                <Text style={styles.timeText}>{formatTime(endTime)}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Start Time Picker Modal */}
+            <DatePicker
+              modal
+              mode='time'
+              open={isStartTimePickerVisible}
+              date={startTime}
+              onConfirm={(date) => {
+                setStartTime(date);
+                if (!endTime || endTime <= date) {
+                  const newEndTime = new Date(date);
+                  newEndTime.setHours(date.getHours() + 1);
+                  setEndTime(newEndTime);
+                }
+                hideStartTimePicker();
               }}
-            >
-              <View
-                style={[
-                  styles.radioCircle,
-                  membershipRequired === 'yes' && styles.radioCircleActive,
-                ]}
-              >
-                {membershipRequired === 'yes' && (
-                  <View style={styles.radioCircleFilledActive} />
-                )}
-              </View>
-              <Text
-                style={[
-                  styles.membershipText,
-                  membershipRequired === 'yes' && styles.membershipTextActive,
-                ]}
-              >
-                Yes
-              </Text>
-            </TouchableOpacity>
+              onCancel={hideStartTimePicker}
+            />
 
-            <TouchableOpacity
-              style={[
-                styles.membershipButton,
-                membershipRequired === 'no' && styles.membershipButtonActive,
-              ]}
-              onPress={() => setMembershipRequired('no')}
-            >
-              <View
-                style={[
-                  styles.radioCircle,
-                  membershipRequired === 'no' && styles.radioCircleActive,
-                ]}
-              >
-                {membershipRequired === 'no' && (
-                  <View style={styles.radioCircleFilledActive} />
-                )}
-              </View>
-              <Text
-                style={[
-                  styles.membershipText,
-                  membershipRequired === 'no' && styles.membershipTextActive,
-                ]}
-              >
-                No
-              </Text>
-            </TouchableOpacity>
+            {/* End Time Picker Modal */}
+            <DatePicker
+              modal
+              mode='time'
+              open={isEndTimePickerVisible}
+              date={endTime}
+              onConfirm={(date) => {
+                setEndTime(date);
+                hideEndTimePicker();
+              }}
+              onCancel={hideEndTimePicker}
+            />
+          </View>
 
-            <TouchableOpacity
-              style={[
-                styles.membershipButton,
-                membershipRequired === 'required' &&
-                  styles.membershipButtonActive,
-              ]}
-              onPress={() => setMembershipRequired('required')}
-            >
-              <View
+          {/* Membership Required */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Membership Required</Text>
+            <View style={styles.membershipContainer}>
+              <TouchableOpacity
                 style={[
-                  styles.radioCircle,
-                  membershipRequired === 'required' && styles.radioCircleActive,
+                  styles.membershipButton,
+                  membershipRequired === 'yes' && styles.membershipButtonActive,
                 ]}
+                onPress={() => {
+                  console.log('Setting membership to yes');
+                  setMembershipRequired('yes');
+                }}
               >
-                {membershipRequired === 'required' && (
-                  <View style={styles.radioCircleFilledActive} />
-                )}
-              </View>
-              <Text
+                <View
+                  style={[
+                    styles.radioCircle,
+                    membershipRequired === 'yes' && styles.radioCircleActive,
+                  ]}
+                >
+                  {membershipRequired === 'yes' && (
+                    <View style={styles.radioCircleFilledActive} />
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.membershipText,
+                    membershipRequired === 'yes' && styles.membershipTextActive,
+                  ]}
+                >
+                  Yes
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={[
-                  styles.membershipText,
+                  styles.membershipButton,
+                  membershipRequired === 'no' && styles.membershipButtonActive,
+                ]}
+                onPress={() => setMembershipRequired('no')}
+              >
+                <View
+                  style={[
+                    styles.radioCircle,
+                    membershipRequired === 'no' && styles.radioCircleActive,
+                  ]}
+                >
+                  {membershipRequired === 'no' && (
+                    <View style={styles.radioCircleFilledActive} />
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.membershipText,
+                    membershipRequired === 'no' && styles.membershipTextActive,
+                  ]}
+                >
+                  No
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.membershipButton,
                   membershipRequired === 'required' &&
-                    styles.membershipTextActive,
+                    styles.membershipButtonActive,
                 ]}
+                onPress={() => setMembershipRequired('required')}
               >
-                Required
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Toggle Switches */}
-        <View style={styles.toggleSection}>
-          {/* Is this place free */}
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>Is this place free?</Text>
-            <Switch value={isFree} onValueChange={setIsFree} color='#2C7E88' />
-          </View>
-
-          {/* Lights available */}
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>Lights available</Text>
-            <Switch
-              value={lightsAvailable}
-              onValueChange={setLightsAvailable}
-              color='#2C7E88'
-            />
-          </View>
-
-          {/* Rest room */}
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>Rest room</Text>
-            <Switch
-              value={restroom}
-              onValueChange={setRestroom}
-              color='#2C7E88'
-            />
+                <View
+                  style={[
+                    styles.radioCircle,
+                    membershipRequired === 'required' &&
+                      styles.radioCircleActive,
+                  ]}
+                >
+                  {membershipRequired === 'required' && (
+                    <View style={styles.radioCircleFilledActive} />
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.membershipText,
+                    membershipRequired === 'required' &&
+                      styles.membershipTextActive,
+                  ]}
+                >
+                  Required
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Parking available */}
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>Parking available</Text>
-            <Switch
-              value={parking}
-              onValueChange={setParking}
-              color='#2C7E88'
-            />
+          {/* Toggle Switches */}
+          <View style={styles.toggleSection}>
+            {/* Is this place free */}
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Is this place free?</Text>
+              <Switch
+                value={isFree}
+                onValueChange={setIsFree}
+                color='#2C7E88'
+              />
+            </View>
+
+            {/* Lights available */}
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Lights available</Text>
+              <Switch
+                value={lightsAvailable}
+                onValueChange={setLightsAvailable}
+                color='#2C7E88'
+              />
+            </View>
+
+            {/* Rest room */}
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Rest room</Text>
+              <Switch
+                value={restroom}
+                onValueChange={setRestroom}
+                color='#2C7E88'
+              />
+            </View>
+
+            {/* Parking available */}
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Parking available</Text>
+              <Switch
+                value={parking}
+                onValueChange={setParking}
+                color='#2C7E88'
+              />
+            </View>
+
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Is Private</Text>
+              <Switch
+                value={isPrivate}
+                onValueChange={setIsPrivate}
+                color='#2C7E88'
+              />
+            </View>
           </View>
 
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>Is Private</Text>
-            <Switch
-              value={isPrivate}
-              onValueChange={setIsPrivate}
-              color='#2C7E88'
-            />
+          {/* Submit Button */}
+          <View style={styles.actionButtonContainer}>
+            <Button
+              mode='contained'
+              style={styles.submitButton}
+              onPress={handleSubmit}
+              buttonColor='#2C7E88'
+              textColor='#fff'
+            >
+              Add Place
+            </Button>
           </View>
-        </View>
-
-        {/* Submit Button */}
-        <View style={styles.actionButtonContainer}>
-          <Button
-            mode='contained'
-            style={styles.submitButton}
-            onPress={handleSubmit}
-            buttonColor='#2C7E88'
-          >
-            Add Place
-          </Button>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -489,14 +504,18 @@ export default AddPlace;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#2C7E88',
   },
   mainHeader: {
     backgroundColor: '#2C7E88',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
+  },
+  formContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
   },
   header: {
     flexDirection: 'row',
@@ -526,6 +545,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
   },
   formSection: {
     marginBottom: 24,
@@ -534,6 +555,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
+    color: '#000',
   },
   textInput: {
     backgroundColor: '#fff',
@@ -593,7 +615,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#2C7E88',
+    borderColor: '#000',
     borderRadius: 8,
     zIndex: 1000,
     elevation: 5,
@@ -601,10 +623,11 @@ const styles = StyleSheet.create({
   dropdownItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#000',
   },
   dropdownItemText: {
     fontSize: 16,
+    color: '#000',
   },
   timeRow: {
     flexDirection: 'row',

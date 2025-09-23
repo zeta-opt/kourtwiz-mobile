@@ -95,6 +95,7 @@ const EventNameSearch: React.FC<EventNameSearchProps> = ({
       <TextInput
         style={[styles.input, error && { borderColor: 'red', borderWidth: 1 }]}
         placeholder='Enter Event Name'
+        placeholderTextColor='#9F9F9F'
         value={value}
         onChangeText={(text) => {
           onChange(text);

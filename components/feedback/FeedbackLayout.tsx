@@ -86,11 +86,7 @@ const FeedbackLayout = () => {
       <View style={styles.headerContainer}>
         <TouchableOpacity
           onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace('/(authenticated)/home');
-            }
+            router.replace('/(authenticated)/home');
           }}
           style={styles.backButton}
         >
@@ -131,6 +127,8 @@ const FeedbackLayout = () => {
             outlineColor='#E0E0E0'
             activeOutlineColor='#4B9CA6'
             outlineStyle={styles.inputOutline}
+            textColor='#000'
+            placeholderTextColor={'#9F9F9F'}
           />
         </View>
 
@@ -195,6 +193,8 @@ const FeedbackLayout = () => {
             activeOutlineColor='#4B9CA6'
             outlineStyle={styles.inputOutline}
             contentStyle={styles.textInputContent}
+            textColor='#000'
+            placeholderTextColor={'#9F9F9F'}
           />
         </View>
 
@@ -260,12 +260,19 @@ const FeedbackLayout = () => {
         <Button
           mode='contained'
           onPress={handleSubmit}
-          style={styles.submitButton}
+          style={[
+            styles.submitButton,
+            (!feedbackTitle.trim() ||
+              !description.trim() ||
+              status === 'loading') &&
+              styles.submitButtonDisabled, // apply disabled style
+          ]}
           contentStyle={styles.submitButtonContent}
           disabled={
             !feedbackTitle.trim() || !description.trim() || status === 'loading'
           }
           buttonColor='#4B9CA6'
+          textColor='#fff'
           loading={status === 'loading'}
           icon={status !== 'loading' ? 'send' : undefined}
         >
@@ -444,6 +451,10 @@ const styles = StyleSheet.create({
   },
   submitButtonContent: {
     paddingVertical: 10,
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#9F9F9F',
+    shadowOpacity: 0,
   },
 });
 

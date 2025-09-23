@@ -202,7 +202,9 @@ const VideosLayout = () => {
           <View style={styles.headerTextContainer}>
             <Text style={styles.mainTitle}>Videos</Text>
           </View>
-          <TouchableOpacity onPress={() => router.push('/(authenticated)/profile')}>
+          <TouchableOpacity
+            onPress={() => router.push('/(authenticated)/profile')}
+          >
             <UserAvatar size={30} />
           </TouchableOpacity>
         </View>
@@ -218,6 +220,13 @@ const VideosLayout = () => {
           inputStyle={styles.searchInput}
           iconColor='#666'
           placeholderTextColor='#999'
+          theme={{
+            colors: {
+              primary: '#333', // this controls the text color and focus color
+              text: '#333', // this controls the input text color
+              placeholder: '#999',
+            },
+          }}
         />
       </View>
 
@@ -434,7 +443,7 @@ const styles = StyleSheet.create({
   searchBar: {
     backgroundColor: '#e5e5e5',
     elevation: 0,
-    borderRadius: 25,
+    borderRadius: 15,
     height: 45,
   },
   searchInput: { fontSize: 14, paddingLeft: 0 },

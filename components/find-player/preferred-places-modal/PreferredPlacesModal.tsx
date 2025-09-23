@@ -88,15 +88,15 @@ const PreferredPlacesModal = ({
 
   // Reset on modal open
   useEffect(() => {
-  if (!visible) {
-    setSelectedPlace(null);
-    setQuery('');
-    setCoords(null);
-    setPlaces([]);
-    setPage(0);
-    setHasMore(true);
-  }
-}, [visible]);
+    if (!visible) {
+      setSelectedPlace(null);
+      setQuery('');
+      setCoords(null);
+      setPlaces([]);
+      setPage(0);
+      setHasMore(true);
+    }
+  }, [visible]);
 
   // Refetch when coords are available
   useEffect(() => {
@@ -106,37 +106,43 @@ const PreferredPlacesModal = ({
   }, [coords]);
 
   // Trigger new fetch on page change
-useEffect(() => {
-  if (!isSearching && coords) {
-    refetch();
-  }
-}, [page, coords, isSearching]);
+  useEffect(() => {
+    if (!isSearching && coords) {
+      refetch();
+    }
+  }, [page, coords, isSearching]);
 
-// Update place list when new data loads
-useEffect(() => {
-  if (nearbyPlaces && coords) {
-    const preferredIds = new Set(preferredPlaces?.map(p => p.id) ?? []);
-    const preferredNames = new Set(preferredPlaces?.map(p => p.name.toLowerCase()) ?? []);
+  // Update place list when new data loads
+  useEffect(() => {
+    if (nearbyPlaces && coords) {
+      const preferredIds = new Set(preferredPlaces?.map((p) => p.id) ?? []);
+      const preferredNames = new Set(
+        preferredPlaces?.map((p) => p.name.toLowerCase()) ?? []
+      );
 
-    const newPlaces: CombinedPlace[] = nearbyPlaces
-      .filter(court =>
-        typeof court.Name === 'string' &&
-        !preferredIds.has(court.id) &&
-        !preferredNames.has(court.Name.toLowerCase())
-      )
-      .map(court => ({
-        id: court.id || court.Name,
-        name: court.Name,
-        isPreferred: false,
-        courtType: court['Court Type'],
-        distance: court.distance,
-      }));
+      const newPlaces: CombinedPlace[] = nearbyPlaces
+        .filter(
+          (court) =>
+            typeof court.Name === 'string' &&
+            !preferredIds.has(court.id) &&
+            !preferredNames.has(court.Name.toLowerCase())
+        )
+        .map((court) => ({
+          id: court.id || court.Name,
+          name: court.Name,
+          isPreferred: false,
+          courtType: court['Court Type'],
+          distance: court.distance,
+        }));
 
-    setHasMore(newPlaces.length >= 20); // check per page, not total list
-    setPlaces(prev => [...prev, ...newPlaces.filter(p => !prev.some(x => x.id === p.id))]);
-    setIsFetchingMore(false);
-  }
-}, [nearbyPlaces]);
+      setHasMore(newPlaces.length >= 20); // check per page, not total list
+      setPlaces((prev) => [
+        ...prev,
+        ...newPlaces.filter((p) => !prev.some((x) => x.id === p.id)),
+      ]);
+      setIsFetchingMore(false);
+    }
+  }, [nearbyPlaces]);
 
   const handlePlaceSelection = (placeName: string) => {
     dispatch(setPlaceToPlay(placeName));
@@ -194,6 +200,7 @@ useEffect(() => {
                   style={styles.searchInput}
                   value={query}
                   onChangeText={setQuery}
+                  placeholderTextColor='#9F9F9F'
                   returnKeyType='search'
                   autoCapitalize='none'
                   autoCorrect={false}
@@ -211,9 +218,11 @@ useEffect(() => {
                 <FlatList
                   data={filteredPlaces}
                   keyExtractor={(item) =>
-                    `${item.isPreferred ? 'preferred' : 'nearby'}-${item.id || item.name}`
+                    `${item.isPreferred ? 'preferred' : 'nearby'}-${
+                      item.id || item.name
+                    }`
                   }
-                    renderItem={({ item: place }) => (
+                  renderItem={({ item: place }) => (
                     <TouchableOpacity
                       style={[
                         styles.placeItem,
@@ -235,7 +244,11 @@ useEffect(() => {
                             {place.name}
                             {place.isPreferred && (
                               <View style={styles.preferredIcon}>
-                                <Icon source="check" size={20} color="#2C7E88" />
+                                <Icon
+                                  source='check'
+                                  size={20}
+                                  color='#2C7E88'
+                                />
                               </View>
                             )}
                           </Text>
@@ -260,17 +273,17 @@ useEffect(() => {
                       </View>
 
                       {selectedPlace === place.name && (
-                        <Icon source="check-circle" size={20} color="#2C7E88" />
+                        <Icon source='check-circle' size={20} color='#2C7E88' />
                       )}
                     </TouchableOpacity>
                   )}
                   onEndReached={loadMore}
                   onEndReachedThreshold={0.6}
-                  keyboardShouldPersistTaps="handled"
+                  keyboardShouldPersistTaps='handled'
                   ListFooterComponent={() =>
                     !isSearching && isFetchingMore ? (
                       <ActivityIndicator
-                        size="small"
+                        size='small'
                         style={{ marginVertical: 16 }}
                       />
                     ) : null
@@ -300,6 +313,7 @@ useEffect(() => {
                     handlePlaceSelection(selectedPlace);
                   }
                 }}
+                textColor='#fff'
                 style={styles.doneButton}
               >
                 Done

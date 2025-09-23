@@ -30,6 +30,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from 'react-native';
 import {
@@ -83,10 +84,13 @@ const FindPlayerLayout = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const params = useLocalSearchParams();
+  const redirectHome = params.redirectHome === 'true';
   // Explicitly derive editMode from params
   const isEditMode = params?.isEditMode === 'true';
   const finderId = params?.finderId as string | undefined;
   console.log('params received in the layout', params);
+
+  const colorScheme = useColorScheme();
 
   // Get user from Redux
   const { user } = useSelector((state: RootState) => state.auth);
@@ -558,7 +562,12 @@ const FindPlayerLayout = () => {
           <TouchableOpacity
             onPress={() => {
               resetForm();
-              router.back();
+              // If coming from Add Place, go to Home instead of back
+              if (redirectHome) {
+                router.replace('/home');
+              } else {
+                router.back();
+              }
             }}
             style={styles.backButton}
           >
@@ -579,202 +588,213 @@ const FindPlayerLayout = () => {
         </View>
       </View>
 
-      <ScrollView style={styles.formScrollView}>
-        {isEditMode !== true && (
-          <>
-            {/* Event Name */}
-            <Text style={styles.sectionTitle}>Event Name</Text>
-            <EventNameSearch
-              value={eventName}
-              onChange={setEventName}
-              requesterId={userId}
-              onSelect={(event) => {
-                setEventName(event.eventName);
-                setSkillLevel(event.skillRating);
-                setPlayerCount(event.playersNeeded);
-                dispatch(setPlaceToPlay(event.placeToPlay));
-                if (event.preferredContacts?.length > 0) {
-                  dispatch(setPreferredContacts(event.preferredContacts));
-                }
-              }}
-              error={false}
-            />
-          </>
-        )}
+      <View style={styles.formContainer}>
+        <ScrollView style={styles.formScrollView}>
+          {isEditMode !== true && (
+            <>
+              {/* Event Name */}
+              <Text style={styles.sectionTitle}>Event Name</Text>
+              <EventNameSearch
+                value={eventName}
+                onChange={setEventName}
+                requesterId={userId}
+                onSelect={(event) => {
+                  setEventName(event.eventName);
+                  setSkillLevel(event.skillRating);
+                  setPlayerCount(event.playersNeeded);
+                  dispatch(setPlaceToPlay(event.placeToPlay));
+                  if (event.preferredContacts?.length > 0) {
+                    dispatch(setPreferredContacts(event.preferredContacts));
+                  }
+                }}
+                error={false}
+              />
+            </>
+          )}
 
-        {/* Club Name Section */}
-        <Text style={[styles.sectionTitle, { marginTop: 25 }]}>Place</Text>
-        <View style={styles.dropdownRow}>
-          <Button
-            mode='outlined'
-            onPress={handleClubDetailsClick}
-            style={styles.dropdownButton}
-            contentStyle={styles.dropdownContent}
-            textColor='#2C7E88'
-          >
-            <View style={styles.buttonContent}>
-              <Text style={styles.buttonText} numberOfLines={1}>
-                {placeToPlay || 'Enter Place Name'}
-              </Text>
-              <View style={styles.iconContainer}>
-                <Icon source='chevron-down' size={20} />
+          {/* Club Name Section */}
+          <Text style={[styles.sectionTitle, { marginTop: 25 }]}>Place</Text>
+          <View style={styles.dropdownRow}>
+            <Button
+              mode='outlined'
+              onPress={handleClubDetailsClick}
+              style={styles.dropdownButton}
+              contentStyle={styles.dropdownContent}
+              textColor='#2C7E88'
+            >
+              <View style={styles.buttonContent}>
+                <Text
+                  style={[
+                    styles.buttonText,
+                    { color: placeToPlay ? '#000' : '#9F9F9F' },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {placeToPlay || 'Enter Place Name'}
+                </Text>
+                <View style={styles.iconContainer}>
+                  <Icon source='chevron-down' size={20} />
+                </View>
+              </View>
+            </Button>
+
+            <IconButton
+              icon='plus'
+              size={24}
+              iconColor='white'
+              onPress={handleAddPlace}
+              style={styles.disabledPlus}
+            />
+
+            <PreferredPlacesModal
+              visible={preferredPlaceModal}
+              handleClose={() => {
+                dispatch(closePreferredPlaceModal());
+              }}
+              locationPermissionGranted={locationPermissionGranted}
+            />
+          </View>
+
+          {/* Location permission hint */}
+          {locationPermissionGranted === false && (
+            <Text style={styles.permissionHint}>
+              Enable location access to search nearby courts
+            </Text>
+          )}
+
+          {/* Game Schedule Section - Using the new component */}
+          <GameSchedulePicker
+            selectedDate={selectedDate}
+            startTime={startTime}
+            endTime={endTime}
+            onDateChange={setSelectedDate}
+            onStartTimeChange={setStartTime}
+            onEndTimeChange={setEndTime}
+          />
+
+          <View style={styles.formSection}>
+            <View style={styles.sliderSection}>
+              <Text style={styles.sectionTitle}>Minimum Skill Level</Text>
+              <View onLayout={handleLayout} style={styles.sliderWrapper}>
+                {/* Floating Label */}
+                <Animated.View
+                  style={[styles.floatingLabel, { left: sliderPos - 10 }]}
+                >
+                  <Text style={styles.floatingText}>
+                    {skillLevel.toFixed(1)}
+                  </Text>
+                </Animated.View>
+
+                <Slider
+                  style={styles.slider}
+                  minimumValue={0}
+                  maximumValue={5}
+                  step={0.1}
+                  value={skillLevel}
+                  minimumTrackTintColor='#2C7E88'
+                  maximumTrackTintColor='#E5E7EB'
+                  thumbTintColor='#2C7E88'
+                  onValueChange={handleValueChange}
+                />
               </View>
             </View>
-          </Button>
-
-          <IconButton
-            icon='plus'
-            size={24}
-            iconColor='white'
-            onPress={handleAddPlace}
-            style={styles.disabledPlus}
-          />
-
-          <PreferredPlacesModal
-            visible={preferredPlaceModal}
-            handleClose={() => {
-              dispatch(closePreferredPlaceModal());
-            }}
-            locationPermissionGranted={locationPermissionGranted}
-          />
-        </View>
-
-        {/* Location permission hint */}
-        {locationPermissionGranted === false && (
-          <Text style={styles.permissionHint}>
-            Enable location access to search nearby courts
-          </Text>
-        )}
-
-        {/* Game Schedule Section - Using the new component */}
-        <GameSchedulePicker
-          selectedDate={selectedDate}
-          startTime={startTime}
-          endTime={endTime}
-          onDateChange={setSelectedDate}
-          onStartTimeChange={setStartTime}
-          onEndTimeChange={setEndTime}
-        />
-
-        <View style={styles.formSection}>
-          <View style={styles.sliderSection}>
-            <Text style={styles.sectionTitle}>Minimum Skill Level</Text>
-            <View onLayout={handleLayout} style={styles.sliderWrapper}>
-              {/* Floating Label */}
-              <Animated.View
-                style={[styles.floatingLabel, { left: sliderPos - 10 }]}
-              >
-                <Text style={styles.floatingText}>{skillLevel.toFixed(1)}</Text>
-              </Animated.View>
-
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={5}
-                step={0.1}
-                value={skillLevel}
-                minimumTrackTintColor='#2C7E88'
-                maximumTrackTintColor='#E5E7EB'
-                thumbTintColor='#2C7E88'
-                onValueChange={handleValueChange}
+          </View>
+          <View style={styles.formSection}>
+            <View style={styles.formSection}>
+              <Text style={styles.sectionTitle}>Max Players</Text>
+              <TextInput
+                style={styles.input}
+                value={playerCountInput}
+                onChangeText={(text) => {
+                  setPlayerCountInput(text);
+                  const numeric = Number(text);
+                  if (!isNaN(numeric) && numeric > 0) {
+                    setPlayerCount(numeric);
+                  } else if (text !== '') {
+                    Alert.alert('Invalid Input', 'Please enter a valid number');
+                  }
+                }}
+                keyboardType='numeric'
+                placeholder='Enter maximum number of players'
               />
             </View>
           </View>
-        </View>
-        <View style={styles.formSection}>
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Max Players</Text>
-            <TextInput
-              style={styles.input}
-              value={playerCountInput}
-              onChangeText={(text) => {
-                setPlayerCountInput(text);
-                const numeric = Number(text);
-                if (!isNaN(numeric) && numeric > 0) {
-                  setPlayerCount(numeric);
-                } else if (text !== '') {
-                  Alert.alert('Invalid Input', 'Please enter a valid number');
-                }
-              }}
-              keyboardType='numeric'
-              placeholder='Enter maximum number of players'
-            />
-          </View>
-        </View>
 
-        {isEditMode !== true && (
-          <>
-            {/* Preferred Players */}
-            <PreferredPlayersSelector
-              preferredContacts={preferredContacts}
-              onShowPreferredPlayers={showPreferredPlayers}
-              onAddContact={handleAddContact}
-              onRemovePlayer={handleRemovePlayer}
-            />
+          {isEditMode !== true && (
+            <>
+              {/* Preferred Players */}
+              <PreferredPlayersSelector
+                preferredContacts={preferredContacts}
+                onShowPreferredPlayers={showPreferredPlayers}
+                onAddContact={handleAddContact}
+                onRemovePlayer={handleRemovePlayer}
+              />
 
-            <PreferredPlayersModal
-              visible={preferredPlayersModal}
-              onClose={() => dispatch(closePreferredPlayersModal())}
-              onSelectPlayers={handleSelectPlayers}
-              selectedPlayers={preferredContacts}
-            />
+              <PreferredPlayersModal
+                visible={preferredPlayersModal}
+                onClose={() => dispatch(closePreferredPlayersModal())}
+                onSelectPlayers={handleSelectPlayers}
+                selectedPlayers={preferredContacts}
+              />
 
-            <ContactsModal
-              visible={contactsModalVisible}
-              onClose={() => setContactsModalVisible(false)}
-              onSelectContacts={handleSelectContactsFromDevice}
-              selectedContacts={preferredContacts}
-            />
-          </>
-        )}
+              <ContactsModal
+                visible={contactsModalVisible}
+                onClose={() => setContactsModalVisible(false)}
+                onSelectContacts={handleSelectContactsFromDevice}
+                selectedContacts={preferredContacts}
+              />
+            </>
+          )}
 
-        {/* Action Button */}
-        <View style={styles.actionButtonContainer}>
-          <Button
-            mode='contained'
-            style={styles.findPlayerButton}
-            onPress={handleSubmit}
-            icon={'magnify'}
-            loading={finderStatus === 'loading' || editStatus === 'loading'}
-            disabled={
-              finderStatus === 'loading' ||
-              editStatus === 'loading' ||
-              submitted
-            }
-            buttonColor='#2C7E88'
-          >
-            {submitted
-              ? 'Submitted'
-              : isEditMode === true
-              ? 'Update Request'
-              : 'Find Player'}
-          </Button>
-        </View>
-      </ScrollView>
-
-      {/* Booking conflict dialog */}
-      <Portal>
-        <Dialog
-          visible={conflictDialogVisible}
-          onDismiss={() => setConflictDialogVisible(false)}
-        >
-          <Dialog.Title>Booking Conflict</Dialog.Title>
-          <Dialog.Content>
-            <Text variant='bodyMedium'>
-              You already have a booking at this time. Please choose another
-              slot.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
+          {/* Action Button */}
+          <View style={styles.actionButtonContainer}>
             <Button
-              onPress={() => setConflictDialogVisible(false)}
-              textColor='#2C7E88'
+              mode='contained'
+              style={styles.findPlayerButton}
+              onPress={handleSubmit}
+              icon={'magnify'}
+              loading={finderStatus === 'loading' || editStatus === 'loading'}
+              disabled={
+                finderStatus === 'loading' ||
+                editStatus === 'loading' ||
+                submitted
+              }
+              buttonColor='#2C7E88'
+              textColor='#fff'
             >
-              OK
+              {submitted
+                ? 'Submitted'
+                : isEditMode === true
+                ? 'Update Request'
+                : 'Find Player'}
             </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+          </View>
+        </ScrollView>
+
+        {/* Booking conflict dialog */}
+        <Portal>
+          <Dialog
+            visible={conflictDialogVisible}
+            onDismiss={() => setConflictDialogVisible(false)}
+          >
+            <Dialog.Title>Booking Conflict</Dialog.Title>
+            <Dialog.Content>
+              <Text variant='bodyMedium'>
+                You already have a booking at this time. Please choose another
+                slot.
+              </Text>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                onPress={() => setConflictDialogVisible(false)}
+                textColor='#2C7E88'
+              >
+                OK
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
+      </View>
     </View>
   );
 };
@@ -784,14 +804,12 @@ export default FindPlayerLayout;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#2C7E88',
   },
   mainHeader: {
     backgroundColor: '#2C7E88',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
   },
   header: {
     flexDirection: 'row',
@@ -813,7 +831,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 0,
   },
-
+  formContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+  },
   backButton: {
     marginRight: 8,
     marginLeft: -8,
@@ -869,11 +892,10 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   formScrollView: {
-    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
   },
   formSection: {
     marginBottom: 30,
@@ -882,6 +904,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 16,
     fontWeight: '600',
+    color: '#000',
   },
   input: {
     flex: 1,
