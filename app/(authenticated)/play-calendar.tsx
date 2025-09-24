@@ -6,6 +6,7 @@ import PlayerDetailsModal from '@/components/home-page/PlayerDetailsModal';
 import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import { useCancelInvitation } from '@/hooks/apis/player-finder/useCancelInvite';
 import { useGetPlayerEventsByDate } from '@/hooks/apis/set-availability/useGetPlayerEventsByDate';
+import * as Location from 'expo-location';
 import { useGetPlayerSchedule } from '@/hooks/apis/set-availability/useGetPlayerSchedule';
 import { getToken } from '@/shared/helpers/storeToken';
 import { RootState } from '@/store';
@@ -37,32 +38,74 @@ import { useSelector } from 'react-redux';
 const API_URL = 'https://api.vddette.com';
 
 // Utilities
-const parseArrayToDate = (arr: number[]): Date => {
-  if (!arr || arr.length < 3) return new Date('');
-  const [year, month, day, hour = 0, minute = 0] = arr;
-  return new Date(year, month - 1, day, hour, minute);
+const parseArrayToDate = (arr: any): Date => {
+  if (!arr) return new Date();
+
+  // if nested array like [[2025,9,28,18,30]], pick the first element
+  if (Array.isArray(arr) && Array.isArray(arr[0])) {
+    arr = arr[0];
+  }
+
+  // if flat array of numbers
+  if (Array.isArray(arr) && arr.length >= 3) {
+    const [year, month, day, hour = 0, minute = 0, second = 0] = arr;
+    return new Date(year, month - 1, day, hour, minute, second);
+  }
+
+  // fallback: try Date constructor (if string or object)
+  return new Date(arr);
 };
 
-const isSameDay = (dateArray: number[], selectedDate: string) => {
-  if (!dateArray || dateArray.length < 3) return false;
+const isSameDay = (dateArray: any, selectedDate: string) => {
+  if (!dateArray) return false;
+
+  // handle nested array
+  if (Array.isArray(dateArray) && Array.isArray(dateArray[0])) {
+    dateArray = dateArray[0];
+  }
+
+  if (!Array.isArray(dateArray) || dateArray.length < 3) return false;
+
   const [year, month, day] = dateArray;
   return format(new Date(year, month - 1, day), 'yyyy-MM-dd') === selectedDate;
 };
-
 export default function PlayCalendarPage() {
   const user = useSelector((state: RootState) => state.auth.user);
   const router = useRouter();
   const userId = user?.userId;
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+      (async () => {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Permission to access location was denied');
+          return;
+        }
+        const location = await Location.getCurrentPositionAsync({});
+        setCoords({
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        });
+      })();
+    }, []);
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const [selectedDate, setSelectedDate] = useState<string>(today);
 
   const { data: eventsForSelectedDate, refetch } = useGetPlayerEventsByDate(
     selectedDate,
-    userId
+    userId,
+    coords?.lat,
+    coords?.lng
   );
+  
   const { data: schedule, refetch: fetchSchedule } =
-    useGetPlayerSchedule(userId);
+    useGetPlayerSchedule(
+    userId,
+    coords?.lat,
+    coords?.lng
+  );
+
   const { data: initiatedData } = useGetInitiatedPlays(userId);
 
   const {
@@ -221,107 +264,104 @@ export default function PlayCalendarPage() {
     }))
     .filter((e) => isSameDay(e.playTime, selectedDate));
 
-  // Merge all events
-  const mergedEvents = [
-    ...availableEventsForSelectedDate,
-    ...incomingRequests,
-    ...outgoingRequests,
-    ...initiatedPlaysForSelectedDate,
-  ];
+const registeredEventsForSelectedDate = (eventsForSelectedDate?.eventsRegistered ?? [])
+  .map((e) => {
+    const start = parseArrayToDate(e.startTime);
+    return {
+      ...e,
+      type: 'registered',
+      start,
+      end: e.durationMinutes
+        ? new Date(start.getTime() + e.durationMinutes * 60000)
+        : null,
+    };
+  })
+  .filter((e) => isSameDay(e.startTime, selectedDate));
+
+// Filter waitlisted events for selected date
+const waitlistedEventsForSelectedDate = (eventsForSelectedDate?.eventsWaitlisted ?? [])
+  .map((e) => {
+    const start = parseArrayToDate(e.startTime);
+    return {
+      ...e,
+      type: 'waitlisted',
+      start,
+      end: e.durationMinutes
+        ? new Date(start.getTime() + e.durationMinutes * 60000)
+        : null,
+    };
+  })
+  .filter((e) => isSameDay(e.startTime, selectedDate));
+
+// Merge all events including waitlisted
+const mergedEvents = [
+  ...availableEventsForSelectedDate,
+  ...registeredEventsForSelectedDate,
+  ...waitlistedEventsForSelectedDate, // <--- added waitlisted here
+  ...incomingRequests,
+  ...outgoingRequests,
+  ...initiatedPlaysForSelectedDate,
+];
   const markedDates = useMemo(() => {
-    const marks: Record<string, any> = {};
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
+  const marks: Record<string, any> = {};
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
 
-    if (schedule || initiatedData) {
-      const allEvents = [
-        ...(schedule?.eventsAvailable ?? []).map((e) => ({
-          ...e,
-          type: 'eventsAvailable',
-        })),
-        ...(schedule?.incomingPlayerFinderRequests ?? []).map((e) => ({
-          ...e,
-          type: 'incomingPlayerFinder',
-        })),
-        ...(schedule?.initiatedPlayerFinderRequests ?? []).map((e) => ({
-          ...e,
-          type: 'initiatedPlayerFinder',
-        })),
-        ...(initiatedData ?? []).map((e) => ({ ...e, type: 'initiatedPlay' })),
-      ];
+  const allEvents = [
+    ...(schedule?.eventsAvailable ?? []).map(e => ({ ...e, type: 'eventsAvailable' })),
+    ...(schedule?.incomingPlayerFinderRequests ?? []).map(e => ({ ...e, type: 'incomingPlayerFinder' })),
+    ...(schedule?.initiatedPlayerFinderRequests ?? []).map(e => ({ ...e, type: 'initiatedPlayerFinder' })),
+    ...(initiatedData ?? []).map(e => ({ ...e, type: 'initiatedPlay' })),
+  ];
 
-      // group events by date
-      const eventsByDate: Record<string, any[]> = {};
-      allEvents.forEach((event) => {
-        const dateArr = event.startTime ?? event.playTime;
-        if (!dateArr) return;
-        const date = format(parseArrayToDate(dateArr), 'yyyy-MM-dd');
-        if (!eventsByDate[date]) eventsByDate[date] = [];
-        eventsByDate[date].push(event);
-      });
+  const eventsByDate: Record<string, any[]> = {};
+  allEvents.forEach(event => {
+    const dateArr = event.startTime ?? event.playTime;
+    if (!dateArr) return;
+    const date = format(parseArrayToDate(dateArr), 'yyyy-MM-dd');
+    if (!eventsByDate[date]) eventsByDate[date] = [];
+    eventsByDate[date].push(event);
+  });
 
-      // decide color per date
-      Object.entries(eventsByDate).forEach(([date, events]) => {
-        // ✅ only colorize today or future
-        if (date < todayStr) return;
+  Object.entries(eventsByDate).forEach(([date, events]) => {
+    if (date < todayStr) return;
 
-        let bgColor: string | null = null;
+    const isAccepted = (e: any) =>
+      e.status === 'ACCEPTED' ||
+      e.type === 'eventsAvailable' && Array.isArray(e.registeredPlayers) && e.registeredPlayers.includes(userId) ||
+      e.type === 'initiatedPlayerFinder' ||
+      e.type === 'initiatedPlay';
 
-        const isAccepted = (e: any) =>
-          e.status === 'ACCEPTED' ||
-          (e.type === 'eventsAvailable' &&
-            Array.isArray(e.registeredPlayers) &&
-            e.registeredPlayers.includes(userId)) ||
-          e.type === 'initiatedPlayerFinder' ||
-          e.type === 'initiatedPlay';
+    let bgColor: string | null = null;
 
-        const allAccepted =
-          events.length > 0 && events.every((e) => isAccepted(e));
-        const allDeclined =
-          events.length > 0 && events.every((e) => e.status === 'DECLINED');
-
-        if (allAccepted) {
-          bgColor = 'green';
-        } else if (allDeclined) {
-          bgColor = 'red';
-        } else {
-          bgColor = '#b18a17ff'; // gold
-        }
-
-        if (bgColor) {
-          marks[date] = {
-            customStyles: {
-              container: {
-                backgroundColor: bgColor,
-                borderRadius: 4,
-              },
-              text: {
-                color: 'white',
-                fontWeight: 'bold',
-              },
-            },
-          };
-        }
-      });
+    if (events.every(isAccepted)) {
+      bgColor = 'green';
+    } else if (events.every(e => e.status === 'DECLINED')) {
+      bgColor = 'red';
+    } else {
+      bgColor = '#b18a17ff'; // gold
     }
 
-    if (selectedDate) {
-      marks[selectedDate] = {
+    if (bgColor) {
+      marks[date] = {
         customStyles: {
-          container: {
-            backgroundColor: '#00adf5',
-            borderRadius: 4,
-          },
-          text: {
-            color: 'white',
-            fontWeight: 'bold',
-          },
+          container: { backgroundColor: bgColor, borderRadius: 4 },
+          text: { color: 'white', fontWeight: 'bold' },
         },
       };
     }
+  });
 
-    return marks;
-  }, [schedule, initiatedData, selectedDate, userId]);
+  if (selectedDate) {
+    marks[selectedDate] = {
+      customStyles: {
+        container: { backgroundColor: '#00adf5', borderRadius: 4 },
+        text: { color: 'white', fontWeight: 'bold' },
+      },
+    };
+  }
+
+  return marks;
+}, [schedule, initiatedData, selectedDate, userId]);
 
   const showCommentDialog = (
     invite: any,
@@ -504,60 +544,81 @@ export default function PlayCalendarPage() {
               </Text>
             }
             renderItem={({ item }) => {
+              const safeStart = parseArrayToDate(item.start || item.startTime);
+
               if (item.type === 'incoming') {
-                return (
-                  <InvitationCard
-                    key={item.id}
-                    invite={item}
-                    onAccept={() => showCommentDialog(item, 'accept')}
-                    onReject={() => showCommentDialog(item, 'reject')}
-                    onCancel={() => showCommentDialog(item, 'cancel')}
-                    loading={loadingId === item.id}
-                    totalPlayers={item.totalPlayers}
-                    acceptedPlayers={item.accepted}
-                    onViewPlayers={() => handleViewPlayers(item.requestId)}
+                  return (
+                    <InvitationCard
+                      key={item.id}
+                      invite={item}
+                      onAccept={() => showCommentDialog(item, 'accept')}
+                      onReject={() => showCommentDialog(item, 'reject')}
+                      onCancel={() => showCommentDialog(item, 'cancel')}
+                      loading={loadingId === item.id}
+                      totalPlayers={item.totalPlayers}
+                      acceptedPlayers={item.accepted}
+                      onViewPlayers={() => handleViewPlayers(item.requestId)}
                     disabled={isPastDate(item.playTime)}
-                  />
-                );
+                    />
+                  );
               } else if (item.type === 'outgoing') {
                 // console.log('Rendering outgoing invite:', item);
-                return (
-                  <TouchableOpacity onPress={() => handlePress(item)}>
-                    <OutgoingInviteCardItem
-                      key={item.requestId}
-                      invite={item}
-                      onViewPlayers={() => handleViewPlayers(item.requestId)}
+                  return (
+                    <TouchableOpacity onPress={() => handlePress(item)}>
+                      <OutgoingInviteCardItem
+                        key={item.requestId}
+                        invite={item}
+                        onViewPlayers={() => handleViewPlayers(item.requestId)}
                       disabled={isPastDate(item.start)}
+                      />
+                    </TouchableOpacity>
+                  );
+              } else if (item.type === 'available'|| item.type === 'registered'|| item.type === 'waitlisted') {
+                  const start = item.start || parseArrayToDate(item.startTime);
+                  console.log("hereeeeee",item)
+                  const normalizedItem = {
+                    id: item.id ?? '',
+                    eventName: item.eventName ?? 'Unknown Event',
+                    date: start.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                    time: start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    duration: item.durationMinutes ?? 0,
+                    'skill level': item.skillLevel ?? 'N/A',
+                    court: item.allCourts?.Name ?? 'N/A',
+                    'max slots': item.maxPlayers ?? 0,
+                    'filled slots': item.registeredPlayers?.length ?? 0,
+                    action: item.type ?? 'N/A',
+                    isFull: item.sessionFull ?? false,
+                    priceForPlay: item.priceForPlay ?? 0,
+                    isRegistered: item.registeredPlayers?.includes(userId) ?? false,
+                    isWaitlisted: item.waitlistedPlayers?.includes(userId) ?? false,
+                    initiated: item.type === 'initiated',
+                  };
+                  return (
+                    <OpenPlayCard
+                      data={[normalizedItem]}
+                      refetch={() => {}}
+                      disabled={isPastDate(start)}
                     />
-                  </TouchableOpacity>
-                );
-              } else if (item.type === 'available') {
-                return (
-                  <OpenPlayCard
-                    data={[item]}
-                    refetch={() => {}}
-                    disabled={isPastDate(item.start)}
-                  />
-                );
+                  );
               } else {
-                return (
+                  return (
                   <View style={styles.eventCard}>
-                    <Text style={styles.eventTitle}>
-                      {item.eventName || 'Event Name'}
-                    </Text>
-                    <Text style={styles.eventLocation}>
+                      <Text style={styles.eventTitle}>
+                        {item.eventName || 'Event Name'}
+                      </Text>
+                      <Text style={styles.eventLocation}>
                       {item.placeToPlay ||
                         item.allCourts?.Name ||
                         'Unknown Location'}
-                    </Text>
-                    {item.start && item.end && (
-                      <Text style={styles.eventTime}>
+                      </Text>
+                      {item.start && item.end && (
+                        <Text style={styles.eventTime}>
                         {format(item.start, 'h:mm a')} -{' '}
                         {format(item.end, 'h:mm a')}
-                      </Text>
-                    )}
-                  </View>
-                );
+                        </Text>
+                      )}
+                    </View>
+                  );
               }
             }}
           />

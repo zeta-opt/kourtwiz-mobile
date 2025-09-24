@@ -3,14 +3,19 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { useCallback, useEffect, useState } from 'react';
 
-export const useGetPlayerEventsByDate = (date?: string, userId?: string) => {
+export const useGetPlayerEventsByDate = (
+  date?: string, 
+  userId?: string,
+  lat?: number,
+  lng?: number
+) => {
   const [data, setData] = useState<any | null>(null);
   const [status, setStatus] = useState<'loading' | 'error' | 'success'>('loading');
   const [error, setError] = useState<string | null>(null);
 
   const fetchEvents = useCallback(async () => {
-    if (!date || !userId) return;
-
+    if (!date || !userId|| lat == null || lng == null) return;
+  
     setStatus('loading');
     setError(null);
 
@@ -18,15 +23,18 @@ export const useGetPlayerEventsByDate = (date?: string, userId?: string) => {
       const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
       const token = await getToken();
 
-      const response = await axios.get(
-        `${BASE_URL}/player-calendar/events-by-date?userId=${userId}&date=${encodeURIComponent(date)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: '*/*',
-          },
-        }
-      );
+      const response = await axios.get(`${BASE_URL}/player-calendar/events-by-date`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: '*/*',
+        },
+        params: {
+          userId,
+          date,
+          lat,
+          lng,
+        },
+      });
 
       setData(response.data);
       setStatus('success');
@@ -36,13 +44,13 @@ export const useGetPlayerEventsByDate = (date?: string, userId?: string) => {
       setError(errorMessage);
       setStatus('error');
     }
-  }, [date, userId]);
+  }, [date, userId, lat, lng]);
 
   useEffect(() => {
-    if (date && userId) {
+    if (date && userId && lat != null && lng != null) {
       fetchEvents();
     }
-  }, [date, userId, fetchEvents]);
+  }, [date, userId, lat, lng, fetchEvents]);
 
   return {
     data,

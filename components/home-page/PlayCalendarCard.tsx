@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 
 const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,onCancelInitiated, }: { invites: any[];onCancel: (invite: any) => void;onWithdraw: (invite: any) => void; onWithdrawSentRequest?: (invite: any) => void;onCancelInitiated?: (invite: any) => void; }) => {
   const router = useRouter();
+  // console.log('Invites:', invites);
 
   const renderStatusBadge = (status: string) => {
     let backgroundColor = '#e0e0e0';
@@ -47,12 +48,15 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
     if (invite.type === 'incoming' && Array.isArray(invite.playTime)) {
       const [year, month, day, hour = 0, min = 0, sec = 0] = invite.playTime;
       return new Date(year, month - 1, day, hour, min, sec);
-    } else if (invite.type === 'openplay' && Array.isArray(invite.playTime)) {
-      const [year, month, day, hour = 0, min = 0] = invite.playTime;
-      return new Date(year, month - 1, day, hour, min);
-    } else if (invite.dateTimeMs) {
-      return new Date(invite.dateTimeMs);
-    }
+    } else if (
+    (invite.type === 'openplay' || invite.type === 'registered' || invite.type === 'initiated') &&
+    Array.isArray(invite.startTime)
+  ) {
+    const [year, month, day, hour = 0, min = 0] = invite.startTime;
+    return new Date(year, month - 1, day, hour, min);
+  } else if (invite.dateTimeMs) {
+    return new Date(invite.dateTimeMs);
+  }
     return null;
   };
 
@@ -68,6 +72,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
       const dateB = getDateObject(b)?.getTime() || 0;
       return dateA - dateB;
     });
+    //  console.log('Sorted Invites:', sortedInvites);
 
   const renderInviteRow = (invite: any, index: number) => {
     const { type } = invite;
@@ -122,7 +127,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
             pathname: '/(authenticated)/sentRequestsDetailedView',
             params: { data: encoded },
           });
-        } else if (type === 'openplay' || type === 'initiated') {
+        } else if (type === 'registered' || type === 'initiated') {
           router.push({
             pathname: '/(authenticated)/openPlayDetailedView',
             params: { sessionId: invite.id },
@@ -193,7 +198,7 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
                 </>
               )}
 
-            {type === 'openplay' && invite.isRegistered && (
+            {type === 'registered' && (
               <>
               <TouchableOpacity
                 onPress={() => {
@@ -261,12 +266,9 @@ const PlayCalendarCard = ({ invites,onCancel,onWithdraw,onWithdrawSentRequest,on
           } else if (invite.type === 'outgoing') {
             // all sent requests (no filtering)
             return true;
-          } else if (invite.type === 'openplay') {
-            // registered openplay events only
-            return invite.isRegistered === true;
-          }
-          else if (invite.type === 'initiated') {
-            return true; // show all initiated plays
+          } else if (invite.type === 'registered' || invite.type === 'initiated') {
+              // only show registered and initiated open plays
+              return true;
           }
 
           return false;
