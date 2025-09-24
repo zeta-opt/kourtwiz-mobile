@@ -1,12 +1,4 @@
-import UserAvatar from '@/assets/UserAvatar';
-import { useSubmitGameFeedback } from '@/hooks/apis/game-feedback/useSubmitGameFeedback';
-import { useGetPlayerSchedule } from '@/hooks/apis/set-availability/useGetPlayerSchedule';
-import { RootState } from '@/store';
-import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import moment from 'moment';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,13 +12,43 @@ import {
 import { Text } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { format, isBefore } from 'date-fns';
+import { RootState } from '@/store';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import * as Location from 'expo-location';
+import moment from 'moment';
+import UserAvatar from '@/assets/UserAvatar';
+import { useSubmitGameFeedback } from '@/hooks/apis/game-feedback/useSubmitGameFeedback';
+import { useGetPlayerSchedule } from '@/hooks/apis/set-availability/useGetPlayerSchedule';
 
 const parseArrayToDate = (arr?: number[]) =>
   arr ? new Date(arr[0], arr[1] - 1, arr[2], arr[3] || 0, arr[4] || 0) : null;
 
 const HistoryPage = () => {
   const { user } = useSelector((state: RootState) => state.auth);
-  const { data: schedule, status, error } = useGetPlayerSchedule(user?.userId);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({});
+      setCoords({
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      });
+    })();
+  }, []);
+
+  const { data: schedule, status, error } = useGetPlayerSchedule(
+    user?.userId,
+    coords?.lat,
+    coords?.lng
+  );
+
   const {
     submitGameFeedback,
     status: feedbackStatus,
