@@ -88,7 +88,7 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
           duration: play.duration ?? 0,
           'skill level': play.skillLevel ?? 'N/A',
           court: play.court ?? 'N/A',
-          'max slots': (play.playersNeeded ?? 0) + (play.accepted ?? 0),
+          'max slots': (play.playersNeeded ?? 0) + 1,
           'filled slots': play.accepted ?? 0,
           action: play.type ?? 'N/A',
           isFull: play.isFull ?? false,
