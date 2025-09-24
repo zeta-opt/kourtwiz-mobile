@@ -1,6 +1,5 @@
 import { useGetClubCourt } from '@/hooks/apis/courts/useGetClubCourts';
 import { useCancelOpenPlay } from '@/hooks/apis/join-play/useCancelOpenPlay';
-import { useGetInitiatedPlays } from '@/hooks/apis/join-play/useGetInitiatedPlays';
 import { useMutateJoinPlay } from '@/hooks/apis/join-play/useMutateJoinPlay';
 import { useWithdrawFromPlay } from '@/hooks/apis/join-play/useWithdrawFromPlay';
 import { useWithdrawFromWaitlist } from '@/hooks/apis/join-play/useWithdrawFromWaitlist';
@@ -35,7 +34,6 @@ type PlayRow = {
   isWaitlisted: boolean;
   priceForPlay: number;
   'event name': string;
-  initiated: boolean;
   [key: string]: any;
 };
 
@@ -43,11 +41,8 @@ type OpenPlayCardProps = {
   cardStyle?: ViewStyle;
   data: any[];
   refetch: () => void;
-  refetchInitiated?: () => void; // 🔑 add this for initiated plays
-  onCancelSuccess?: (sessionId: string) => void;
   disabled?: boolean;
 };
-
 const extractErrorMessage = (err: any): string => {
   return (
     err?.response?.data?.message ||
@@ -61,29 +56,57 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
   cardStyle,
   data,
   refetch,
-  refetchInitiated,
   disabled = false,
 }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const clubId = user?.currentActiveClubId || 'GLOBAL';
   const userId = user?.userId;
 
-  const { data: initiatedData, status: initiatedStatus } =
-    useGetInitiatedPlays(userId);
-
-  const { data: courtsData, status: courtsStatus } = useGetClubCourt({
-    clubId,
-  });
+  const { data: courtsData, status: courtsStatus } = useGetClubCourt({ clubId });
   const { joinPlaySession } = useMutateJoinPlay();
   const { withdraw } = useWithdrawFromPlay();
   const { withdrawFromWaitlist } = useWithdrawFromWaitlist();
-  const { cancel } = useCancelOpenPlay();
-
   const [rows, setRows] = useState<PlayRow[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const optimisticUpdates = useRef<Map<string, Partial<PlayRow>>>(new Map());
   const pendingActions = useRef<Set<string>>(new Set());
+    useEffect(() => {
+      if (!Array.isArray(data) || data.length === 0) {
+        setRows([]);
+        return;
+      }
+
+      const mappedRows: PlayRow[] = data.map((play: any) => {
+        console.log("play", play);
+
+        return {
+          id: play.id ?? '',
+          'event name': play.eventName ?? 'Unknown Event',
+          date: play.date,
+          time: play.time,
+          duration: play.duration ?? 0,
+          'skill level': play.skillLevel ?? 'N/A',
+          court: play.court ?? 'N/A',
+          'max slots': (play.playersNeeded ?? 0) + (play.accepted ?? 0),
+          'filled slots': play.accepted ?? 0,
+          action: play.type ?? 'N/A',
+          isFull: play.isFull ?? false,
+          priceForPlay: play.priceForPlay ?? 0,
+          isRegistered: play.isRegistered ?? false,
+          isWaitlisted: play.isWaitlisted ?? false,
+          initiated: play.type === 'initiated',
+        };
+      });
+
+      setRows(mappedRows);
+    }, [data]);
+
+
+
+
+  const { cancel } = useCancelOpenPlay();
+
 
   const handleCancelInitiatedPlay = async (id: string) => {
     Alert.alert(
@@ -104,7 +127,6 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
                 topOffset: 100,
               });
               await refetch();
-              await refetchInitiated?.();
             } catch (err) {
               Toast.show({
                 type: 'error',
@@ -295,115 +317,9 @@ const OpenPlayCard: React.FC<OpenPlayCardProps> = ({
     return 'Register';
   };
 
-  useEffect(() => {
-    if (
-      !data ||
-      (clubId !== 'GLOBAL' && (!courtsData || courtsData.length === 0))
-    ) {
-      return;
-    }
-
-    let allPlays = data.map((p) => ({ ...p, initiated: false }));
-
-    if (initiatedData && Array.isArray(initiatedData)) {
-      const existingIds = new Set(allPlays.map((p) => p.id));
-
-      allPlays = allPlays.map((p) => ({
-        ...p,
-        initiated: initiatedData.some((ip) => ip.id === p.id) || false,
-      }));
-
-      const extra = initiatedData
-        .filter((p) => !existingIds.has(p.id))
-        .map((p) => ({ ...p, initiated: true }));
-
-      allPlays = [...allPlays];
-    }
-
-    const courtMap: Record<string, string> = {};
-    if (clubId !== 'GLOBAL') {
-      courtsData?.forEach((court: any) => {
-        courtMap[court.id] = court.name;
-      });
-    }
-
-    const mappedRows = allPlays.map((play: any) => {
-      const startDate = new Date(
-        play.startTime[0],
-        play.startTime[1] - 1,
-        play.startTime[2],
-        play.startTime[3] || 0,
-        play.startTime[4] || 0
-      );
-
-      const courtName =
-        clubId !== 'GLOBAL'
-          ? play.courtId
-            ? courtMap[play.courtId] || play.allCourts?.Name || 'N/A'
-            : play.allCourts?.Name || 'N/A'
-          : play.allCourts?.Name || 'N/A';
-
-      const registeredPlayers = play.registeredPlayers || [];
-      const waitlistedPlayers = play.waitlistedPlayers || [];
-
-      const isRegistered = registeredPlayers.includes(userId);
-      const isWaitlisted = waitlistedPlayers.includes(userId);
-      const filledSlots = registeredPlayers.length;
-      const isFull = filledSlots >= play.maxPlayers + 1;
-
-      const baseRow = {
-        id: play.id,
-        initiated: play.initiated || false,
-        'event name':
-          play.eventName?.split('_').join(' ').toLowerCase() || 'Unknown Event',
-        date: startDate.toLocaleDateString('en-US', {
-          month: '2-digit',
-          day: '2-digit',
-          year: 'numeric',
-        }),
-        time: startDate.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        duration: play.durationMinutes,
-        'skill level': play.skillLevel,
-        court: courtName,
-        'max slots': play.maxPlayers + 1,
-        'filled slots': filledSlots,
-        action: play.playTypeName?.split('_').join(' ').toLowerCase(),
-        isFull,
-        priceForPlay: play.priceForPlay || 0,
-        isRegistered,
-        isWaitlisted,
-      };
-
-      if (
-        pendingActions.current.has(play.id) &&
-        optimisticUpdates.current.has(play.id)
-      ) {
-        return { ...baseRow, ...optimisticUpdates.current.get(play.id) };
-      }
-
-      return baseRow;
-    });
-
-    setRows(mappedRows);
-  }, [data, initiatedData, courtsData, userId, clubId]);
-
-  if (!clubId) {
-    return (
-      <Text style={styles.noDataText}>No open play sessions available</Text>
-    );
-  }
-  if (courtsStatus === 'loading' || initiatedStatus === 'loading') {
-    return <LoaderScreen />;
-  }
-  if (rows.length === 0) {
-    return (
-      <Text style={styles.noDataText}>No open play sessions available</Text>
-    );
-  }
-
+  if (courtsStatus === 'loading') return <LoaderScreen />;
+  if (rows.length === 0)
+  return <Text style={styles.noDataText}>No open play sessions available</Text>;
   return (
     <View>
       {rows.map((row) => (
