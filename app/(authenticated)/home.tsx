@@ -188,6 +188,7 @@ const playCount = allUpcomingPlays.length;
   ...(openPlayInvites?.registeredSessions || []).map((play) => ({ ...play, type: 'registered' as const })),
   ...(openPlayInvites?.waitListedSessions || []).map((play) => ({ ...play, type: 'waitlisted' as const })),
 ];
+console.log('Play Calendar Data:', playCalendarData);
 function normalizePlay(play: any, type: 'openplay' | 'initiated' | 'registered' | 'waitlisted', userId: string) {
   const startDate = getPlayDate(play);
 
