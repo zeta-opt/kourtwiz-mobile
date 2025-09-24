@@ -98,9 +98,14 @@ export default function PlayCalendarPage() {
     coords?.lat,
     coords?.lng
   );
-  console.log("here",eventsForSelectedDate);
+  
   const { data: schedule, refetch: fetchSchedule } =
-    useGetPlayerSchedule(userId);
+    useGetPlayerSchedule(
+    userId,
+    coords?.lat,
+    coords?.lng
+  );
+
   const { data: initiatedData } = useGetInitiatedPlays(userId);
 
   const {
@@ -298,99 +303,65 @@ const mergedEvents = [
   ...initiatedPlaysForSelectedDate,
 ];
   const markedDates = useMemo(() => {
-    const marks: Record<string, any> = {};
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
+  const marks: Record<string, any> = {};
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
 
-    if (schedule || initiatedData) {
-      const allEvents = [
-        ...(schedule?.eventsAvailable ?? []).map((e) => ({
-          ...e,
-          type: 'eventsAvailable',
-        })),
-        ...(schedule?.incomingPlayerFinderRequests ?? []).map((e) => ({
-          ...e,
-          type: 'incomingPlayerFinder',
-        })),
-        ...(schedule?.initiatedPlayerFinderRequests ?? []).map((e) => ({
-          ...e,
-          type: 'initiatedPlayerFinder',
-        })),
-        ...(initiatedData ?? []).map((e) => ({ ...e, type: 'initiatedPlay' })),
-      ];
+  const allEvents = [
+    ...(schedule?.eventsAvailable ?? []).map(e => ({ ...e, type: 'eventsAvailable' })),
+    ...(schedule?.incomingPlayerFinderRequests ?? []).map(e => ({ ...e, type: 'incomingPlayerFinder' })),
+    ...(schedule?.initiatedPlayerFinderRequests ?? []).map(e => ({ ...e, type: 'initiatedPlayerFinder' })),
+    ...(initiatedData ?? []).map(e => ({ ...e, type: 'initiatedPlay' })),
+  ];
 
-      // group events by date
-      const eventsByDate: Record<string, any[]> = {};
-      allEvents.forEach((event) => {
-        const dateArr = event.startTime ?? event.playTime;
-        if (!dateArr) return;
-        const date = format(parseArrayToDate(dateArr), 'yyyy-MM-dd');
-        if (!eventsByDate[date]) eventsByDate[date] = [];
-        eventsByDate[date].push(event);
-      });
+  const eventsByDate: Record<string, any[]> = {};
+  allEvents.forEach(event => {
+    const dateArr = event.startTime ?? event.playTime;
+    if (!dateArr) return;
+    const date = format(parseArrayToDate(dateArr), 'yyyy-MM-dd');
+    if (!eventsByDate[date]) eventsByDate[date] = [];
+    eventsByDate[date].push(event);
+  });
 
-      // decide color per date
-      Object.entries(eventsByDate).forEach(([date, events]) => {
-        // ✅ only colorize today or future
-        if (date < todayStr) return;
+  Object.entries(eventsByDate).forEach(([date, events]) => {
+    if (date < todayStr) return;
 
-        let bgColor: string | null = null;
+    const isAccepted = (e: any) =>
+      e.status === 'ACCEPTED' ||
+      e.type === 'eventsAvailable' && Array.isArray(e.registeredPlayers) && e.registeredPlayers.includes(userId) ||
+      e.type === 'initiatedPlayerFinder' ||
+      e.type === 'initiatedPlay';
 
-        const isAccepted = (e: any) =>
-          e.status === 'ACCEPTED' ||
-          (e.type === 'eventsAvailable' &&
-            Array.isArray(e.registeredPlayers) &&
-            e.registeredPlayers.includes(userId)) ||
-          e.type === 'initiatedPlayerFinder' ||
-          e.type === 'initiatedPlay';
+    let bgColor: string | null = null;
 
-        const allAccepted =
-          events.length > 0 && events.every((e) => isAccepted(e));
-        const allDeclined =
-          events.length > 0 && events.every((e) => e.status === 'DECLINED');
-
-        if (allAccepted) {
-          bgColor = 'green';
-        } else if (allDeclined) {
-          bgColor = 'red';
-        } else {
-          bgColor = '#b18a17ff'; // gold
-        }
-
-        if (bgColor) {
-          marks[date] = {
-            customStyles: {
-              container: {
-                backgroundColor: bgColor,
-                borderRadius: 4,
-              },
-              text: {
-                color: 'white',
-                fontWeight: 'bold',
-              },
-            },
-          };
-        }
-      });
+    if (events.every(isAccepted)) {
+      bgColor = 'green';
+    } else if (events.every(e => e.status === 'DECLINED')) {
+      bgColor = 'red';
+    } else {
+      bgColor = '#b18a17ff'; // gold
     }
 
-    if (selectedDate) {
-      marks[selectedDate] = {
+    if (bgColor) {
+      marks[date] = {
         customStyles: {
-          container: {
-            backgroundColor: '#00adf5',
-            borderRadius: 4,
-          },
-          text: {
-            color: 'white',
-            fontWeight: 'bold',
-          },
+          container: { backgroundColor: bgColor, borderRadius: 4 },
+          text: { color: 'white', fontWeight: 'bold' },
         },
       };
     }
+  });
 
-    return marks;
-  }, [schedule, initiatedData, selectedDate, userId]);
+  if (selectedDate) {
+    marks[selectedDate] = {
+      customStyles: {
+        container: { backgroundColor: '#00adf5', borderRadius: 4 },
+        text: { color: 'white', fontWeight: 'bold' },
+      },
+    };
+  }
+
+  return marks;
+}, [schedule, initiatedData, selectedDate, userId]);
 
   const showCommentDialog = (
     invite: any,

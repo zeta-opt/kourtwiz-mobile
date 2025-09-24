@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
 import { Calendar, DateData } from "react-native-calendars";
 import { Calendar as BigCalendar } from "react-native-big-calendar";
 import { parseISO, isWithinInterval, isSameDay, format } from "date-fns";
-
+import * as Location from 'expo-location';
 import UserAvatar from "@/assets/UserAvatar";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -36,8 +36,27 @@ export default function AvailabilityCalendar({ refetch }: Props) {
   const user = useSelector((state: RootState) => state.auth.user);
   const userId = user?.userId;
 
-  const { data: scheduleData } = useGetPlayerSchedule(userId);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({});
+      setCoords({
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      });
+    })();
+  }, []);
 
+  const { data: scheduleData} = useGetPlayerSchedule(
+    userId,
+    coords?.lat,
+    coords?.lng
+  );
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
