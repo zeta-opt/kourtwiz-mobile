@@ -1,2 +1,1 @@
-cd ios
 pod install
