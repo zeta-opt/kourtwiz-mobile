@@ -42,7 +42,7 @@ fi
 # 3. Patch Podfile (optional: skip autolinking if Node isn't ready)
 # -----------------------
 echo "🧩 Checking Podfile for dynamic requires..."
-PODFILE="ios/Podfile"
+PODFILE="../Podfile"
 
 if grep -q "require File.join(File.dirname(\`node" "$PODFILE"; then
   echo "🔄 Wrapping node require in a safe block..."
