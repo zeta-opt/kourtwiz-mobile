@@ -2845,7 +2845,7 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-date-picker (from `../node_modules/react-native-date-picker`)
-  - react-native-google-maps (from `/Users/harshitreddy/Documents/kourtwiz-mobile/node_modules/react-native-maps`)
+  - react-native-google-maps (from `/Users/harshitreddy/Downloads/kourtwiz-mobile/node_modules/react-native-maps`)
   - react-native-maps (from `../node_modules/react-native-maps`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
@@ -3076,7 +3076,7 @@ EXTERNAL SOURCES:
   react-native-date-picker:
     :path: "../node_modules/react-native-date-picker"
   react-native-google-maps:
-    :path: "/Users/harshitreddy/Documents/kourtwiz-mobile/node_modules/react-native-maps"
+    :path: "/Users/harshitreddy/Downloads/kourtwiz-mobile/node_modules/react-native-maps"
   react-native-maps:
     :path: "../node_modules/react-native-maps"
   react-native-safe-area-context:
