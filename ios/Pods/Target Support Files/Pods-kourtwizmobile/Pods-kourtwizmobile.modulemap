@@ -1,0 +1,6 @@
+module Pods_kourtwizmobile {
+  umbrella header "Pods-kourtwizmobile-umbrella.h"
+
+  export *
+  module * { export * }
+}
