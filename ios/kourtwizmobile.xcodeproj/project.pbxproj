@@ -84,7 +84,7 @@
 				72492D09E829F4947F7DDD0F /* Pods-kourtwizmobile.debug.xcconfig */,
 				422FB5E3A3DA94786BCBAD46 /* Pods-kourtwizmobile.release.xcconfig */,
 			);
-			path = Pods;
+			name = Pods;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
