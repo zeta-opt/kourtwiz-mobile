@@ -1,15 +1,33 @@
+require 'json'
+require 'open3'
+
+# --- Safe autolinking for Expo ---
 begin
-  require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
-rescue
-  puts "[!] Unable to load Expo autolinking script."
+  node_command = "node --print \"require.resolve('expo/package.json')\""
+  stdout, status = Open3.capture2(node_command)
+  if status.success? && !stdout.strip.empty?
+    require File.join(File.dirname(stdout.strip), "scripts/autolinking")
+  else
+    puts "[!] Skipping Expo autolinking (expo/package.json not found)"
+  end
+rescue => e
+  puts "[!] Unable to load Expo autolinking script: #{e}"
 end
 
+# --- Safe autolinking for React Native ---
 begin
-  require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
-rescue
-  puts "[!] Unable to load React Native autolinking script."
+  node_command = "node --print \"require.resolve('react-native/package.json')\""
+  stdout, status = Open3.capture2(node_command)
+  if status.success? && !stdout.strip.empty?
+    require File.join(File.dirname(stdout.strip), "scripts/react_native_pods")
+  else
+    puts "[!] Skipping React Native autolinking (react-native/package.json not found)"
+  end
+rescue => e
+  puts "[!] Unable to load React Native autolinking script: #{e}"
 end
-require 'json'
+
+# --- Podfile properties ---
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
 ENV['RCT_NEW_ARCH_ENABLED'] = '0' if podfile_properties['newArchEnabled'] == 'false'
@@ -37,9 +55,18 @@ target 'kourtwizmobile' do
     ]
   end
 
-# @generated begin react-native-maps - expo prebuild (DO NOT MODIFY) sync-e9cc66c360abe50bc66d89fffb3c55b034d7d369
-  pod 'react-native-google-maps', path: File.dirname(`node --print "require.resolve('react-native-maps/package.json')"`)
-# @generated end react-native-maps
+  # --- Safe integration for react-native-maps ---
+  begin
+    rn_maps_package = `node --print "require.resolve('react-native-maps/package.json')"` rescue nil
+    if rn_maps_package && !rn_maps_package.strip.empty?
+      pod 'react-native-google-maps', path: File.dirname(rn_maps_package.strip)
+    else
+      puts "[!] Skipping react-native-google-maps (react-native-maps not found)"
+    end
+  rescue => e
+    puts "[!] Error resolving react-native-maps: #{e}"
+  end
+
   config = use_native_modules!(config_command)
 
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
@@ -58,7 +85,7 @@ target 'kourtwizmobile' do
   pod 'FirebaseCore', :modular_headers => true
   pod 'nanopb', :modular_headers => true
   
-  # Add this to ensure RNFB works correctly
+  # Ensure RNFB works correctly
   $RNFirebaseAsStaticFramework = true
 
   post_install do |installer|
@@ -69,8 +96,7 @@ target 'kourtwizmobile' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
-    # This is necessary for Xcode 14, because it signs resource bundles by default
-    # when building for devices.
+    # Workaround for Xcode 14 signing resource bundles
     installer.target_installation_results.pod_target_installation_results
       .each do |pod_name, target_installation_result|
       target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
