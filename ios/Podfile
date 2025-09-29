@@ -55,7 +55,7 @@ target 'kourtwizmobile' do
     ]
   end
 
-  # --- Safe integration for react-native-maps ---
+  # --- Safe react-native-maps pod ---
   begin
     rn_maps_package = `node --print "require.resolve('react-native-maps/package.json')"` rescue nil
     if rn_maps_package && !rn_maps_package.strip.empty?
@@ -75,7 +75,6 @@ target 'kourtwizmobile' do
   use_react_native!(
     :path => config[:reactNativePath],
     :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
-    # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/..",
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
@@ -84,8 +83,7 @@ target 'kourtwizmobile' do
   pod 'FirebaseCoreInternal', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
   pod 'nanopb', :modular_headers => true
-  
-  # Ensure RNFB works correctly
+
   $RNFirebaseAsStaticFramework = true
 
   post_install do |installer|
@@ -96,7 +94,6 @@ target 'kourtwizmobile' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
-    # Workaround for Xcode 14 signing resource bundles
     installer.target_installation_results.pod_target_installation_results
       .each do |pod_name, target_installation_result|
       target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
