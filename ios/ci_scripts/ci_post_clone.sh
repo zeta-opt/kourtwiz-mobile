@@ -4,9 +4,12 @@ set -o pipefail
 set -x
 
 echo "🔧 [CI] Starting Xcode Cloud post-clone script..."
+echo "📍 Current directory: $(pwd)"
 
-# --- Go to workspace root ---
-cd "$CI_WORKSPACE"
+# --- Go to repository root ---
+# The script is in ios/ci_scripts/, so go up two levels
+cd "$CI_WORKSPACE" || cd "$(dirname "$0")/../../"
+echo "📍 Repository root: $(pwd)"
 
 # --- Ensure Node.js ---
 if ! command -v node &>/dev/null; then
@@ -22,13 +25,29 @@ if [ -f "yarn.lock" ]; then
 elif [ -f "package-lock.json" ]; then
     echo "📦 Installing JS dependencies via npm..."
     npm ci
+elif [ -f "package.json" ]; then
+    echo "📦 Installing JS dependencies via npm (no lock file)..."
+    npm install
 else
-    echo "⚠️ No JS lockfile found, skipping JS deps installation"
+    echo "⚠️ No package.json found, skipping JS deps installation"
 fi
 
 # --- Fix Code Signing Configuration ---
 echo "🔧 Configuring code signing for Xcode Cloud..."
-cd ios
+
+# Navigate to ios directory from repository root
+if [ -d "ios" ]; then
+    cd ios
+    echo "📍 In iOS directory: $(pwd)"
+else
+    echo "❌ iOS directory not found!"
+    ls -la
+    exit 1
+fi
+
+# Set your team ID
+TEAM_ID="R6499KF5HJ"
+echo "📝 Setting Development Team to: $TEAM_ID"
 
 # Debug: Show current signing settings
 echo "📋 Current signing configuration:"
@@ -40,7 +59,16 @@ sed -i '' '/PROVISIONING_PROFILE_SPECIFIER/d' kourtwizmobile.xcodeproj/project.p
 sed -i '' '/PROVISIONING_PROFILE = /d' kourtwizmobile.xcodeproj/project.pbxproj || true
 sed -i '' '/"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]" = "iPhone/d' kourtwizmobile.xcodeproj/project.pbxproj || true
 
-echo "✅ Code signing configuration cleaned"
+# Ensure DEVELOPMENT_TEAM is set correctly
+echo "🔑 Setting development team..."
+sed -i '' "s/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = $TEAM_ID;/g" kourtwizmobile.xcodeproj/project.pbxproj
+# Also handle cases where DEVELOPMENT_TEAM might be empty or missing
+sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = $TEAM_ID;/g" kourtwizmobile.xcodeproj/project.pbxproj
+
+# Ensure CODE_SIGN_STYLE is Automatic
+sed -i '' "s/CODE_SIGN_STYLE = Manual;/CODE_SIGN_STYLE = Automatic;/g" kourtwizmobile.xcodeproj/project.pbxproj
+
+echo "✅ Code signing configuration updated with team: $TEAM_ID"
 
 # --- Install iOS Pods with fixes ---
 if [ -f "Podfile" ]; then
@@ -59,6 +87,9 @@ post_install do |installer|
       
       # Ensure pods support automatic signing
       config.build_settings['CODE_SIGNING_ALLOWED'] = 'YES'
+      
+      # Set team ID for pods as well
+      config.build_settings['DEVELOPMENT_TEAM'] = 'R6499KF5HJ'
     end
   end
   
@@ -78,12 +109,17 @@ else
     echo "⚠️ No Podfile found, skipping pod install"
 fi
 
-# Return to workspace root
-cd "$CI_WORKSPACE"
+# Return to repository root
+cd "$CI_WORKSPACE" || cd ../
 
 # --- Additional Debugging ---
 echo "📊 Build environment info:"
 echo "CI_XCODE_VERSION: $CI_XCODE_VERSION"
 echo "CI_XCODEBUILD_ACTION: $CI_XCODEBUILD_ACTION"
+echo "DEVELOPMENT_TEAM: $TEAM_ID"
+
+# Verify team was set
+echo "🔍 Verifying team ID was set:"
+grep "DEVELOPMENT_TEAM" ios/kourtwizmobile.xcodeproj/project.pbxproj | head -5 || echo "Could not verify team ID"
 
 echo "✅ [CI] Post-clone script completed successfully!"
