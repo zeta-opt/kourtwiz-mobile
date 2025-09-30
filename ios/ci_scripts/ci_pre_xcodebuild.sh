@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 set -o pipefail
-set -x  # Debug mode
+set -x
 
 echo "🔧 [CI] Starting pre-Xcode build script..."
 
-# --- Determine repo root relative to this script ---
+# --- Determine repo root relative to script ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../" && pwd)"
 cd "$REPO_ROOT"
@@ -16,47 +16,32 @@ if ! command -v node &>/dev/null; then
   echo "🚨 Node.js not found. Installing via Homebrew..."
   brew install node
 fi
-echo "✅ Node.js version: $(node -v)"
-echo "✅ npm version: $(npm -v)"
-if command -v yarn &>/dev/null; then
-  echo "✅ Yarn version: $(yarn -v)"
-fi
+echo "✅ Node.js: $(node -v)"
 
-# --- Install JS dependencies ---
+# --- Install JS dependencies in repo root ---
 JS_DEP_FOUND=false
-if [ -f "yarn.lock" ]; then
+if [ -f "$REPO_ROOT/yarn.lock" ]; then
   echo "📦 Installing JS dependencies via Yarn..."
   yarn install --frozen-lockfile
   JS_DEP_FOUND=true
-elif [ -f "package-lock.json" ]; then
+elif [ -f "$REPO_ROOT/package-lock.json" ]; then
   echo "📦 Installing JS dependencies via npm..."
   npm ci
   JS_DEP_FOUND=true
 else
-  echo "⚠️ No JS lockfile found, skipping JS deps installation"
+  echo "🚨 No JS lockfile found at repo root. Pod install will fail!"
+  exit 1
 fi
 
 # --- Install iOS Pods ---
-PODFILE_PATH=""
-if [ -f "ios/Podfile" ]; then
-  PODFILE_PATH="ios/Podfile"
-elif [ -f "Podfile" ]; then
-  PODFILE_PATH="Podfile"
-fi
-
-if [ -n "$PODFILE_PATH" ]; then
-  echo "📦 Installing iOS Pods (found at $PODFILE_PATH)..."
-
-  # Ensure JS dependencies are installed before pod install
-  if [ "$JS_DEP_FOUND" = false ]; then
-    echo "⚠️ JS dependencies not found! Pod install may fail due to missing React Native modules."
-  fi
-
-  cd "$(dirname "$PODFILE_PATH")"
+if [ -f "$REPO_ROOT/ios/Podfile" ]; then
+  echo "📦 Installing iOS Pods..."
+  cd "$REPO_ROOT/ios"
   pod install --repo-update
-  cd "$REPO_ROOT"  # return to repo root
+  cd "$REPO_ROOT"
 else
-  echo "⚠️ No Podfile found, skipping pod install"
+  echo "🚨 No Podfile found at ios/Podfile. Cannot run pod install!"
+  exit 1
 fi
 
 echo "✅ [CI] Pre-Xcode build script completed successfully!"
