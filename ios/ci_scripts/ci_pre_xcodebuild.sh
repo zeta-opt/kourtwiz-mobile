@@ -53,14 +53,18 @@ else
 fi
 
 # --- Install iOS Pods ---
-if [ -f "$REPO_ROOT/ios/Podfile" ]; then
-  echo "📦 Installing iOS Pods..."
-  cd "$REPO_ROOT/ios"
-  pod install --repo-update
-  cd "$REPO_ROOT"
+if [ -f "$REPO_ROOT/Podfile" ]; then
+  PODFILE_DIR="$REPO_ROOT"
+elif [ -f "$REPO_ROOT/ios/Podfile" ]; then
+  PODFILE_DIR="$REPO_ROOT/ios"
 else
-  echo "🚨 No Podfile found at ios/Podfile. Cannot continue!"
+  echo "🚨 No Podfile found. Cannot continue!"
   exit 1
 fi
+
+echo "📦 Installing iOS Pods from $PODFILE_DIR..."
+cd "$PODFILE_DIR"
+pod install --repo-update
+cd "$REPO_ROOT"
 
 echo "✅ [CI] Pre-Xcode build script completed successfully!"
