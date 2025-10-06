@@ -5,24 +5,34 @@ set -x
 
 echo "🚀 Starting S3 upload..."
 
-# ✅ Optional: Check if we're in Xcode Cloud
+# ✅ Confirm we're in Xcode Cloud
 if [[ -z "$CI_XCODEBUILD_ACTION" ]]; then
   echo "❌ Not in Xcode Cloud environment. Skipping upload."
   exit 0
 fi
 
-# ✅ AWS credentials (already injected via Xcode Cloud environment variables)
+# ✅ AWS credentials (provided in Xcode Cloud environment variables)
 export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
 export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
 export AWS_REGION="${AWS_REGION:-us-west-2}"
 
-# ✅ Sanity check: Ensure AWS CLI is available
-if ! command -v aws &> /dev/null; then
-  echo "❌ AWS CLI not found. Exiting."
-  exit 1
-fi
+# ✅ Install AWS CLI (locally, no sudo)
+echo "📥 Downloading AWS CLI..."
+curl "https://awscli.amazonaws.com/awscli-exe-macos-x86_64.zip" -o "awscliv2.zip"
 
-# ✅ Locate the IPA file
+echo "📦 Unzipping AWS CLI..."
+unzip -q awscliv2.zip
+
+echo "🛠️ Installing AWS CLI locally..."
+./aws/install -i "$PWD/aws-cli" -b "$PWD/aws-cli-bin"
+
+# ✅ Define path to local aws binary
+AWS_CMD="$PWD/aws-cli-bin/aws"
+
+# ✅ Verify AWS CLI
+$AWS_CMD --version
+
+# ✅ Find the IPA file
 IPA_PATH=$(find "$PWD" -name "*.ipa" | head -n 1)
 
 if [[ -z "$IPA_PATH" ]]; then
@@ -32,13 +42,14 @@ fi
 
 echo "📦 Found IPA: $IPA_PATH"
 
-# ✅ Set S3 bucket and key
+# ✅ Set S3 target
 BUCKET="kourtwiz-android-artifactory-dev"
 KEY="xcodecloud/$(basename "$IPA_PATH")"
 
 echo "☁️ Uploading $IPA_PATH to s3://$BUCKET/$KEY"
-
-# ✅ Upload the IPA to S3
-aws s3 cp "$IPA_PATH" "s3://$BUCKET/$KEY"
+$AWS_CMD s3 cp "$IPA_PATH" "s3://$BUCKET/$KEY"
 
 echo "✅ Upload complete."
+
+# ✅ (Optional) Clean up AWS CLI files
+rm -rf awscliv2.zip aws aws-cli aws-cli-bin
