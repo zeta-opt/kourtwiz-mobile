@@ -5,11 +5,7 @@ set -e
 
 echo "Starting S3 upload..."
 
-# Skip if not in CI
-if [[ "$CI" != "true" ]]; then
-  echo "Not in CI environment. Skipping upload."
-  exit 0
-fi
+# Skip if not 
 
 # Set AWS credentials (provided as env vars in Xcode Cloud)
 export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
