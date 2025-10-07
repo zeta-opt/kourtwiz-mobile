@@ -67,4 +67,41 @@ cd "$PODFILE_DIR"
 pod install --repo-update
 cd "$REPO_ROOT"
 
+
+# --- Build and export IPA ---
+echo "🏗️ Starting Xcode build and export..."
+
+WORKSPACE_PATH="ios/MyApp.xcworkspace"      # <-- 🔁 Update this if needed
+SCHEME="MyApp"                              # <-- 🔁 Update this if needed
+ARCHIVE_PATH="$REPO_ROOT/ios/build/archive/MyApp.xcarchive"
+EXPORT_PATH="$REPO_ROOT/ios/build/export"
+EXPORT_OPTIONS_PLIST="$REPO_ROOT/ios/exportOptions.plist"  # <-- 🔁 Must exist
+
+echo "📦 Archiving app..."
+xcodebuild archive \
+  -workspace "$WORKSPACE_PATH" \
+  -scheme "$SCHEME" \
+  -configuration Release \
+  -archivePath "$ARCHIVE_PATH" \
+  -destination 'generic/platform=iOS' \
+  SKIP_INSTALL=NO \
+  BUILD_LIBRARY_FOR_DISTRIBUTION=YES
+
+echo "📤 Exporting IPA..."
+xcodebuild -exportArchive \
+  -archivePath "$ARCHIVE_PATH" \
+  -exportPath "$EXPORT_PATH" \
+  -exportOptionsPlist "$EXPORT_OPTIONS_PLIST"
+
+# ✅ Confirm IPA exists
+IPA_PATH=$(find "$EXPORT_PATH" -type f -name "*.ipa" | head -n 1)
+if [[ -z "$IPA_PATH" ]]; then
+  echo "❌ IPA file not found after export!"
+  exit 1
+fi
+
+echo "✅ IPA exported successfully at: $IPA_PATH"
+
+echo "✅ [CI] Pre-Xcode build script completed successfully!"
+
 echo "✅ [CI] Pre-Xcode build script completed successfully!"
