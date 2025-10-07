@@ -71,13 +71,16 @@ cd "$REPO_ROOT"
 # --- Build and export IPA ---
 echo "🏗️ Starting Xcode build and export..."
 
-cd "$REPO_ROOT/ios"  # 👈 ensures xcodebuild runs inside ios directory
-
-WORKSPACE_PATH="kourtwizmobile.xcworkspace"
+# You're already in $REPO_ROOT, not inside ios/
+WORKSPACE_PATH="ios/kourtwizmobile.xcworkspace"
 SCHEME="kourtwizmobile"
 ARCHIVE_PATH="$REPO_ROOT/ios/build/kourtwizmobile.xcarchive"
 EXPORT_PATH="$REPO_ROOT/ios/build/export"
 EXPORT_OPTIONS_PLIST="$REPO_ROOT/ios/exportOptions.plist"
+
+# Debug check
+echo "🧭 Checking workspace path..."
+ls -la ios/*.xcworkspace || { echo "❌ Workspace not found!"; exit 1; }
 
 echo "📦 Archiving app..."
 xcodebuild archive \
