@@ -72,7 +72,8 @@ ls -la ios/*.xcworkspace
 # --- Build and export IPA ---
 echo "🏗️ Starting Xcode build and export..."
 
-# We are ALREADY inside /Volumes/workspace/repository/ios
+cd "$REPO_ROOT/ios"  # We are now inside the ios directory
+
 WORKSPACE_PATH="kourtwizmobile.xcworkspace"
 SCHEME="kourtwizmobile"
 ARCHIVE_PATH="$REPO_ROOT/ios/build/kourtwizmobile.xcarchive"
