@@ -80,10 +80,12 @@ EXPORT_PATH="$REPO_ROOT/ios/build/export"
 EXPORT_OPTIONS_PLIST="$REPO_ROOT/ios/exportOptions.plist"
 
 echo "🧭 Verifying workspace path: $WORKSPACE_PATH"
-if [ ! -f "$WORKSPACE_PATH" ]; then
-    echo "❌ Workspace file $WORKSPACE_PATH not found!"
+# Use -d to check for directory (xcworkspace is a directory bundle)
+if [ ! -d "$WORKSPACE_PATH" ]; then
+    echo "❌ Workspace directory $WORKSPACE_PATH not found!"
     exit 1
 fi
+echo "✅ Workspace found at: $WORKSPACE_PATH"
 
 echo "📦 Archiving app..."
 xcodebuild archive \
