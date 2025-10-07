@@ -71,9 +71,9 @@ cd "$REPO_ROOT"
 # --- Build and export IPA ---
 echo "🏗️ Starting Xcode build and export..."
 
-WORKSPACE_PATH="ios/MyApp.xcworkspace"      # <-- 🔁 Update this if needed
-SCHEME="MyApp"                              # <-- 🔁 Update this if needed
-ARCHIVE_PATH="$REPO_ROOT/ios/build/archive/MyApp.xcarchive"
+WORKSPACE_PATH="ios/kourtwizmobile.xcworkspace"      # <-- 🔁 Update this if needed
+SCHEME="kourtwizmobile"                              # <-- 🔁 Update this if needed
+ARCHIVE_PATH="$REPO_ROOT/ios/build/kourtwizmobile.xcarchive"
 EXPORT_PATH="$REPO_ROOT/ios/build/export"
 EXPORT_OPTIONS_PLIST="$REPO_ROOT/ios/exportOptions.plist"  # <-- 🔁 Must exist
 
