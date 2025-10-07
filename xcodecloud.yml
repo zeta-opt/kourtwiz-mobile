@@ -1,0 +1,23 @@
+version: 1.0
+
+workflows:
+  export-and-upload:
+    name: Export IPA and Upload to S3
+
+    environment:
+      # Optional: Set environment variables (or manage them via Secrets in Xcode Cloud UI)
+      variables:
+        AWS_REGION: "us-west-2"
+
+    actions:
+      - name: Build and Archive
+        action: build
+        workspace: ios/kourtwizmobile.xcworkspace
+        scheme: kourtwizmobile
+        configuration: release
+
+      - name: Export IPA
+        script: ios/ci_scripts/ci_export_ipa.sh
+
+      - name: Upload to S3
+        script: ios/ci_scripts/ci_post_xcodebuild.sh
