@@ -12,7 +12,9 @@ if [[ -z "$CI_XCODEBUILD_ACTION" ]]; then
 fi
 
 # ✅ Find the IPA file
-IPA_PATH=$(find "$PWD" -name "*.ipa" | head -n 1)
+IPA_PATH=$(find "$CI_PRIMARY_REPOSITORY_PATH" -name "*.ipa" | head -n 1)
+
+
 
 if [[ -z "$IPA_PATH" ]]; then
   echo "❌ IPA file not found!"
