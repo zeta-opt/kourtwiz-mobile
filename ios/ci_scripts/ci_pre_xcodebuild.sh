@@ -67,20 +67,20 @@ cd "$PODFILE_DIR"
 pod install --repo-update
 cd "$REPO_ROOT"
 
+ls -la ios/*.xcworkspace
 
 # --- Build and export IPA ---
 echo "🏗️ Starting Xcode build and export..."
 
-# You're already in $REPO_ROOT, not inside ios/
-WORKSPACE_PATH="ios/kourtwizmobile.xcworkspace"
+# We are ALREADY inside /Volumes/workspace/repository/ios
+WORKSPACE_PATH="kourtwizmobile.xcworkspace"
 SCHEME="kourtwizmobile"
 ARCHIVE_PATH="$REPO_ROOT/ios/build/kourtwizmobile.xcarchive"
 EXPORT_PATH="$REPO_ROOT/ios/build/export"
 EXPORT_OPTIONS_PLIST="$REPO_ROOT/ios/exportOptions.plist"
 
-# Debug check
 echo "🧭 Checking workspace path..."
-ls -la ios/*.xcworkspace || { echo "❌ Workspace not found!"; exit 1; }
+ls -la *.xcworkspace || { echo "❌ Workspace not found!"; exit 1; }
 
 echo "📦 Archiving app..."
 xcodebuild archive \
