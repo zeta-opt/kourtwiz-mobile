@@ -7,7 +7,7 @@ echo "🔧 [CI] Starting pre-Xcode build script..."
 
 # --- Determine script and repo root directories ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../" && pwd)"  # Go up two levels from ci_scripts
 cd "$REPO_ROOT"
 echo "📂 Current directory (repo root): $REPO_ROOT"
 
@@ -65,16 +65,13 @@ echo "📦 Installing iOS Pods from $PODFILE_DIR..."
 cd "$PODFILE_DIR"
 pod install --repo-update
 
-# IMPORTANT: Return to repo root after pod install
-cd "$REPO_ROOT"
-
-# Now list the workspaces from the correct directory
-echo "🔍 Checking for workspace files..."
-ls -la "$REPO_ROOT/ios"/*.xcworkspace || { echo "❌ No workspace files found!"; exit 1; }
-
 # --- Build and export IPA ---
 echo "🏗️ Starting Xcode build and export..."
-cd "$REPO_ROOT/ios" # Now we can safely go into ios directory
+cd "$REPO_ROOT/ios" # Navigate to ios directory
+
+# Now check for workspace files in the current directory
+echo "🔍 Checking for workspace files..."
+ls -la *.xcworkspace || { echo "❌ No workspace files found!"; exit 1; }
 
 WORKSPACE_PATH="kourtwizmobile.xcworkspace"
 SCHEME="kourtwizmobile"
@@ -82,8 +79,11 @@ ARCHIVE_PATH="$REPO_ROOT/ios/build/kourtwizmobile.xcarchive"
 EXPORT_PATH="$REPO_ROOT/ios/build/export"
 EXPORT_OPTIONS_PLIST="$REPO_ROOT/ios/exportOptions.plist"
 
-echo "🧭 Checking workspace path..."
-ls -la *.xcworkspace || { echo "❌ Workspace not found!"; exit 1; }
+echo "🧭 Verifying workspace path: $WORKSPACE_PATH"
+if [ ! -f "$WORKSPACE_PATH" ]; then
+    echo "❌ Workspace file $WORKSPACE_PATH not found!"
+    exit 1
+fi
 
 echo "📦 Archiving app..."
 xcodebuild archive \
