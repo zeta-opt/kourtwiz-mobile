@@ -5,20 +5,19 @@ set -x
 
 echo "🚀 Starting S3 upload using Python (boto3)..."
 
-# ✅ Check if running in Xcode Cloud
+# ✅ Check if running inside Xcode Cloud
 if [[ -z "$CI_XCODEBUILD_ACTION" ]]; then
   echo "❌ Not in Xcode Cloud environment. Skipping upload."
   exit 0
 fi
 
-# ✅ Print all found .ipa files for debugging
-echo "🔍 Searching for .ipa files across workspace..."
-find /Volumes/workspace -name "*.ipa"
+# ✅ Define repo path (automatically set in Xcode Cloud)
+REPO_PATH="$CI_PRIMARY_REPOSITORY_PATH"
 
-# ✅ Try to find the first IPA file anywhere in workspace
-IPA_PATH=$(find /Volumes/workspace -name "*.ipa" | head -n 1)
+# ✅ Debug: Find the .ipa file inside the repo
+echo "🔍 Searching for .ipa files inside $REPO_PATH..."
+IPA_PATH=$(find "$REPO_PATH" -name "*.ipa" 2>/dev/null | head -n 1)
 
-# ✅ Validate .ipa presence
 if [[ -z "$IPA_PATH" ]]; then
   echo "❌ IPA file not found!"
   exit 1
@@ -26,22 +25,22 @@ fi
 
 echo "📦 Found IPA at: $IPA_PATH"
 
-# ✅ Define S3 upload target
+# ✅ Set S3 bucket and key
 BUCKET="kourtwiz-android-artifactory-dev"
 KEY="xcodecloud/$(basename "$IPA_PATH")"
 
-# ✅ Install boto3 locally (no sudo)
+# ✅ Install boto3 (locally, no sudo)
 echo "📥 Installing boto3..."
 pip3 install boto3 --target ./python-packages
 
-# ✅ Upload IPA to S3 using Python + boto3
+# ✅ Upload IPA using Python + boto3
 echo "☁️ Uploading $IPA_PATH to s3://$BUCKET/$KEY..."
 
 PYTHONPATH=./python-packages python3 <<EOF
 import boto3
 import os
 
-# Create a session using env vars set in Xcode Cloud
+# Create session using environment variables from Xcode Cloud
 session = boto3.Session(
     aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
@@ -49,6 +48,7 @@ session = boto3.Session(
 )
 
 s3 = session.client("s3")
+
 ipa_path = "${IPA_PATH}"
 bucket = "${BUCKET}"
 key = "${KEY}"
@@ -56,10 +56,10 @@ key = "${KEY}"
 with open(ipa_path, "rb") as f:
     s3.upload_fileobj(f, bucket, key)
 
-print("✅ Upload complete.")
+print("✅ Upload to S3 complete.")
 EOF
 
-# ✅ Cleanup (optional)
+# ✅ Optional: clean up Python packages
 rm -rf ./python-packages
 
-echo "🎉 Done."
+echo "🎉 Done uploading to S3!"
