@@ -94,9 +94,12 @@ xcodebuild archive \
     -configuration Release \
     -archivePath "$ARCHIVE_PATH" \
     -destination 'generic/platform=iOS' \
+    -allowProvisioningUpdates \
+    CODE_SIGN_STYLE=Automatic \
+    DEVELOPMENT_TEAM=R6499KF5HJ \
     SKIP_INSTALL=NO \
     BUILD_LIBRARY_FOR_DISTRIBUTION=YES
-
+    
 echo "📤 Exporting IPA..."
 xcodebuild -exportArchive \
     -archivePath "$ARCHIVE_PATH" \
