@@ -65,53 +65,5 @@ echo "📦 Installing iOS Pods from $PODFILE_DIR..."
 cd "$PODFILE_DIR"
 pod install --repo-update
 
-# --- Build and export IPA ---
-echo "🏗️ Starting Xcode build and export..."
-cd "$REPO_ROOT/ios" # Navigate to ios directory
 
-# Now check for workspace files in the current directory
-echo "🔍 Checking for workspace files..."
-ls -la *.xcworkspace || { echo "❌ No workspace files found!"; exit 1; }
-
-WORKSPACE_PATH="kourtwizmobile.xcworkspace"
-SCHEME="kourtwizmobile"
-ARCHIVE_PATH="$REPO_ROOT/ios/build/kourtwizmobile.xcarchive"
-EXPORT_PATH="$REPO_ROOT/ios/build/export"
-EXPORT_OPTIONS_PLIST="$REPO_ROOT/ios/exportOptions.plist"
-
-echo "🧭 Verifying workspace path: $WORKSPACE_PATH"
-# Use -d to check for directory (xcworkspace is a directory bundle)
-if [ ! -d "$WORKSPACE_PATH" ]; then
-    echo "❌ Workspace directory $WORKSPACE_PATH not found!"
-    exit 1
-fi
-echo "✅ Workspace found at: $WORKSPACE_PATH"
-
-echo "📦 Archiving app..."
-xcodebuild archive \
-    -workspace "$WORKSPACE_PATH" \
-    -scheme "$SCHEME" \
-    -configuration Release \
-    -archivePath "$ARCHIVE_PATH" \
-    -destination 'generic/platform=iOS' \
-    -allowProvisioningUpdates \
-    CODE_SIGN_STYLE=Automatic \
-    DEVELOPMENT_TEAM=R6499KF5HJ \
-    SKIP_INSTALL=NO \
-    BUILD_LIBRARY_FOR_DISTRIBUTION=YES
-    
-echo "📤 Exporting IPA..."
-xcodebuild -exportArchive \
-    -archivePath "$ARCHIVE_PATH" \
-    -exportPath "$EXPORT_PATH" \
-    -exportOptionsPlist "$EXPORT_OPTIONS_PLIST"
-
-# ✅ Confirm IPA exists
-IPA_PATH=$(find "$EXPORT_PATH" -type f -name "*.ipa" | head -n 1)
-if [[ -z "$IPA_PATH" ]]; then
-    echo "❌ IPA file not found after export!"
-    exit 1
-fi
-
-echo "✅ IPA exported successfully at: $IPA_PATH"
 echo "✅ [CI] Pre-Xcode build script completed successfully!"
